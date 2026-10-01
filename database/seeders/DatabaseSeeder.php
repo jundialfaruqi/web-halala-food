@@ -2,11 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Permission;
+use App\Models\PermissionGroup;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -22,22 +23,56 @@ class DatabaseSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Create Permissions (<resource>-<action> format)
-        $permissions = [
-            'dashboard-view',
-            'user-manage',
-            'role-manage',
-            'permission-manage',
-            'financial-report-view',
-            'product-manage',
-            'order-manage',
-            'payment-process',
-            'kitchen-manage',
-            'delivery-manage',
+        // 1. Create Permission Groups
+        $groups = [
+            'Dashboard' => [
+                'description' => 'Akses halaman utama dan ringkasan metrik performa toko.',
+                'permissions' => ['dashboard-view'],
+            ],
+            'Pengguna & Akses' => [
+                'description' => 'Kelola akun staf, role pengguna, dan konfigurasi hak akses.',
+                'permissions' => ['user-manage', 'role-manage', 'permission-manage'],
+            ],
+            'Keuangan & Laporan' => [
+                'description' => 'Akses laporan omzet, rekap penjualan, dan pembukuan.',
+                'permissions' => ['financial-report-view'],
+            ],
+            'Produk & Menu' => [
+                'description' => 'Kelola katalog camilan (Marie Wijen & Ting-Ting Susu) dan stok.',
+                'permissions' => ['product-manage'],
+            ],
+            'Dapur & Produksi' => [
+                'description' => 'Akses pesanan masuk, antrean penggorengan, dan pengemasan.',
+                'permissions' => ['kitchen-manage'],
+            ],
+            'Pesanan & Transaksi' => [
+                'description' => 'Kelola pesanan pelanggan dan konfirmasi pembelian.',
+                'permissions' => ['order-manage'],
+            ],
+            'Kasir & Pembayaran' => [
+                'description' => 'Proses transaksi kasir dan konfirmasi penerimaan uang.',
+                'permissions' => ['payment-process'],
+            ],
+            'Pengiriman & Kurir' => [
+                'description' => 'Kelola rute pengantaran pesanan dan kurir.',
+                'permissions' => ['delivery-manage'],
+            ],
         ];
 
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        foreach ($groups as $groupName => $groupData) {
+            $group = PermissionGroup::firstOrCreate(
+                ['name' => $groupName],
+                ['description' => $groupData['description']]
+            );
+
+            foreach ($groupData['permissions'] as $permissionName) {
+                Permission::firstOrCreate(
+                    ['name' => $permissionName, 'guard_name' => 'web'],
+                    ['permission_group_id' => $group->id]
+                );
+                // Ensure permission group id is set if already existed
+                Permission::where('name', $permissionName)->update(['permission_group_id' => $group->id]);
+            }
         }
 
         // 2. Create the 6 Roles

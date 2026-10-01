@@ -41,6 +41,9 @@
         <!-- Global Logout Modal -->
         <x-modal.logout />
 
+        <!-- Global Toast Notifications -->
+        <x-toast />
+
         @livewireScripts
     </body>
 </html>

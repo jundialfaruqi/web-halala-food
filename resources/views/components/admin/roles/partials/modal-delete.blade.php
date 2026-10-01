@@ -1,0 +1,43 @@
+<!-- MODAL 4: DELETE CONFIRMATION (Custom Alpine Modal) -->
+<div x-cloak x-show="showDeleteModal" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+    <!-- Backdrop -->
+    <div x-show="showDeleteModal" x-transition:enter="transition-opacity ease-linear duration-200"
+        x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity ease-linear duration-150"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+        class="fixed inset-0 bg-brand-espresso/60 backdrop-blur-xs"
+        @click="showDeleteModal = false"></div>
+
+    <!-- Modal Box -->
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div x-show="showDeleteModal" x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+            class="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-brand-border p-6 text-center space-y-4">
+            
+            <div>
+                <i class="text-4xl" :class="deleteTarget.isDev ? 'ti ti-lock text-amber-600' : 'ti ti-trash text-red-600'"></i>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-bold text-brand-espresso"
+                    x-text="deleteTarget.isDev ? 'Role Sistem Terproteksi' : 'Konfirmasi Penghapusan'"></h3>
+                <p class="text-sm text-brand-warm-gray mt-2 leading-relaxed" x-text="deleteTarget.description"></p>
+            </div>
+
+            <div class="flex items-center justify-center gap-3 pt-2">
+                <button type="button" @click="showDeleteModal = false"
+                    class="px-5 py-2.5 rounded-xl border border-brand-border text-sm font-semibold text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                    <span x-text="deleteTarget.isDev ? 'Tutup' : 'Batal'"></span>
+                </button>
+
+                <button x-show="!deleteTarget.isDev" type="button" @click="executeDelete()" :disabled="isProcessing"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-xs transition cursor-pointer disabled:opacity-60">
+                    <i x-show="isProcessing" class="ti ti-loader animate-spin text-base"></i>
+                    <span x-text="isProcessing ? 'Menghapus...' : 'Ya, Hapus'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

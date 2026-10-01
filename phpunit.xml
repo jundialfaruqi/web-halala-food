@@ -12,7 +12,8 @@
             <directory>tests/Feature</directory>
         </testsuite>
         <testsuite name="Components">
-            <directory>resources/views/components</directory>
+            <directory suffix=".test.php">resources/views/components</directory>
+            <directory suffix="Test.php">resources/views/components</directory>
         </testsuite>
     </testsuites>
     <source>
