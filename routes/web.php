@@ -18,6 +18,6 @@ Route::redirect('/admin', '/admin/dashboard');
 
 Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/dashboard', 'admin.dashboard')->name('admin.dashboard');
-    Route::livewire('/users', 'admin.users')->name('admin.users');
-    Route::livewire('/roles', 'admin.roles')->name('admin.roles');
+    Route::livewire('/users', 'admin.users')->name('admin.users')->middleware('permission:user-manage');
+    Route::livewire('/roles', 'admin.roles')->name('admin.roles')->middleware('permission:role-manage|permission-manage');
 });

@@ -21,6 +21,8 @@ it('redirects unauthenticated user from roles page to login', function () {
 it('renders roles and permission management component successfully', function () {
     $user = User::factory()->create();
     $devRole = Role::firstOrCreate(['name' => 'dev', 'guard_name' => 'web']);
+    $perm = Permission::firstOrCreate(['name' => 'role-manage', 'guard_name' => 'web']);
+    $devRole->givePermissionTo($perm);
     $user->assignRole($devRole);
 
     actingAs($user);
@@ -36,6 +38,14 @@ it('renders roles and permission management component successfully', function ()
         ->assertSee('Role Pengguna')
         ->assertSee('Grup Permission')
         ->assertSee('Daftar Permission');
+});
+
+it('forbids unauthorized user without role-manage permission from accessing roles page', function () {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    get(route('admin.roles'))
+        ->assertForbidden();
 });
 
 it('can create a new role and sync permissions', function () {

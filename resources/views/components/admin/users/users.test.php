@@ -37,6 +37,14 @@ it('renders user management component successfully for authorized user', functio
         ->assertSee('Tambah Pengguna');
 });
 
+it('forbids unauthorized user without user-manage permission from accessing users page', function () {
+    $user = User::factory()->create();
+    actingAs($user);
+
+    get(route('admin.users'))
+        ->assertForbidden();
+});
+
 it('can create a new user with name, email, phone, role, and password', function () {
     $admin = User::factory()->create();
     $devRole = Role::firstOrCreate(['name' => 'dev', 'guard_name' => 'web']);
