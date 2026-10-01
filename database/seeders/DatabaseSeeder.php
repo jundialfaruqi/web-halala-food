@@ -22,18 +22,18 @@ class DatabaseSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Create Permissions
+        // 1. Create Permissions (<resource>-<action> format)
         $permissions = [
-            'view-dashboard',
-            'manage-users',
-            'manage-roles',
-            'manage-permissions',
-            'view-financial-reports',
-            'manage-products',
-            'manage-orders',
-            'process-payment',
-            'manage-kitchen',
-            'manage-delivery',
+            'dashboard-view',
+            'user-manage',
+            'role-manage',
+            'permission-manage',
+            'financial-report-view',
+            'product-manage',
+            'order-manage',
+            'payment-process',
+            'kitchen-manage',
+            'delivery-manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -52,38 +52,38 @@ class DatabaseSeeder extends Seeder
         $devRole->syncPermissions(Permission::all());
 
         $ceoRole->syncPermissions([
-            'view-dashboard',
-            'view-financial-reports',
-            'manage-users',
-            'manage-products',
-            'manage-orders',
+            'dashboard-view',
+            'financial-report-view',
+            'user-manage',
+            'product-manage',
+            'order-manage',
         ]);
 
         $managerRole->syncPermissions([
-            'view-dashboard',
-            'view-financial-reports',
-            'manage-users',
-            'manage-products',
-            'manage-orders',
-            'manage-kitchen',
-            'manage-delivery',
+            'dashboard-view',
+            'financial-report-view',
+            'user-manage',
+            'product-manage',
+            'order-manage',
+            'kitchen-manage',
+            'delivery-manage',
         ]);
 
         $masakRole->syncPermissions([
-            'view-dashboard',
-            'manage-kitchen',
-            'manage-products',
+            'dashboard-view',
+            'kitchen-manage',
+            'product-manage',
         ]);
 
         $kasirRole->syncPermissions([
-            'view-dashboard',
-            'manage-orders',
-            'process-payment',
+            'dashboard-view',
+            'order-manage',
+            'payment-process',
         ]);
 
         $kurirRole->syncPermissions([
-            'view-dashboard',
-            'manage-delivery',
+            'dashboard-view',
+            'delivery-manage',
         ]);
 
         // 4. Seed Users for Each Role
