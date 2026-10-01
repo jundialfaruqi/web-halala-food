@@ -259,6 +259,12 @@ class DatabaseSeeder extends Seeder
 
         // 6. Seed Fase 2: Production Batches, Stock Mutations, and Waste Logs
         $this->call(ProductionAndStockSeeder::class);
+
+        // 7. Seed Fase 3: Partner Stores & B2B Directories
+        $this->call(PartnerSeeder::class);
+
+        // 8. Seed Fase 4: Deliveries & Courier Distributions
+        $this->call(DeliverySeeder::class);
     }
 }
 

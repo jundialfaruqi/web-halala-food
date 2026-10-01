@@ -61,6 +61,24 @@
                         </a>
                     @endcanany
 
+                    <!-- 4. Mitra Toko & Barcode -->
+                    @canany(['partner-manage', 'product-manage'])
+                        <a href="{{ route('admin.partners') }}"
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.partners*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-building-store text-xl {{ request()->routeIs('admin.partners*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Mitra & Barcode</span>
+                        </a>
+                    @endcanany
+
+                    <!-- 5. Surat Jalan & Kurir -->
+                    @canany(['delivery-manage', 'partner-manage'])
+                        <a href="{{ route('admin.deliveries') }}"
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.deliveries*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-truck text-xl {{ request()->routeIs('admin.deliveries*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Surat Jalan & Kurir</span>
+                        </a>
+                    @endcanany
+
                     <!-- 4. Pengguna -->
                     @can('user-manage')
                         <a href="{{ route('admin.users') }}"
