@@ -9,5 +9,41 @@
 
 @theme {
     --font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-brand-primary: #A65F2B;
+    --color-brand-primary-hover: #87491F;
+    --color-brand-dark-brown: #6B3E26;
+    --color-brand-espresso: #3B2922;
+    --color-brand-honey: #F4C542;
+    --color-brand-soft-cream: #FFF4DE;
+    --color-brand-soft-cream-light: #FFFBF2;
+    --color-brand-warm-gray: #7A726D;
+    --color-brand-text-primary: #4B4541;
+    --color-brand-border: #EDE7E2;
+    --color-brand-natural-green: #5F8D4E;
 }
+
+:root {
+    --primary: #A65F2B;
+    --primary-hover: #87491F;
+    --text-heading: #3B2922;
+    --text-primary: #4B4541;
+    --text-secondary: #7A726D;
+    --accent: #F4C542;
+    --accent-soft: #FFF4DE;
+    --border: #EDE7E2;
+    --success: #5F8D4E;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-family: var(--font-sans);
+    background-color: #FFFFFF;
+    color: var(--text-primary);
+}
+
+.handwriting-accent {
+    font-family: 'Comic Sans MS', 'Caveat', 'Segoe Script', cursive, sans-serif;
+}
+
 
