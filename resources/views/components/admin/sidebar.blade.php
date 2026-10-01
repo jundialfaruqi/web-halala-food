@@ -82,29 +82,14 @@
         </div>
     </div>
 
-    <!-- Bottom Section: User Info & Logout -->
-    <div class="p-4">
-        <div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-brand-soft-cream/30">
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="size-10 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-sm shrink-0">
-                    {{ auth()->user() ? auth()->user()->initials() : 'AD' }}
-                </div>
-                <div class="flex flex-col min-w-0">
-                    <span class="text-sm font-bold text-brand-espresso truncate">
-                        {{ auth()->user()?->name ?? 'Administrator' }}
-                    </span>
-                    <span class="text-xs text-brand-warm-gray truncate">
-                        {{ auth()->user()?->email ?? 'admin@halala-food.id' }}
-                    </span>
-                </div>
+    <!-- Bottom Section: App Info & Version -->
+    <div class="p-5 border-t border-brand-border/60">
+        <div class="flex flex-col">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-brand-espresso">Halala Food</span>
+                <span class="text-xs font-medium text-brand-warm-gray font-mono">v1.0.0</span>
             </div>
-
-            <button type="button"
-                @click.prevent="$dispatch('open-logout-modal')"
-                title="Keluar"
-                class="size-9 rounded-xl flex items-center justify-center text-brand-warm-gray hover:text-red-600 hover:bg-red-50 transition cursor-pointer">
-                <i class="ti ti-logout text-lg"></i>
-            </button>
+            <span class="text-xs text-brand-warm-gray mt-0.5">Sistem Usaha & Distribusi</span>
         </div>
     </div>
 
