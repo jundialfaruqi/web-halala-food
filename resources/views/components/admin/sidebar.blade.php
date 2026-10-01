@@ -79,6 +79,15 @@
                         </a>
                     @endcanany
 
+                    <!-- 6. Pembelian & Supplier -->
+                    @canany(['purchase-manage', 'raw-material-manage'])
+                        <a href="{{ route('admin.purchases') }}"
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.purchases*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-shopping-cart text-xl {{ request()->routeIs('admin.purchases*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Pembelian & Supplier</span>
+                        </a>
+                    @endcanany
+
                     <!-- 4. Pengguna -->
                     @can('user-manage')
                         <a href="{{ route('admin.users') }}"

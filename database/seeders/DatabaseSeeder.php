@@ -265,6 +265,9 @@ class DatabaseSeeder extends Seeder
 
         // 8. Seed Fase 4: Deliveries & Courier Distributions
         $this->call(DeliverySeeder::class);
+
+        // 9. Seed Fase 5: Suppliers & Purchase Orders
+        $this->call(SupplierAndPurchaseOrderSeeder::class);
     }
 }
 
