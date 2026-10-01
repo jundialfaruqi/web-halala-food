@@ -35,6 +35,11 @@
     couriers: {{ \Illuminate\Support\Js::from($couriers) }},
     productVariants: {{ \Illuminate\Support\Js::from($productVariants) }},
     currentUserId: {{ \Illuminate\Support\Js::from($currentUserId) }},
+    isCourierOnly: {{ \Illuminate\Support\Js::from($isCourierOnly) }},
+
+    // Courier Tab Filters
+    courierTaskFilter: {{ $isCourierOnly ? $currentUserId : "'all'" }},
+    courierStatusFilter: 'active', // 'active' (draft & on_the_way), 'all', 'draft', 'on_the_way', 'delivered'
 
     // Computed Filtered Deliveries
     get filteredDeliveries() {
@@ -55,7 +60,25 @@
     // Computed Courier Tasks
     get myAssignedDeliveries() {
         return this.deliveries.filter(delivery => {
-            return (delivery.courier_id == this.currentUserId || !delivery.courier_id) && delivery.status !== 'cancelled';
+            // Courier filter
+            let matchesCourier = true;
+            if (this.courierTaskFilter === 'unassigned') {
+                matchesCourier = !delivery.courier_id;
+            } else if (this.courierTaskFilter !== 'all') {
+                matchesCourier = delivery.courier_id == this.courierTaskFilter;
+            }
+
+            // Status filter
+            let matchesStatus = true;
+            if (this.courierStatusFilter === 'active') {
+                matchesStatus = ['draft', 'on_the_way'].includes(delivery.status);
+            } else if (this.courierStatusFilter !== 'all') {
+                matchesStatus = delivery.status === this.courierStatusFilter;
+            } else {
+                matchesStatus = delivery.status !== 'cancelled';
+            }
+
+            return matchesCourier && matchesStatus;
         });
     },
 

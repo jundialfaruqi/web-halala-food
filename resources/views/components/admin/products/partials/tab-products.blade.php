@@ -90,7 +90,11 @@
                                                 @endif
                                                 <span>{{ $variant->name }}</span>
                                             </div>
-                                            <div class="flex items-center gap-2 mt-0.5 text-brand-warm-gray">
+                                            <div class="flex flex-wrap items-center gap-2 mt-0.5 text-brand-warm-gray">
+                                                @if ($variant->sku_code)
+                                                    <span>SKU: <code class="font-mono text-brand-primary font-semibold">{{ $variant->sku_code }}</code></span>
+                                                    <span>•</span>
+                                                @endif
                                                 <span>Isi: {{ $variant->pcs_per_package }} pcs</span>
                                                 @if ($variant->weight_grams)
                                                     <span>• {{ (float) $variant->weight_grams }}g</span>

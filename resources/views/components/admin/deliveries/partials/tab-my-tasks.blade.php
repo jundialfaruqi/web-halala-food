@@ -1,15 +1,35 @@
-<!-- Tab 2: Tugas Pengantaran Kurir Saya -->
+<!-- Tab 2: Tugas Pengantaran Kurir -->
 <div x-show="activeTab === 'my-tasks'" x-cloak class="space-y-4">
 
-    <!-- Header Info Banner -->
-    <div class="bg-brand-soft-cream/40 border border-brand-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-            <i class="ti ti-steering-wheel text-2xl text-brand-primary"></i>
-            <div>
-                <h2 class="font-bold text-brand-espresso text-base">Antrean Pengantaran Kurir</h2>
-                <p class="text-xs text-brand-warm-gray mt-0.5">Daftar pengiriman toko yang ditugaskan kepada Anda hari ini. Segera perbarui status saat berangkat dan tiba.</p>
+    <!-- Action & Filter Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+            <!-- Filter Staf Kurir -->
+            <div class="shrink-0">
+                <select x-model="courierTaskFilter"
+                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-base text-brand-espresso font-medium capitalize">
+                    <option value="all">Semua Staf Kurir</option>
+                    <template x-for="courier in couriers" :key="courier.id">
+                        <option :value="courier.id" x-text="`Kurir: ${courier.name}`"></option>
+                    </template>
+                    <option value="unassigned">Belum Ditugaskan</option>
+                </select>
+            </div>
+
+            <!-- Filter Status Tugas -->
+            <div class="shrink-0">
+                <select x-model="courierStatusFilter"
+                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-base text-brand-espresso font-medium capitalize">
+                    <option value="active">Tugas Aktif (Draft & Perjalanan)</option>
+                    <option value="on_the_way">Dalam Perjalanan (On The Way)</option>
+                    <option value="draft">Draft (Menunggu Berangkat)</option>
+                    <option value="delivered">Riwayat Selesai (Delivered)</option>
+                    <option value="all">Semua Status</option>
+                </select>
             </div>
         </div>
+
+        <span class="text-xs sm:text-sm text-brand-warm-gray" x-text="`${myAssignedDeliveries.length} antrean pengiriman`"></span>
     </div>
 
     <!-- Courier Task Cards Grid -->
@@ -20,7 +40,10 @@
                 <div class="space-y-3">
                     <!-- Top: SJ Number & Status -->
                     <div class="flex items-center justify-between border-b border-brand-border/60 pb-3">
-                        <span class="font-mono font-bold text-brand-primary text-base" x-text="delivery.delivery_number"></span>
+                        <div>
+                            <span class="font-mono font-bold text-brand-primary text-base" x-text="delivery.delivery_number"></span>
+                            <span class="text-xs text-brand-warm-gray block mt-0.5" x-text="`Kurir: ${delivery.courier_name}`"></span>
+                        </div>
                         <div class="flex items-center gap-1.5 font-bold text-xs">
                             <span class="size-2 rounded-full"
                                 :class="{
@@ -102,7 +125,7 @@
         <div x-show="myAssignedDeliveries.length === 0" class="col-span-full py-12 text-center text-brand-warm-gray bg-white rounded-xl border border-brand-border p-8">
             <i class="ti ti-calendar-check text-4xl mb-2 block text-neutral-300"></i>
             <div class="font-bold text-brand-espresso text-base">Tidak ada tugas pengantaran aktif</div>
-            <div class="text-xs sm:text-sm mt-1">Semua surat jalan yang ditugaskan kepada Anda telah selesai diserahterimakan.</div>
+            <div class="text-xs sm:text-sm mt-1">Gunakan filter di atas untuk melihat tugas staf kurir lain atau riwayat pengantaran yang sudah selesai.</div>
         </div>
     </div>
 

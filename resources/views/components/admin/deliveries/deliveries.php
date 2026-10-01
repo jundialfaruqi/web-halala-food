@@ -439,9 +439,7 @@ new #[Layout('layouts.admin'), Title('Distribusi Surat Jalan & Kurir - Halala Fo
             ];
         });
 
-        $couriers = User::whereHas('roles', function ($q) {
-            $q->whereIn('name', ['kurir', 'manager', 'dev']);
-        })->orderBy('name')->get()->map(function ($u) {
+        $couriers = User::role('kurir')->orderBy('name')->get()->map(function ($u) {
             return [
                 'id' => $u->id,
                 'name' => $u->name,
@@ -472,6 +470,10 @@ new #[Layout('layouts.admin'), Title('Distribusi Surat Jalan & Kurir - Halala Fo
         $deliveredCount = $deliveries->where('status', 'delivered')->count();
         $draftCount = $deliveries->where('status', 'draft')->count();
 
+        /** @var User|null $currentUser */
+        $currentUser = Auth::user();
+        $isCourierOnly = $currentUser && $currentUser->hasRole('kurir') && !$currentUser->hasAnyRole(['dev', 'manager', 'ceo']);
+
         return [
             'deliveries' => $deliveries,
             'partners' => $partners,
@@ -482,6 +484,7 @@ new #[Layout('layouts.admin'), Title('Distribusi Surat Jalan & Kurir - Halala Fo
             'deliveredCount' => $deliveredCount,
             'draftCount' => $draftCount,
             'currentUserId' => Auth::id(),
+            'isCourierOnly' => (bool) $isCourierOnly,
         ];
     }
 };
