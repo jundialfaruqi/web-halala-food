@@ -16,23 +16,23 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Seed the application's database with 3 core roles: dev, manager, and kurir.
      */
     public function run(): void
     {
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Define Standard Permission Groups & Permissions
+        // 1. Define Core Permission Groups & Permissions
         $groups = [
             'Dashboard' => [
-                'description' => 'Akses ringkasan metrik performa toko, penjualan, dan keuangan.',
+                'description' => 'Akses ringkasan metrik performa toko dan operasional.',
                 'permissions' => [
                     'dashboard-view' => 'Melihat dashboard utama dan ringkasan metrik performa.',
                 ],
             ],
             'Pengguna & Hak Akses' => [
-                'description' => 'Kelola akun staf, hierarki role pengguna, dan konfigurasi hak akses.',
+                'description' => 'Kelola akun pengguna, hierarki 3 role (dev, manager, kurir), dan konfigurasi izin akses.',
                 'permissions' => [
                     'user-manage' => 'Kelola akun staf dan pengguna sistem.',
                     'role-manage' => 'Kelola data role jabatan dan wewenang.',
@@ -76,46 +76,36 @@ class DatabaseSeeder extends Seeder
             }
         });
 
-        // 2. Create the 6 Standard System Roles
+        // 2. Define exactly 3 Core Roles: dev, manager, and kurir
         $devRole = Role::firstOrCreate(['name' => 'dev', 'guard_name' => 'web']);
-        $ceoRole = Role::firstOrCreate(['name' => 'ceo', 'guard_name' => 'web']);
         $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
-        $masakRole = Role::firstOrCreate(['name' => 'tukang masak', 'guard_name' => 'web']);
-        $kasirRole = Role::firstOrCreate(['name' => 'kasir', 'guard_name' => 'web']);
         $kurirRole = Role::firstOrCreate(['name' => 'kurir', 'guard_name' => 'web']);
 
-        // 3. Assign Granular Permissions to Roles
-        // Developer / Super Admin gets everything
+        // Delete any obsolete roles not in ['dev', 'manager', 'kurir']
+        Role::whereNotIn('name', ['dev', 'manager', 'kurir'])->get()->each(function ($role) {
+            $role->permissions()->detach();
+            $role->users()->detach();
+            $role->delete();
+        });
+
+        // 3. Assign Permissions to Roles
+        // Dev / Super Admin gets all permissions
         $devRole->syncPermissions(Permission::all());
 
-        // CEO / Owner
-        $ceoRole->syncPermissions([
-            'dashboard-view',
-            'user-manage',
-        ]);
-
-        // Manager
+        // Manager gets full operational, user & role management permissions
         $managerRole->syncPermissions([
             'dashboard-view',
             'user-manage',
+            'role-manage',
+            'permission-manage',
         ]);
 
-        // Tukang Masak (Kitchen)
-        $masakRole->syncPermissions([
-            'dashboard-view',
-        ]);
-
-        // Kasir (Cashier)
-        $kasirRole->syncPermissions([
-            'dashboard-view',
-        ]);
-
-        // Kurir (Courier)
+        // Kurir gets dashboard access
         $kurirRole->syncPermissions([
             'dashboard-view',
         ]);
 
-        // 4. Seed Standard Users for Each Role
+        // 4. Seed Standard Users for the 3 Roles
         $users = [
             [
                 'email' => 'developer@halala-food.id',
@@ -130,28 +120,10 @@ class DatabaseSeeder extends Seeder
                 'role' => $devRole,
             ],
             [
-                'email' => 'ceo@halala-food.id',
-                'name' => 'Bpk. Rahmat (CEO)',
-                'phone' => '081311223344',
-                'role' => $ceoRole,
-            ],
-            [
                 'email' => 'manager@halala-food.id',
                 'name' => 'Ibu Dewi Lestari (Manager)',
                 'phone' => '081299887766',
                 'role' => $managerRole,
-            ],
-            [
-                'email' => 'masak@halala-food.id',
-                'name' => 'Pak Joko (Tukang Masak)',
-                'phone' => '085711224466',
-                'role' => $masakRole,
-            ],
-            [
-                'email' => 'kasir@halala-food.id',
-                'name' => 'Siti Rahayu (Kasir)',
-                'phone' => '087812345678',
-                'role' => $kasirRole,
             ],
             [
                 'email' => 'kurir@halala-food.id',
@@ -160,6 +132,10 @@ class DatabaseSeeder extends Seeder
                 'role' => $kurirRole,
             ],
         ];
+
+        // Clean up users not in the new standard list
+        $activeEmails = array_column($users, 'email');
+        User::whereNotIn('email', $activeEmails)->delete();
 
         foreach ($users as $userData) {
             $user = User::updateOrCreate(
