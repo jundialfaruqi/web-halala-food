@@ -43,7 +43,25 @@
                         </a>
                     @endcan
 
-                    <!-- 2. Pengguna -->
+                    <!-- 2. Produk & Resep (BOM) -->
+                    @canany(['product-manage', 'category-manage', 'recipe-manage', 'raw-material-manage'])
+                        <a href="{{ route('admin.products') }}"
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.products*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-cookie text-xl {{ request()->routeIs('admin.products*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Produk & Resep</span>
+                        </a>
+                    @endcanany
+
+                    <!-- 3. Dapur & Produksi -->
+                    @canany(['production-manage', 'stock-manage', 'waste-manage'])
+                        <a href="{{ route('admin.production') }}"
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.production*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-flame text-xl {{ request()->routeIs('admin.production*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Dapur & Produksi</span>
+                        </a>
+                    @endcanany
+
+                    <!-- 4. Pengguna -->
                     @can('user-manage')
                         <a href="{{ route('admin.users') }}"
                             class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.users*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">

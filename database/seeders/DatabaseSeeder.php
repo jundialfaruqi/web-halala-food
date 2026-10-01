@@ -23,59 +23,107 @@ class DatabaseSeeder extends Seeder
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 1. Create Permission Groups
+        // 1. Define Standard Permission Groups & Permissions
         $groups = [
             'Dashboard' => [
-                'description' => 'Akses halaman utama dan ringkasan metrik performa toko.',
-                'permissions' => ['dashboard-view'],
+                'description' => 'Akses ringkasan metrik performa toko, penjualan, dan keuangan.',
+                'permissions' => [
+                    'dashboard-view' => 'Melihat dashboard utama dan ringkasan metrik performa.',
+                ],
             ],
-            'Pengguna & Akses' => [
-                'description' => 'Kelola akun staf, role pengguna, dan konfigurasi hak akses.',
-                'permissions' => ['user-manage', 'role-manage', 'permission-manage'],
+            'Pengguna & Hak Akses' => [
+                'description' => 'Kelola akun staf, hierarki role pengguna, dan konfigurasi hak akses.',
+                'permissions' => [
+                    'user-manage' => 'Kelola akun staf dan pengguna sistem.',
+                    'role-manage' => 'Kelola data role jabatan dan wewenang.',
+                    'permission-manage' => 'Kelola izin dan hak akses teknis aplikasi.',
+                ],
             ],
-            'Keuangan & Laporan' => [
-                'description' => 'Akses laporan omzet, rekap penjualan, dan pembukuan.',
-                'permissions' => ['financial-report-view'],
+            'Master Produk & Resep' => [
+                'description' => 'Kelola kategori camilan (Marie Wijen & Ting-Ting Susu), varian kemasan, dan formula resep (BOM).',
+                'permissions' => [
+                    'category-manage' => 'Kelola kategori produk makanan.',
+                    'product-manage' => 'Kelola master produk, varian kemasan pouch/toples/ecer, harga jual, dan barcode.',
+                    'recipe-manage' => 'Kelola formula resep standar (Bill of Materials) per varian produk.',
+                ],
             ],
-            'Produk & Menu' => [
-                'description' => 'Kelola katalog camilan (Marie Wijen & Ting-Ting Susu) dan stok.',
-                'permissions' => ['product-manage'],
+            'Bahan Baku & Inventori Gudang' => [
+                'description' => 'Kelola master bahan baku, kartu stok gudang, pengadaan PO supplier, dan pencatatan bahan rusak.',
+                'permissions' => [
+                    'raw-material-manage' => 'Kelola data master bahan baku dan stok minimum.',
+                    'stock-manage' => 'Melihat kartu stok bahan & barang jadi, penyesuaian stok opname.',
+                    'waste-manage' => 'Pencatatan dan audit bahan baku rusak/kedaluwarsa (waste tracking).',
+                    'purchase-manage' => 'Pengadaan dan pembelian bahan baku ke supplier.',
+                ],
             ],
-            'Dapur & Produksi' => [
-                'description' => 'Akses pesanan masuk, antrean penggorengan, dan pengemasan.',
-                'permissions' => ['kitchen-manage'],
+            'Dapur & Produksi Manufaktur' => [
+                'description' => 'Akses rencana produksi harian, eksekusi batch masak dapur, dan konversi bahan baku ke produk jadi.',
+                'permissions' => [
+                    'production-manage' => 'Kelola rencana dan eksekusi batch produksi masak dapur.',
+                ],
             ],
-            'Pesanan & Transaksi' => [
-                'description' => 'Kelola pesanan pelanggan dan konfirmasi pembelian.',
-                'permissions' => ['order-manage'],
+            'Mitra Toko & Distribusi Kurir' => [
+                'description' => 'Kelola mitra supermarket / kelontong, surat jalan pengantaran, dan pelacakan kurir.',
+                'permissions' => [
+                    'partner-manage' => 'Kelola direktori mitra toko, batas piutang, dan harga khusus.',
+                    'delivery-manage' => 'Surat jalan digital, penugasan kurir, dan konfirmasi serah terima toko.',
+                ],
             ],
-            'Kasir & Pembayaran' => [
-                'description' => 'Proses transaksi kasir dan konfirmasi penerimaan uang.',
-                'permissions' => ['payment-process'],
+            'Point of Sale (POS) & Kasir' => [
+                'description' => 'Layar kasir penjualan ecer/grosir, scan barcode kemasan, cetak struk, dan buka/tutup shift kasir.',
+                'permissions' => [
+                    'pos-manage' => 'Akses kasir POS dan transaksi penjualan toko.',
+                    'cash-register-manage' => 'Buka dan tutup shift laci kasir serta rekonsiliasi kas.',
+                ],
             ],
-            'Pengiriman & Kurir' => [
-                'description' => 'Kelola rute pengantaran pesanan dan kurir.',
-                'permissions' => ['delivery-manage'],
+            'Keuangan & Akuntansi Otomatis' => [
+                'description' => 'Bagan akun (COA), jurnal umum otomatis, buku besar, neraca saldo, laba rugi, arus kas, dan kas operasional.',
+                'permissions' => [
+                    'financial-report-view' => 'Akses laporan laba rugi, neraca, arus kas, dan aging piutang toko.',
+                    'journal-manage' => 'Akses jurnal umum otomatis dan input jurnal penyesuaian.',
+                    'ledger-manage' => 'Akses buku besar (General Ledger) dan neraca saldo.',
+                    'coa-manage' => 'Kelola bagan akun (Chart of Accounts) dan aturan mapping auto-jurnal.',
+                    'cash-transaction-manage' => 'Pencatatan kas masuk dan kas keluar operasional non-penjualan.',
+                ],
             ],
         ];
 
+        // Track valid active permission names
+        $validPermissionNames = [];
+
         foreach ($groups as $groupName => $groupData) {
-            $group = PermissionGroup::firstOrCreate(
+            $group = PermissionGroup::updateOrCreate(
                 ['name' => $groupName],
                 ['description' => $groupData['description']]
             );
 
-            foreach ($groupData['permissions'] as $permissionName) {
-                Permission::firstOrCreate(
+            foreach ($groupData['permissions'] as $permissionName => $permissionDesc) {
+                $validPermissionNames[] = $permissionName;
+
+                Permission::updateOrCreate(
                     ['name' => $permissionName, 'guard_name' => 'web'],
                     ['permission_group_id' => $group->id]
                 );
-                // Ensure permission group id is set if already existed
-                Permission::where('name', $permissionName)->update(['permission_group_id' => $group->id]);
             }
         }
 
-        // 2. Create the 6 Roles
+        // Delete obsolete permissions that are no longer part of the system
+        $obsoletePermissions = Permission::whereNotIn('name', $validPermissionNames)->get();
+        foreach ($obsoletePermissions as $obsPerm) {
+            $obsPerm->roles()->detach();
+            $obsPerm->users()->detach();
+            $obsPerm->delete();
+        }
+
+        // Delete empty obsolete permission groups
+        $validGroupNames = array_keys($groups);
+        PermissionGroup::whereNotIn('name', $validGroupNames)->each(function ($grp) {
+            if ($grp->permissions()->count() === 0) {
+                $grp->delete();
+            }
+        });
+
+        // 2. Create the 6 Standard System Roles
         $devRole = Role::firstOrCreate(['name' => 'dev', 'guard_name' => 'web']);
         $ceoRole = Role::firstOrCreate(['name' => 'ceo', 'guard_name' => 'web']);
         $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
@@ -83,45 +131,71 @@ class DatabaseSeeder extends Seeder
         $kasirRole = Role::firstOrCreate(['name' => 'kasir', 'guard_name' => 'web']);
         $kurirRole = Role::firstOrCreate(['name' => 'kurir', 'guard_name' => 'web']);
 
-        // 3. Assign Permissions to Roles
+        // 3. Assign Granular Permissions to Roles
+        // Developer / Super Admin gets everything
         $devRole->syncPermissions(Permission::all());
 
+        // CEO / Owner
         $ceoRole->syncPermissions([
             'dashboard-view',
-            'financial-report-view',
-            'user-manage',
+            'category-manage',
             'product-manage',
-            'order-manage',
+            'recipe-manage',
+            'partner-manage',
+            'delivery-manage',
+            'financial-report-view',
+            'journal-manage',
+            'ledger-manage',
+            'coa-manage',
+            'cash-transaction-manage',
+            'user-manage',
         ]);
 
+        // Manager
         $managerRole->syncPermissions([
             'dashboard-view',
-            'financial-report-view',
-            'user-manage',
+            'category-manage',
             'product-manage',
-            'order-manage',
-            'kitchen-manage',
+            'recipe-manage',
+            'raw-material-manage',
+            'stock-manage',
+            'waste-manage',
+            'purchase-manage',
+            'production-manage',
+            'partner-manage',
             'delivery-manage',
+            'pos-manage',
+            'cash-register-manage',
+            'financial-report-view',
+            'journal-manage',
+            'ledger-manage',
+            'cash-transaction-manage',
+            'user-manage',
         ]);
 
+        // Tukang Masak (Kitchen & Production)
         $masakRole->syncPermissions([
             'dashboard-view',
-            'kitchen-manage',
-            'product-manage',
+            'production-manage',
+            'stock-manage',
+            'waste-manage',
+            'recipe-manage',
         ]);
 
+        // Kasir (POS & Cash Register)
         $kasirRole->syncPermissions([
             'dashboard-view',
-            'order-manage',
-            'payment-process',
+            'pos-manage',
+            'cash-register-manage',
         ]);
 
+        // Kurir (Delivery)
         $kurirRole->syncPermissions([
             'dashboard-view',
             'delivery-manage',
         ]);
 
-        // 4. Seed Users for Each Role
+        // 4. Seed Standard Users for Each Role
         $users = [
             [
                 'email' => 'developer@halala-food.id',
@@ -179,6 +253,12 @@ class DatabaseSeeder extends Seeder
             );
             $user->syncRoles([$userData['role']]);
         }
+
+        // 5. Seed Fase 1: Products, Variants, Raw Materials, and Recipes
+        $this->call(ProductAndRecipeSeeder::class);
+
+        // 6. Seed Fase 2: Production Batches, Stock Mutations, and Waste Logs
+        $this->call(ProductionAndStockSeeder::class);
     }
 }
 
