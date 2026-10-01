@@ -19,7 +19,8 @@
     <div class="overflow-x-auto bg-white rounded-xl border border-brand-border">
         <table class="w-full text-left border-collapse">
             <thead>
-                <tr class="border-b border-brand-border bg-neutral-50/60 text-brand-espresso text-xs sm:text-sm font-bold uppercase tracking-wider">
+                <tr
+                    class="border-b border-brand-border bg-neutral-50/60 text-brand-espresso text-xs sm:text-sm font-bold uppercase tracking-wider">
                     <th class="py-3.5 px-6">Nama Role</th>
                     <th class="py-3.5 px-6">Jumlah Pengguna</th>
                     <th class="py-3.5 px-6">Hak Akses (Permissions)</th>
@@ -30,11 +31,10 @@
                 @forelse ($roles as $role)
                     <tr x-show="!roleSearch || $el.textContent.toLowerCase().includes(roleSearch.toLowerCase())"
                         class="hover:bg-neutral-50/50 transition">
-                        
+
                         <!-- Role Name -->
                         <td class="py-4 px-6 align-top">
                             <div class="flex items-center gap-3">
-                                <i class="ti ti-shield text-brand-primary text-2xl shrink-0"></i>
                                 <div>
                                     <span class="font-bold text-brand-espresso text-base block capitalize">
                                         {{ $role->name }}
@@ -58,11 +58,13 @@
                         <td class="py-4 px-6 align-top">
                             <div class="flex flex-wrap items-center gap-1.5 max-w-xl">
                                 @if ($role->permissions && $role->permissions->count() > 0)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-50 text-green-700">
+                                    <span
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-50 text-green-700">
                                         {{ $role->permissions->count() }} Izin
                                     </span>
                                     @foreach ($role->permissions->take(4) as $perm)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-neutral-100 text-brand-espresso text-xs">
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded bg-neutral-100 text-brand-espresso text-xs">
                                             {{ $perm->name }}
                                         </span>
                                     @endforeach
@@ -80,22 +82,22 @@
                         <!-- Actions -->
                         <td class="py-4 px-6 align-top text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-2">
-                                <button type="button"
-                                    @click="openEditRoleById({{ $role->id }})"
+                                <button type="button" @click="openEditRoleById({{ $role->id }})"
                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60 transition cursor-pointer border border-brand-border">
                                     <i class="ti ti-edit text-base"></i>
                                     <span>Edit</span>
                                 </button>
 
                                 @if (!in_array(strtolower($role->name), ['dev', 'developer']))
-                                    <button type="button"
-                                        @click="confirmDeleteRoleById({{ $role->id }})"
+                                    <button type="button" @click="confirmDeleteRoleById({{ $role->id }})"
                                         class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer border border-red-200">
                                         <i class="ti ti-trash text-base"></i>
                                         <span>Hapus</span>
                                     </button>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-brand-warm-gray bg-neutral-100 border border-neutral-200" title="Role sistem utama tidak dapat dihapus">
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-brand-warm-gray bg-neutral-100 border border-neutral-200"
+                                        title="Role sistem utama tidak dapat dihapus">
                                         <i class="ti ti-lock"></i> Sistem
                                     </span>
                                 @endif

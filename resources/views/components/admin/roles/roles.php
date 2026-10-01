@@ -50,6 +50,7 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
             return [
                 'success' => false,
                 'message' => $validator->errors()->first('name'),
+                'errors' => $validator->errors()->toArray(),
             ];
         }
 
@@ -180,6 +181,7 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
             return [
                 'success' => false,
                 'message' => $validator->errors()->first('name') ?: $validator->errors()->first('description'),
+                'errors' => $validator->errors()->toArray(),
             ];
         }
 
@@ -296,6 +298,7 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
             return [
                 'success' => false,
                 'message' => $validator->errors()->first('name') ?: $validator->errors()->first('groupId'),
+                'errors' => $validator->errors()->toArray(),
             ];
         }
 

@@ -97,6 +97,7 @@ new #[Layout('components.layouts.admin'), Title('Manajemen Pengguna - Halala Foo
             return [
                 'success' => false,
                 'message' => $validator->errors()->first(),
+                'errors' => $validator->errors()->toArray(),
             ];
         }
 

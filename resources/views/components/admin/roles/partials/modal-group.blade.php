@@ -40,16 +40,30 @@
                     <label class="block text-sm font-bold text-brand-espresso mb-1.5">
                         Nama Grup Permission <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" x-model="groupForm.name" placeholder="Contoh: Logistik & Pengiriman, Stok & Gudang"
-                        class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary font-medium">
+                    <input type="text" x-model="groupForm.name"
+                        @input="if (groupErrors.name) delete groupErrors.name"
+                        placeholder="Contoh: Logistik & Pengiriman, Stok & Gudang"
+                        class="w-full px-4 py-2.5 bg-white border rounded-xl text-base text-brand-espresso focus:outline-none focus:ring-2 font-medium transition"
+                        :class="groupErrors.name ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50/20' : 'border-brand-border focus:ring-brand-primary focus:border-brand-primary'">
+                    <p x-cloak x-show="groupErrors.name" class="text-xs text-red-600 mt-1.5 font-semibold flex items-center gap-1">
+                        <i class="ti ti-alert-circle text-sm"></i>
+                        <span x-text="groupErrors.name?.[0] || groupErrors.name"></span>
+                    </p>
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-brand-espresso mb-1.5">
                         Deskripsi Singkat (Opsional)
                     </label>
-                    <textarea x-model="groupForm.description" rows="2" placeholder="Jelaskan modul atau fungsi hak akses yang tercakup dalam grup ini..."
-                        class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm sm:text-base text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary font-medium resize-none"></textarea>
+                    <textarea x-model="groupForm.description"
+                        @input="if (groupErrors.description) delete groupErrors.description"
+                        rows="2" placeholder="Jelaskan modul atau fungsi hak akses yang tercakup dalam grup ini..."
+                        class="w-full px-4 py-2.5 bg-white border rounded-xl text-sm sm:text-base text-brand-espresso focus:outline-none focus:ring-2 font-medium resize-none transition"
+                        :class="groupErrors.description ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50/20' : 'border-brand-border focus:ring-brand-primary focus:border-brand-primary'"></textarea>
+                    <p x-cloak x-show="groupErrors.description" class="text-xs text-red-600 mt-1.5 font-semibold flex items-center gap-1">
+                        <i class="ti ti-alert-circle text-sm"></i>
+                        <span x-text="groupErrors.description?.[0] || groupErrors.description"></span>
+                    </p>
                 </div>
 
                 <!-- Permission Assignment Section for Group -->

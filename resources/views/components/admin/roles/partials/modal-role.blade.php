@@ -42,9 +42,16 @@
                     <label class="block text-sm font-bold text-brand-espresso mb-1.5">
                         Nama Role <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" x-model="roleForm.name" placeholder="Contoh: staff operasional, supervisor, kasir utama"
-                        class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary font-medium">
-                    <p class="text-xs text-brand-warm-gray mt-1">
+                    <input type="text" x-model="roleForm.name"
+                        @input="if (roleErrors.name) delete roleErrors.name"
+                        placeholder="Contoh: staff operasional, supervisor, kasir utama"
+                        class="w-full px-4 py-2.5 bg-white border rounded-xl text-base text-brand-espresso focus:outline-none focus:ring-2 font-medium transition"
+                        :class="roleErrors.name ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50/20' : 'border-brand-border focus:ring-brand-primary focus:border-brand-primary'">
+                    <p x-cloak x-show="roleErrors.name" class="text-xs text-red-600 mt-1.5 font-semibold flex items-center gap-1">
+                        <i class="ti ti-alert-circle text-sm"></i>
+                        <span x-text="roleErrors.name?.[0] || roleErrors.name"></span>
+                    </p>
+                    <p x-show="!roleErrors.name" class="text-xs text-brand-warm-gray mt-1">
                         Nama peran identitas pengguna dalam sistem Halala Food.
                     </p>
                 </div>

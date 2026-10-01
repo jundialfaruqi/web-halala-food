@@ -7,13 +7,13 @@
             <div class="relative flex-1 max-w-md">
                 <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg"></i>
                 <input type="text" x-model="permissionSearch" placeholder="Cari nama permission (e.g. order-manage)..."
-                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm sm:text-base text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary">
+                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:border-brand-primary">
             </div>
 
             <!-- Filter by Group Dropdown -->
             <div class="shrink-0">
                 <select x-model="permissionGroupFilter"
-                    class="w-full sm:w-auto px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm sm:text-base text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary font-medium">
+                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-base text-brand-espresso font-medium">
                     <option value="all">Semua Grup Permission</option>
                     <option value="none">Tanpa Grup (Belum Dikelompokkan)</option>
                     @foreach ($groups as $group)
@@ -24,7 +24,7 @@
         </div>
 
         <button type="button" @click="openCreatePermissionModal()"
-            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm sm:text-base font-bold rounded-xl shadow-xs transition cursor-pointer shrink-0">
+            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-base font-bold rounded-xl shadow-xs transition cursor-pointer shrink-0">
             <i class="ti ti-plus text-lg"></i>
             <span>Tambah Permission</span>
         </button>

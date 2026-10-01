@@ -3,19 +3,18 @@
     <!-- Backdrop -->
     <div x-show="showPermissionModal" x-transition:enter="transition-opacity ease-linear duration-200"
         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-        x-transition:leave="transition-opacity ease-linear duration-150"
-        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-        class="fixed inset-0 bg-brand-espresso/60 backdrop-blur-xs"
+        x-transition:leave="transition-opacity ease-linear duration-150" x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0" class="fixed inset-0 bg-brand-espresso/60 backdrop-blur-xs"
         @click="showPermissionModal = false"></div>
 
     <!-- Modal Box -->
     <div class="flex min-h-full items-center justify-center p-4">
         <div x-show="showPermissionModal" x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-            x-transition:leave="transition ease-in duration-150"
-            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+            x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
             class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-brand-border overflow-hidden">
-            
+
             <!-- Modal Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-brand-border">
                 <div class="flex items-center gap-2.5">
@@ -31,7 +30,8 @@
             <!-- Modal Body -->
             <div class="p-6 space-y-4">
                 <!-- Error Message -->
-                <div x-cloak x-show="permissionFormError" class="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center gap-2">
+                <div x-cloak x-show="permissionFormError"
+                    class="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center gap-2">
                     <i class="ti ti-alert-circle text-lg shrink-0"></i>
                     <span x-text="permissionFormError"></span>
                 </div>
@@ -40,10 +40,20 @@
                     <label class="block text-sm font-bold text-brand-espresso mb-1.5">
                         Nama Permission (Slug) <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" x-model="permissionForm.name" placeholder="Contoh: order-create, invoice-print, promo-manage"
-                        class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-base font-mono text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary">
-                    <p class="text-xs text-brand-warm-gray mt-1">
-                        Gunakan format standar <code class="font-mono text-brand-primary font-bold">modul-aksi</code> (huruf kecil dan tanda strip).
+                    <input type="text" x-model="permissionForm.name"
+                        @input="if (permissionErrors.name) delete permissionErrors.name"
+                        placeholder="Contoh: order-create, invoice-print, promo-manage"
+                        class="w-full px-4 py-2.5 bg-white border rounded-xl text-base font-mono text-brand-espresso focus:outline-none focus:ring-2 font-medium transition"
+                        :class="permissionErrors.name ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50/20' :
+                            'border-brand-border focus:ring-brand-primary focus:border-brand-primary'">
+                    <p x-cloak x-show="permissionErrors.name"
+                        class="text-xs text-red-600 mt-1.5 font-semibold flex items-center gap-1">
+                        <i class="ti ti-alert-circle text-sm"></i>
+                        <span x-text="permissionErrors.name?.[0] || permissionErrors.name"></span>
+                    </p>
+                    <p x-show="!permissionErrors.name" class="text-xs text-brand-warm-gray mt-1">
+                        Gunakan format standar <code class="font-mono text-brand-primary font-bold">modul-aksi</code>
+                        (huruf kecil dan tanda strip).
                     </p>
                 </div>
 
@@ -52,13 +62,20 @@
                         Pilih Grup Permission
                     </label>
                     <select x-model="permissionForm.group_id"
-                        class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary font-medium">
+                        @change="if (permissionErrors.groupId) delete permissionErrors.groupId"
+                        class="select select-lg select-bordered w-full bg-white rounded-xl text-base text-brand-espresso focus:outline-none font-medium transition"
+                        :class="permissionErrors.groupId ? 'border-red-500!' : ''">
                         <option value="">-- Tanpa Grup (Belum Dikelompokkan) --</option>
                         @foreach ($groups as $group)
                             <option value="{{ $group->id }}">{{ $group->name }}</option>
                         @endforeach
                     </select>
-                    <p class="text-xs text-brand-warm-gray mt-1">
+                    <p x-cloak x-show="permissionErrors.groupId"
+                        class="text-xs text-red-600 mt-1.5 font-semibold flex items-center gap-1">
+                        <i class="ti ti-alert-circle text-sm"></i>
+                        <span x-text="permissionErrors.groupId?.[0] || permissionErrors.groupId"></span>
+                    </p>
+                    <p x-show="!permissionErrors.groupId" class="text-xs text-brand-warm-gray mt-1">
                         Permission ini akan dikelompokkan ke dalam kategori grup yang dipilih.
                     </p>
                 </div>

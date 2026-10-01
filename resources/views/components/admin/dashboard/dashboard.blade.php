@@ -84,7 +84,7 @@
 
                     <!-- Role Filter -->
                     <select wire:model.live="selectedRole"
-                        class="py-2.5 px-4 rounded-xl border border-brand-border bg-white text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition cursor-pointer">
+                        class="select select-lg select-bordered rounded-xl border-brand-border bg-white text-brand-espresso font-medium focus:outline-none focus:border-brand-primary transition cursor-pointer">
                         <option value="">Semua Peran</option>
                         @foreach ($roles as $r)
                             <option value="{{ $r->name }}">{{ $r->name }}</option>

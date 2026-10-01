@@ -47,4 +47,20 @@ html {
     font-family: 'Comic Sans MS', 'Caveat', 'Segoe Script', cursive, sans-serif;
 }
 
+/* DaisyUI Select Brand Styling */
+.select {
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-color: var(--color-brand-border) !important;
+    background-color: #FFFFFF !important;
+}
+
+.select:focus,
+.select:focus-within,
+.select:focus-visible {
+    border-color: var(--color-brand-primary) !important;
+    outline: 2px solid color-mix(in srgb, var(--color-brand-primary) 25%, transparent) !important;
+    outline-offset: 1px !important;
+}
+
 

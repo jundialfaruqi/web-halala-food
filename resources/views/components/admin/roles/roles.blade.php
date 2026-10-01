@@ -39,6 +39,7 @@
     roleModalTitle: 'Tambah Role Baru',
     roleForm: { id: null, name: '', permission_ids: [] },
     rolePermSearch: '',
+    roleErrors: {},
     roleFormError: '',
 
     // Group Modal
@@ -46,12 +47,14 @@
     groupModalTitle: 'Tambah Grup Permission',
     groupForm: { id: null, name: '', description: '', permission_ids: [] },
     groupPermSearch: '',
+    groupErrors: {},
     groupFormError: '',
 
     // Permission Modal
     showPermissionModal: false,
     permissionModalTitle: 'Tambah Permission',
     permissionForm: { id: null, name: '', group_id: '' },
+    permissionErrors: {},
     permissionFormError: '',
 
     // Delete Modal
@@ -72,6 +75,7 @@
         this.roleForm = { id: null, name: '', permission_ids: [] };
         this.roleModalTitle = 'Tambah Role Baru';
         this.rolePermSearch = '';
+        this.roleErrors = {};
         this.roleFormError = '';
         this.showRoleModal = true;
     },
@@ -85,6 +89,7 @@
         };
         this.roleModalTitle = 'Edit Role: ' + role.name;
         this.rolePermSearch = '';
+        this.roleErrors = {};
         this.roleFormError = '';
         this.showRoleModal = true;
     },
@@ -121,18 +126,23 @@
         }
     },
     async submitRole() {
+        this.roleErrors = {};
+        this.roleFormError = '';
         if (!this.roleForm.name.trim()) {
-            this.roleFormError = 'Nama role wajib diisi.';
+            this.roleErrors.name = ['Nama role wajib diisi.'];
             return;
         }
         this.isProcessing = true;
-        this.roleFormError = '';
         const res = await $wire.saveRole(this.roleForm.id, this.roleForm.name, this.roleForm.permission_ids);
         this.isProcessing = false;
         if (res.success) {
             this.showRoleModal = false;
+            this.roleErrors = {};
         } else {
-            this.roleFormError = res.message;
+            this.roleErrors = res.errors || {};
+            if (Object.keys(this.roleErrors).length === 0) {
+                this.roleFormError = res.message;
+            }
         }
     },
 
@@ -141,6 +151,7 @@
         this.groupForm = { id: null, name: '', description: '', permission_ids: [] };
         this.groupModalTitle = 'Tambah Grup Permission';
         this.groupPermSearch = '';
+        this.groupErrors = {};
         this.groupFormError = '';
         this.showGroupModal = true;
     },
@@ -155,6 +166,7 @@
         };
         this.groupModalTitle = 'Edit Grup: ' + group.name;
         this.groupPermSearch = '';
+        this.groupErrors = {};
         this.groupFormError = '';
         this.showGroupModal = true;
     },
@@ -179,12 +191,13 @@
         return ids.every(id => this.groupForm.permission_ids.includes(id));
     },
     async submitGroup() {
+        this.groupErrors = {};
+        this.groupFormError = '';
         if (!this.groupForm.name.trim()) {
-            this.groupFormError = 'Nama grup wajib diisi.';
+            this.groupErrors.name = ['Nama grup wajib diisi.'];
             return;
         }
         this.isProcessing = true;
-        this.groupFormError = '';
         const res = await $wire.saveGroup(
             this.groupForm.id, 
             this.groupForm.name, 
@@ -194,8 +207,12 @@
         this.isProcessing = false;
         if (res.success) {
             this.showGroupModal = false;
+            this.groupErrors = {};
         } else {
-            this.groupFormError = res.message;
+            this.groupErrors = res.errors || {};
+            if (Object.keys(this.groupErrors).length === 0) {
+                this.groupFormError = res.message;
+            }
         }
     },
 
@@ -203,6 +220,8 @@
     openCreatePermissionModal() {
         this.permissionForm = { id: null, name: '', group_id: '' };
         this.permissionModalTitle = 'Tambah Permission Baru';
+        this.permissionPermSearch = '';
+        this.permissionErrors = {};
         this.permissionFormError = '';
         this.showPermissionModal = true;
     },
@@ -215,16 +234,18 @@
             group_id: perm.permission_group_id ? String(perm.permission_group_id) : ''
         };
         this.permissionModalTitle = 'Edit Permission: ' + perm.name;
+        this.permissionErrors = {};
         this.permissionFormError = '';
         this.showPermissionModal = true;
     },
     async submitPermission() {
+        this.permissionErrors = {};
+        this.permissionFormError = '';
         if (!this.permissionForm.name.trim()) {
-            this.permissionFormError = 'Nama permission wajib diisi.';
+            this.permissionErrors.name = ['Nama permission wajib diisi.'];
             return;
         }
         this.isProcessing = true;
-        this.permissionFormError = '';
         const res = await $wire.savePermission(
             this.permissionForm.id,
             this.permissionForm.name,
@@ -233,8 +254,12 @@
         this.isProcessing = false;
         if (res.success) {
             this.showPermissionModal = false;
+            this.permissionErrors = {};
         } else {
-            this.permissionFormError = res.message;
+            this.permissionErrors = res.errors || {};
+            if (Object.keys(this.permissionErrors).length === 0) {
+                this.permissionFormError = res.message;
+            }
         }
     },
 

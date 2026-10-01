@@ -12,6 +12,7 @@
     showUserModal: false,
     userModalTitle: 'Tambah Pengguna Baru',
     userForm: { id: null, name: '', email: '', phone: '', role: '', password: '' },
+    userErrors: {},
     userFormError: '',
 
     // Delete Modal State
@@ -40,6 +41,7 @@
     openCreateModal() {
         this.userForm = { id: null, name: '', email: '', phone: '', role: this.roles[0]?.name || '', password: '' };
         this.userModalTitle = 'Tambah Pengguna Baru';
+        this.userErrors = {};
         this.userFormError = '';
         this.showUserModal = true;
     },
@@ -57,31 +59,41 @@
             password: ''
         };
         this.userModalTitle = 'Edit Pengguna: ' + user.name;
+        this.userErrors = {};
         this.userFormError = '';
         this.showUserModal = true;
     },
 
     // Submit User Form
     async submitUser() {
+        this.userErrors = {};
+        this.userFormError = '';
+
+        let hasClientError = false;
         if (!this.userForm.name.trim()) {
-            this.userFormError = 'Nama lengkap wajib diisi.';
-            return;
+            this.userErrors.name = ['Nama lengkap pengguna wajib diisi.'];
+            hasClientError = true;
         }
         if (!this.userForm.email.trim()) {
-            this.userFormError = 'Alamat email wajib diisi.';
-            return;
+            this.userErrors.email = ['Alamat email wajib diisi.'];
+            hasClientError = true;
         }
         if (!this.userForm.role) {
-            this.userFormError = 'Pilih salah satu peran untuk pengguna.';
-            return;
+            this.userErrors.role = ['Pilih salah satu peran (role) untuk pengguna.'];
+            hasClientError = true;
         }
         if (!this.userForm.id && !this.userForm.password) {
-            this.userFormError = 'Kata sandi wajib diisi untuk pengguna baru.';
-            return;
+            this.userErrors.password = ['Kata sandi wajib diisi untuk pengguna baru.'];
+            hasClientError = true;
+        }
+        if (this.userForm.password && this.userForm.password.length < 6) {
+            this.userErrors.password = ['Kata sandi minimal harus terdiri dari 6 karakter.'];
+            hasClientError = true;
         }
 
+        if (hasClientError) return;
+
         this.isProcessing = true;
-        this.userFormError = '';
         const res = await $wire.saveUser(
             this.userForm.id,
             this.userForm.name,
@@ -94,8 +106,12 @@
 
         if (res.success) {
             this.showUserModal = false;
+            this.userErrors = {};
         } else {
-            this.userFormError = res.message;
+            this.userErrors = res.errors || {};
+            if (Object.keys(this.userErrors).length === 0) {
+                this.userFormError = res.message;
+            }
         }
     },
 
@@ -148,13 +164,13 @@
                 <div class="relative flex-1 max-w-md">
                     <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg"></i>
                     <input type="text" x-model="search" placeholder="Cari nama, email, atau no. WhatsApp..."
-                        class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm sm:text-base text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary">
+                        class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:border-brand-primary">
                 </div>
 
                 <!-- Role Filter -->
                 <div class="shrink-0">
                     <select x-model="roleFilter"
-                        class="w-full sm:w-auto px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm sm:text-base text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary font-medium capitalize">
+                        class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-base text-brand-espresso font-medium capitalize">
                         <option value="all">Semua Peran (Role)</option>
                         @foreach ($roles as $role)
                             <option value="{{ $role->name }}">{{ $role->name }}</option>
@@ -165,7 +181,7 @@
 
             <!-- Create User Button -->
             <button type="button" @click="openCreateModal()"
-                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm sm:text-base font-bold rounded-xl shadow-xs transition cursor-pointer shrink-0">
+                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-base font-bold rounded-xl shadow-xs transition cursor-pointer shrink-0">
                 <i class="ti ti-plus text-lg"></i>
                 <span>Tambah Pengguna</span>
             </button>
