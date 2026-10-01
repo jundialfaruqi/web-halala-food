@@ -60,7 +60,11 @@
 
     // Dispatch to global Toast component
     notify(message, type = 'success') {
-        this.$dispatch('show-toast', { message: message, type: type });
+        if (typeof window.toast === 'function') {
+            window.toast(message, type);
+        } else {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: message, type: type } }));
+        }
     },
 
     // Role Methods
@@ -127,7 +131,6 @@
         this.isProcessing = false;
         if (res.success) {
             this.showRoleModal = false;
-            this.notify(res.message, 'success');
         } else {
             this.roleFormError = res.message;
         }
@@ -191,7 +194,6 @@
         this.isProcessing = false;
         if (res.success) {
             this.showGroupModal = false;
-            this.notify(res.message, 'success');
         } else {
             this.groupFormError = res.message;
         }
@@ -231,7 +233,6 @@
         this.isProcessing = false;
         if (res.success) {
             this.showPermissionModal = false;
-            this.notify(res.message, 'success');
         } else {
             this.permissionFormError = res.message;
         }
@@ -281,19 +282,15 @@
     async executeDelete() {
         if (!this.deleteTarget.id || this.deleteTarget.isDev) return;
         this.isProcessing = true;
-        let res;
         if (this.deleteTarget.type === 'role') {
-            res = await $wire.deleteRole(this.deleteTarget.id);
+            await $wire.deleteRole(this.deleteTarget.id);
         } else if (this.deleteTarget.type === 'group') {
-            res = await $wire.deleteGroup(this.deleteTarget.id);
+            await $wire.deleteGroup(this.deleteTarget.id);
         } else if (this.deleteTarget.type === 'permission') {
-            res = await $wire.deletePermission(this.deleteTarget.id);
+            await $wire.deletePermission(this.deleteTarget.id);
         }
         this.isProcessing = false;
         this.showDeleteModal = false;
-        if (res) {
-            this.notify(res.message, res.success ? 'success' : 'error');
-        }
     }
 }" class="space-y-6">
 

@@ -73,14 +73,20 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
                 app()[PermissionRegistrar::class]->forgetCachedPermissions();
             });
 
+            $msg = $id ? "Role '{$name}' berhasil diperbarui." : "Role baru '{$name}' berhasil ditambahkan.";
+            $this->dispatch('show-toast', message: $msg, type: 'success');
+
             return [
                 'success' => true,
-                'message' => $id ? "Role '{$name}' berhasil diperbarui." : "Role baru '{$name}' berhasil ditambahkan.",
+                'message' => $msg,
             ];
         } catch (\Throwable $th) {
+            $errMsg = 'Terjadi kesalahan: ' . $th->getMessage();
+            $this->dispatch('show-toast', message: $errMsg, type: 'error');
+
             return [
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $th->getMessage(),
+                'message' => $errMsg,
             ];
         }
     }
@@ -95,16 +101,22 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
 
             // Prevent deleting developer / superadmin role
             if (in_array(strtolower($role->name), ['dev', 'developer'])) {
+                $msg = "Role '{$role->name}' adalah role sistem utama dan tidak dapat dihapus.";
+                $this->dispatch('show-toast', message: $msg, type: 'error');
+
                 return [
                     'success' => false,
-                    'message' => "Role '{$role->name}' adalah role sistem utama dan tidak dapat dihapus.",
+                    'message' => $msg,
                 ];
             }
 
             if ($role->users_count > 0) {
+                $msg = "Role '{$role->name}' sedang digunakan oleh {$role->users_count} pengguna. Pindahkan pengguna terlebih dahulu.";
+                $this->dispatch('show-toast', message: $msg, type: 'error');
+
                 return [
                     'success' => false,
-                    'message' => "Role '{$role->name}' sedang digunakan oleh {$role->users_count} pengguna. Pindahkan pengguna terlebih dahulu.",
+                    'message' => $msg,
                 ];
             }
 
@@ -113,14 +125,20 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
 
             app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+            $msg = "Role '{$roleName}' berhasil dihapus.";
+            $this->dispatch('show-toast', message: $msg, type: 'success');
+
             return [
                 'success' => true,
-                'message' => "Role '{$roleName}' berhasil dihapus.",
+                'message' => $msg,
             ];
         } catch (\Throwable $th) {
+            $errMsg = 'Gagal menghapus role: ' . $th->getMessage();
+            $this->dispatch('show-toast', message: $errMsg, type: 'error');
+
             return [
                 'success' => false,
-                'message' => 'Gagal menghapus role: ' . $th->getMessage(),
+                'message' => $errMsg,
             ];
         }
     }
@@ -194,14 +212,20 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
                 app()[PermissionRegistrar::class]->forgetCachedPermissions();
             });
 
+            $msg = $id ? "Grup permission '{$name}' berhasil diperbarui." : "Grup permission '{$name}' berhasil dibuat.";
+            $this->dispatch('show-toast', message: $msg, type: 'success');
+
             return [
                 'success' => true,
-                'message' => $id ? "Grup permission '{$name}' berhasil diperbarui." : "Grup permission '{$name}' berhasil dibuat.",
+                'message' => $msg,
             ];
         } catch (\Throwable $th) {
+            $errMsg = 'Terjadi kesalahan: ' . $th->getMessage();
+            $this->dispatch('show-toast', message: $errMsg, type: 'error');
+
             return [
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $th->getMessage(),
+                'message' => $errMsg,
             ];
         }
     }
@@ -220,14 +244,20 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
 
             $group->delete();
 
+            $msg = "Grup permission '{$groupName}' berhasil dihapus.";
+            $this->dispatch('show-toast', message: $msg, type: 'success');
+
             return [
                 'success' => true,
-                'message' => "Grup permission '{$groupName}' berhasil dihapus.",
+                'message' => $msg,
             ];
         } catch (\Throwable $th) {
+            $errMsg = 'Gagal menghapus grup permission: ' . $th->getMessage();
+            $this->dispatch('show-toast', message: $errMsg, type: 'error');
+
             return [
                 'success' => false,
-                'message' => 'Gagal menghapus grup permission: ' . $th->getMessage(),
+                'message' => $errMsg,
             ];
         }
     }
@@ -285,14 +315,20 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
 
             app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+            $msg = $id ? "Permission '{$name}' berhasil diperbarui." : "Permission '{$name}' berhasil dibuat.";
+            $this->dispatch('show-toast', message: $msg, type: 'success');
+
             return [
                 'success' => true,
-                'message' => $id ? "Permission '{$name}' berhasil diperbarui." : "Permission '{$name}' berhasil dibuat.",
+                'message' => $msg,
             ];
         } catch (\Throwable $th) {
+            $errMsg = 'Terjadi kesalahan: ' . $th->getMessage();
+            $this->dispatch('show-toast', message: $errMsg, type: 'error');
+
             return [
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $th->getMessage(),
+                'message' => $errMsg,
             ];
         }
     }
@@ -312,14 +348,20 @@ new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class e
 
             app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+            $msg = "Permission '{$permissionName}' berhasil dihapus.";
+            $this->dispatch('show-toast', message: $msg, type: 'success');
+
             return [
                 'success' => true,
-                'message' => "Permission '{$permissionName}' berhasil dihapus.",
+                'message' => $msg,
             ];
         } catch (\Throwable $th) {
+            $errMsg = 'Gagal menghapus permission: ' . $th->getMessage();
+            $this->dispatch('show-toast', message: $errMsg, type: 'error');
+
             return [
                 'success' => false,
-                'message' => 'Gagal menghapus permission: ' . $th->getMessage(),
+                'message' => $errMsg,
             ];
         }
     }

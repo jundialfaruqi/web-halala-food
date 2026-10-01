@@ -126,45 +126,53 @@ class DatabaseSeeder extends Seeder
             [
                 'email' => 'developer@halala-food.id',
                 'name' => 'Developer Super Admin',
+                'phone' => '081234567890',
                 'role' => $devRole,
             ],
             [
                 'email' => 'admin@halala-food.id',
                 'name' => 'Administrator Halala',
+                'phone' => '081288889999',
                 'role' => $devRole,
             ],
             [
                 'email' => 'ceo@halala-food.id',
                 'name' => 'Bpk. Rahmat (CEO)',
+                'phone' => '081311223344',
                 'role' => $ceoRole,
             ],
             [
                 'email' => 'manager@halala-food.id',
                 'name' => 'Ibu Dewi Lestari (Manager)',
+                'phone' => '081299887766',
                 'role' => $managerRole,
             ],
             [
                 'email' => 'masak@halala-food.id',
                 'name' => 'Pak Joko (Tukang Masak)',
+                'phone' => '085711224466',
                 'role' => $masakRole,
             ],
             [
                 'email' => 'kasir@halala-food.id',
                 'name' => 'Siti Rahayu (Kasir)',
+                'phone' => '087812345678',
                 'role' => $kasirRole,
             ],
             [
                 'email' => 'kurir@halala-food.id',
                 'name' => 'Budi Pratama (Kurir)',
+                'phone' => '089612348765',
                 'role' => $kurirRole,
             ],
         ];
 
         foreach ($users as $userData) {
-            $user = User::firstOrCreate(
+            $user = User::updateOrCreate(
                 ['email' => $userData['email']],
                 [
                     'name' => $userData['name'],
+                    'phone' => User::normalizePhone($userData['phone']),
                     'password' => Hash::make('password123'),
                     'email_verified_at' => now(),
                 ]

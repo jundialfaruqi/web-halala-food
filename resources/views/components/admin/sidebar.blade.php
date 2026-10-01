@@ -46,28 +46,18 @@
                     <!-- 2. Pengguna -->
                     @can('user-manage')
                         <a href="{{ route('admin.users') }}"
-                            class="w-full flex items-center justify-between px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.users*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
-                            <div class="flex items-center gap-3.5">
-                                <i class="ti ti-users text-xl {{ request()->routeIs('admin.users*') ? 'text-white' : 'text-brand-primary' }}"></i>
-                                <span>Pengguna</span>
-                            </div>
-                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full {{ request()->routeIs('admin.users*') ? 'bg-white/20 text-white' : 'bg-neutral-100 text-brand-espresso' }}">
-                                {{ \App\Models\User::count() }}
-                            </span>
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.users*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-users text-xl {{ request()->routeIs('admin.users*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Pengguna</span>
                         </a>
                     @endcan
 
                     <!-- 3. Role & Permission -->
                     @canany(['role-manage', 'permission-manage'])
                         <a href="{{ route('admin.roles') }}"
-                            class="w-full flex items-center justify-between px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.roles*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
-                            <div class="flex items-center gap-3.5">
-                                <i class="ti ti-shield-lock text-xl {{ request()->routeIs('admin.roles*') ? 'text-white' : 'text-brand-primary' }}"></i>
-                                <span>Role & Permission</span>
-                            </div>
-                            <span class="text-xs font-bold px-2.5 py-0.5 rounded-full {{ request()->routeIs('admin.roles*') ? 'bg-white/20 text-white' : 'bg-neutral-100 text-brand-espresso' }}">
-                                {{ class_exists('\Spatie\Permission\Models\Role') ? \Spatie\Permission\Models\Role::count() : '0' }}
-                            </span>
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.roles*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-shield-lock text-xl {{ request()->routeIs('admin.roles*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Role & Permission</span>
                         </a>
                     @endcanany
                 </nav>
