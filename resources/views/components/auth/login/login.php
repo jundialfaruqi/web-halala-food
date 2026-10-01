@@ -32,8 +32,12 @@ new #[Layout('layouts.app'), Title('Masuk ke Akun - Halala Food')] class extends
             ]);
         }
 
-        session()->regenerate();
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        $defaultRoute = ($user && $user->roles()->exists())
+            ? route('admin.dashboard')
+            : route('home');
 
-        $this->redirectIntended(default: route('home'), navigate: true);
+        $this->redirectIntended(default: $defaultRoute, navigate: true);
     }
 };
