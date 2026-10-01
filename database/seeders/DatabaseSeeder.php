@@ -41,8 +41,8 @@ class DatabaseSeeder extends Seeder
         }
 
         // 2. Create the 6 Roles
-        $devRole = Role::firstOrCreate(['name' => 'developer aplikasi (super-admin)', 'guard_name' => 'web']);
-        $ceoRole = Role::firstOrCreate(['name' => 'ceo (pemilik)', 'guard_name' => 'web']);
+        $devRole = Role::firstOrCreate(['name' => 'dev', 'guard_name' => 'web']);
+        $ceoRole = Role::firstOrCreate(['name' => 'ceo', 'guard_name' => 'web']);
         $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
         $masakRole = Role::firstOrCreate(['name' => 'tukang masak', 'guard_name' => 'web']);
         $kasirRole = Role::firstOrCreate(['name' => 'kasir', 'guard_name' => 'web']);

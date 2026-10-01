@@ -12,13 +12,9 @@
     <!-- Top Section: Logo & Brand -->
     <div class="flex flex-col flex-1 min-h-0">
         <div class="h-20 flex items-center justify-between px-6 border-b border-brand-border">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center">
                 <img src="{{ asset('assets/logo/logo.webp') }}" alt="Halala Food"
-                    class="h-10 w-auto object-contain">
-                <div class="flex flex-col">
-                    <span class="font-bold text-base text-brand-espresso tracking-tight">Halala Food</span>
-                    <span class="text-xs font-semibold text-brand-primary">Panel Admin</span>
-                </div>
+                    class="h-10 sm:h-11 w-auto object-contain">
             </a>
 
             <!-- Mobile Close Button -->
@@ -30,15 +26,15 @@
         </div>
 
         <!-- Navigation Menu -->
-        <div class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+        <div class="flex-1 overflow-y-auto py-6 space-y-6">
             <div>
-                <p class="px-3 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-3">
+                <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                     Menu Utama
                 </p>
-                <nav class="space-y-2">
+                <nav class="space-y-1">
                     <!-- 1. Dashboard -->
                     <a href="{{ route('admin.dashboard') }}"
-                        class="flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-brand-primary text-white shadow-sm' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                        class="w-full flex items-center justify-between px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                         <div class="flex items-center gap-3.5">
                             <i class="ti ti-layout-dashboard text-xl {{ request()->routeIs('admin.dashboard') ? 'text-white' : 'text-brand-primary' }}"></i>
                             <span>Dashboard</span>
@@ -47,7 +43,7 @@
 
                     <!-- 2. Pengguna -->
                     <a href="{{ route('admin.users') }}"
-                        class="flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition {{ request()->routeIs('admin.users*') ? 'bg-brand-primary text-white shadow-sm' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                        class="w-full flex items-center justify-between px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.users*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                         <div class="flex items-center gap-3.5">
                             <i class="ti ti-users text-xl {{ request()->routeIs('admin.users*') ? 'text-white' : 'text-brand-primary' }}"></i>
                             <span>Pengguna</span>
@@ -59,7 +55,7 @@
 
                     <!-- 3. Role & Permission -->
                     <a href="{{ route('admin.roles') }}"
-                        class="flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition {{ request()->routeIs('admin.roles*') ? 'bg-brand-primary text-white shadow-sm' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                        class="w-full flex items-center justify-between px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.roles*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                         <div class="flex items-center gap-3.5">
                             <i class="ti ti-shield-lock text-xl {{ request()->routeIs('admin.roles*') ? 'text-white' : 'text-brand-primary' }}"></i>
                             <span>Role & Permission</span>
@@ -72,13 +68,13 @@
             </div>
 
             <!-- Section: Pintasan Cepat -->
-            <div class="pt-2 border-t border-brand-border/60">
-                <p class="px-3 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-3">
+            <div class="pt-4 border-t border-brand-border/60">
+                <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                     Akses Cepat
                 </p>
-                <nav class="space-y-1.5">
+                <nav class="space-y-1">
                     <a href="{{ route('home') }}" target="_blank"
-                        class="flex items-center justify-between px-4 py-2.5 rounded-xl text-base font-medium text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60 transition">
+                        class="w-full flex items-center justify-between px-6 py-3.5 text-base font-medium text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60 transition">
                         <div class="flex items-center gap-3.5">
                             <i class="ti ti-world text-xl text-brand-warm-gray"></i>
                             <span>Lihat Toko</span>
@@ -107,14 +103,12 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit"
-                    title="Keluar"
-                    class="size-9 rounded-xl flex items-center justify-center text-brand-warm-gray hover:text-red-600 hover:bg-red-50 transition cursor-pointer">
-                    <i class="ti ti-logout text-lg"></i>
-                </button>
-            </form>
+            <button type="button"
+                @click.prevent="$dispatch('open-logout-modal')"
+                title="Keluar"
+                class="size-9 rounded-xl flex items-center justify-center text-brand-warm-gray hover:text-red-600 hover:bg-red-50 transition cursor-pointer">
+                <i class="ti ti-logout text-lg"></i>
+            </button>
         </div>
     </div>
 

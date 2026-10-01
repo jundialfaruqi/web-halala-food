@@ -9,16 +9,11 @@
             <i class="ti ti-menu-2 text-2xl"></i>
         </button>
 
-        <div>
-            <div class="flex items-center gap-1.5 text-xs sm:text-sm text-brand-warm-gray">
-                <span>Admin</span>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Dashboard</span>
-            </div>
-            <h1 class="text-xl sm:text-2xl font-bold text-brand-espresso tracking-tight">
-                Ringkasan Panel Admin
-            </h1>
-        </div>
+        <nav aria-label="Breadcrumb" class="hidden sm:flex items-center gap-2 text-sm text-brand-warm-gray font-medium">
+            <span>Admin</span>
+            <i class="ti ti-chevron-right text-xs"></i>
+            <span class="text-brand-espresso font-semibold">Dashboard</span>
+        </nav>
     </div>
 
     <!-- Right: Actions & Profile -->
@@ -54,13 +49,11 @@
                     </a>
                 </li>
                 <li class="pt-1 border-t border-brand-border/60">
-                    <form method="POST" action="{{ route('logout') }}" class="w-full">
-                        @csrf
-                        <button type="submit" class="w-full flex items-center gap-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl py-2.5">
-                            <i class="ti ti-logout text-base"></i>
-                            <span>Keluar dari Akun</span>
-                        </button>
-                    </form>
+                    <button type="button" @click.prevent="$dispatch('open-logout-modal')"
+                        class="w-full flex items-center gap-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl py-2.5 cursor-pointer text-left">
+                        <i class="ti ti-logout text-base"></i>
+                        <span>Keluar dari Akun</span>
+                    </button>
                 </li>
             </ul>
         </div>

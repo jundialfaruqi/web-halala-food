@@ -38,6 +38,9 @@
 
         </div>
 
+        <!-- Global Logout Modal -->
+        <x-modal.logout />
+
         @livewireScripts
     </body>
 </html>

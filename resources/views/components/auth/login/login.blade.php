@@ -14,7 +14,7 @@
         </div>
 
         <!-- General Error Alert -->
-        @if ($errors->has('email') && $errors->first('email') === 'Email atau kata sandi yang Anda masukkan tidak sesuai.')
+        @if ($errors->has('email') && $errors->first('email') === 'Email atau kata sandi yang Anda masukkan salah.')
             <div
                 class="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm flex items-start gap-3">
                 <i class="ti ti-alert-circle text-lg shrink-0 mt-0.5"></i>
@@ -36,15 +36,15 @@
                         <i class="ti ti-mail text-lg"></i>
                     </div>
                     <input type="email" id="email" wire:model.blur="email" placeholder="nama@email.com"
-                        autocomplete="email"
-                        @class([
+                        autocomplete="email" @class([
                             'w-full pl-10 pr-4 py-3 rounded-xl border bg-white text-sm text-brand-espresso placeholder-brand-warm-gray/60 focus:outline-none focus:ring-4 transition',
                             'border-red-400 focus:ring-red-400' => $errors->has('email'),
-                            'border-brand-border focus:border-brand-primary focus:ring-brand-primary/20' => !$errors->has('email'),
+                            'border-brand-border focus:border-brand-primary focus:ring-brand-primary/20' => !$errors->has(
+                                'email'),
                         ])>
                 </div>
                 @error('email')
-                    @if ($message !== 'Email atau kata sandi yang Anda masukkan tidak sesuai.')
+                    @if ($message !== 'Email atau kata sandi yang Anda masukkan salah.')
                         <p class="text-xs text-red-600 mt-1 flex items-center gap-1">
                             <i class="ti ti-info-circle"></i>
                             <span>{{ $message }}</span>
@@ -70,11 +70,11 @@
                         <i class="ti ti-lock text-lg"></i>
                     </div>
                     <input :type="showPassword ? 'text' : 'password'" id="password" wire:model.blur="password"
-                        placeholder="••••••••" autocomplete="current-password"
-                        @class([
+                        placeholder="••••••••" autocomplete="current-password" @class([
                             'w-full pl-10 pr-11 py-3 rounded-xl border bg-white text-sm text-brand-espresso placeholder-brand-warm-gray/60 focus:outline-none focus:ring-4 transition',
                             'border-red-400 focus:ring-red-400' => $errors->has('password'),
-                            'border-brand-border focus:border-brand-primary focus:ring-brand-primary/20' => !$errors->has('password'),
+                            'border-brand-border focus:border-brand-primary focus:ring-brand-primary/20' => !$errors->has(
+                                'password'),
                         ])>
 
                     <!-- Show/Hide Toggle -->
