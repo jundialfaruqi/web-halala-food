@@ -39,53 +39,6 @@ class DatabaseSeeder extends Seeder
                     'permission-manage' => 'Kelola izin dan hak akses teknis aplikasi.',
                 ],
             ],
-            'Master Produk & Resep' => [
-                'description' => 'Kelola kategori camilan (Marie Wijen & Ting-Ting Susu), varian kemasan, dan formula resep (BOM).',
-                'permissions' => [
-                    'category-manage' => 'Kelola kategori produk makanan.',
-                    'product-manage' => 'Kelola master produk, varian kemasan pouch/toples/ecer, harga jual, dan barcode.',
-                    'recipe-manage' => 'Kelola formula resep standar (Bill of Materials) per varian produk.',
-                ],
-            ],
-            'Bahan Baku & Inventori Gudang' => [
-                'description' => 'Kelola master bahan baku, kartu stok gudang, pengadaan PO supplier, dan pencatatan bahan rusak.',
-                'permissions' => [
-                    'raw-material-manage' => 'Kelola data master bahan baku dan stok minimum.',
-                    'stock-manage' => 'Melihat kartu stok bahan & barang jadi, penyesuaian stok opname.',
-                    'waste-manage' => 'Pencatatan dan audit bahan baku rusak/kedaluwarsa (waste tracking).',
-                    'purchase-manage' => 'Pengadaan dan pembelian bahan baku ke supplier.',
-                ],
-            ],
-            'Dapur & Produksi Manufaktur' => [
-                'description' => 'Akses rencana produksi harian, eksekusi batch masak dapur, dan konversi bahan baku ke produk jadi.',
-                'permissions' => [
-                    'production-manage' => 'Kelola rencana dan eksekusi batch produksi masak dapur.',
-                ],
-            ],
-            'Mitra Toko & Distribusi Kurir' => [
-                'description' => 'Kelola mitra supermarket / kelontong, surat jalan pengantaran, dan pelacakan kurir.',
-                'permissions' => [
-                    'partner-manage' => 'Kelola direktori mitra toko, batas piutang, dan harga khusus.',
-                    'delivery-manage' => 'Surat jalan digital, penugasan kurir, dan konfirmasi serah terima toko.',
-                ],
-            ],
-            'Point of Sale (POS) & Kasir' => [
-                'description' => 'Layar kasir penjualan ecer/grosir, scan barcode kemasan, cetak struk, dan buka/tutup shift kasir.',
-                'permissions' => [
-                    'pos-manage' => 'Akses kasir POS dan transaksi penjualan toko.',
-                    'cash-register-manage' => 'Buka dan tutup shift laci kasir serta rekonsiliasi kas.',
-                ],
-            ],
-            'Keuangan & Akuntansi Otomatis' => [
-                'description' => 'Bagan akun (COA), jurnal umum otomatis, buku besar, neraca saldo, laba rugi, arus kas, dan kas operasional.',
-                'permissions' => [
-                    'financial-report-view' => 'Akses laporan laba rugi, neraca, arus kas, dan aging piutang toko.',
-                    'journal-manage' => 'Akses jurnal umum otomatis dan input jurnal penyesuaian.',
-                    'ledger-manage' => 'Akses buku besar (General Ledger) dan neraca saldo.',
-                    'coa-manage' => 'Kelola bagan akun (Chart of Accounts) dan aturan mapping auto-jurnal.',
-                    'cash-transaction-manage' => 'Pencatatan kas masuk dan kas keluar operasional non-penjualan.',
-                ],
-            ],
         ];
 
         // Track valid active permission names
@@ -138,61 +91,28 @@ class DatabaseSeeder extends Seeder
         // CEO / Owner
         $ceoRole->syncPermissions([
             'dashboard-view',
-            'category-manage',
-            'product-manage',
-            'recipe-manage',
-            'partner-manage',
-            'delivery-manage',
-            'financial-report-view',
-            'journal-manage',
-            'ledger-manage',
-            'coa-manage',
-            'cash-transaction-manage',
             'user-manage',
         ]);
 
         // Manager
         $managerRole->syncPermissions([
             'dashboard-view',
-            'category-manage',
-            'product-manage',
-            'recipe-manage',
-            'raw-material-manage',
-            'stock-manage',
-            'waste-manage',
-            'purchase-manage',
-            'production-manage',
-            'partner-manage',
-            'delivery-manage',
-            'pos-manage',
-            'cash-register-manage',
-            'financial-report-view',
-            'journal-manage',
-            'ledger-manage',
-            'cash-transaction-manage',
             'user-manage',
         ]);
 
-        // Tukang Masak (Kitchen & Production)
+        // Tukang Masak (Kitchen)
         $masakRole->syncPermissions([
             'dashboard-view',
-            'production-manage',
-            'stock-manage',
-            'waste-manage',
-            'recipe-manage',
         ]);
 
-        // Kasir (POS & Cash Register)
+        // Kasir (Cashier)
         $kasirRole->syncPermissions([
             'dashboard-view',
-            'pos-manage',
-            'cash-register-manage',
         ]);
 
-        // Kurir (Delivery)
+        // Kurir (Courier)
         $kurirRole->syncPermissions([
             'dashboard-view',
-            'delivery-manage',
         ]);
 
         // 4. Seed Standard Users for Each Role
@@ -253,22 +173,5 @@ class DatabaseSeeder extends Seeder
             );
             $user->syncRoles([$userData['role']]);
         }
-
-        // 5. Seed Fase 1: Products, Variants, Raw Materials, and Recipes
-        $this->call(ProductAndRecipeSeeder::class);
-
-        // 6. Seed Fase 2: Production Batches, Stock Mutations, and Waste Logs
-        $this->call(ProductionAndStockSeeder::class);
-
-        // 7. Seed Fase 3: Partner Stores & B2B Directories
-        $this->call(PartnerSeeder::class);
-
-        // 8. Seed Fase 4: Deliveries & Courier Distributions
-        $this->call(DeliverySeeder::class);
-
-        // 9. Seed Fase 5: Suppliers & Purchase Orders
-        $this->call(SupplierAndPurchaseOrderSeeder::class);
     }
 }
-
-

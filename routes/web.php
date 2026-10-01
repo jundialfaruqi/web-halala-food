@@ -18,11 +18,6 @@ Route::redirect('/admin', '/admin/dashboard');
 
 Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/dashboard', 'admin.dashboard')->name('admin.dashboard');
-    Route::livewire('/products', 'admin.products')->name('admin.products')->middleware('permission:product-manage|category-manage|recipe-manage|raw-material-manage');
-    Route::livewire('/production', 'admin.production')->name('admin.production')->middleware('permission:production-manage|stock-manage|waste-manage');
-    Route::livewire('/partners', 'admin.partners')->name('admin.partners')->middleware('permission:partner-manage|product-manage');
-    Route::livewire('/deliveries', 'admin.deliveries')->name('admin.deliveries')->middleware('permission:delivery-manage|partner-manage');
-    Route::livewire('/purchases', 'admin.purchases')->name('admin.purchases')->middleware('permission:purchase-manage|raw-material-manage');
     Route::livewire('/users', 'admin.users')->name('admin.users')->middleware('permission:user-manage');
     Route::livewire('/roles', 'admin.roles')->name('admin.roles')->middleware('permission:role-manage|permission-manage');
 });
