@@ -7,7 +7,7 @@
     searchQuery: '',
     selectedStatus: 'all',
     selectedRoute: 'all',
-    onlyMyTasks: false,
+    taskFilter: 'all',
 
     // Modal Confirmation State
     showCancelModal: false,
@@ -32,7 +32,7 @@
 
     init() {
         if (this.isCourier) {
-            this.onlyMyTasks = true;
+            this.taskFilter = 'my';
         }
 
         @if ($flashToast = session('toast') ?? (session('success') ? ['message' => session('success'), 'type' => 'success'] : null))
@@ -62,10 +62,10 @@
             const matchRoute = this.selectedRoute === 'all' ||
                 (item.store && item.store.route === this.selectedRoute);
 
-            const matchMyTask = !this.onlyMyTasks ||
-                (item.courier && item.courier.id === this.currentUserId);
+            const matchTask = this.taskFilter === 'all' ||
+                (this.taskFilter === 'my' && item.courier && item.courier.id === this.currentUserId);
 
-            return matchSearch && matchStatus && matchRoute && matchMyTask;
+            return matchSearch && matchStatus && matchRoute && matchTask;
         });
     },
 
@@ -177,20 +177,31 @@
     </div>
 
     <!-- Filter & Search Bar -->
-    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        <div class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
             <!-- Search Input -->
-            <div class="relative flex-1">
+            <div class="relative flex-1 max-w-md">
                 <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg"></i>
                 <input type="text" x-model="searchQuery"
-                    placeholder="Cari nomor SJ, toko mitra, rute, atau kurir..."
-                    class="w-full pl-10 pr-4 py-2 bg-white border border-brand-border rounded-xl text-sm focus:outline-none focus:border-brand-primary transition text-brand-espresso">
+                    placeholder="Cari nomor SJ, toko, alamat, kurir, penerima..."
+                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:border-brand-primary">
             </div>
 
-            <!-- Filter Status -->
-            <div class="w-full sm:w-56 shrink-0">
+            <!-- Route Filter -->
+            <div class="w-full sm:w-auto">
+                <select x-model="selectedRoute"
+                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
+                    <option value="all">Semua Rute Wilayah</option>
+                    <template x-for="r in routes" :key="r">
+                        <option :value="r" x-text="r"></option>
+                    </template>
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="w-full sm:w-auto">
                 <select x-model="selectedStatus"
-                    class="w-full px-3 py-2 bg-white border border-brand-border rounded-xl text-sm focus:outline-none focus:border-brand-primary transition text-brand-espresso">
+                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
                     <option value="all">Semua Status</option>
                     <option value="diproses">Menunggu Pengambilan</option>
                     <option value="dikirim">Sedang Dikirim</option>
@@ -199,44 +210,36 @@
                 </select>
             </div>
 
-            <!-- Filter Rute -->
-            <div class="w-full sm:w-48 shrink-0">
-                <select x-model="selectedRoute"
-                    class="w-full px-3 py-2 bg-white border border-brand-border rounded-xl text-sm focus:outline-none focus:border-brand-primary transition text-brand-espresso">
-                    <option value="all">Semua Rute</option>
-                    <template x-for="r in routes" :key="r">
-                        <option :value="r" x-text="r"></option>
-                    </template>
+            <!-- Penugasan / Courier Filter -->
+            <div class="w-full sm:w-auto">
+                <select x-model="taskFilter"
+                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
+                    <option value="all">Semua Pengantaran</option>
+                    <option value="my">Tugas Saya Saja</option>
                 </select>
             </div>
         </div>
 
-        <!-- Toggle My Tasks Only (Useful for Couriers & Managers) -->
-        <div class="flex items-center gap-2 self-start lg:self-auto shrink-0">
-            <button type="button" @click="onlyMyTasks = !onlyMyTasks"
-                :class="onlyMyTasks ? 'bg-brand-espresso text-white border-brand-espresso' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50'"
-                class="inline-flex items-center gap-2 px-3.5 py-2 border rounded-xl text-sm font-semibold transition cursor-pointer">
-                <i class="ti ti-user-check text-base"></i>
-                <span>Tugas Saya Saja</span>
-            </button>
+        <!-- Total Filtered Indicator (Identik dengan Toko Mitra & Satuan) -->
+        <div class="text-xs sm:text-sm text-brand-warm-gray font-medium self-center shrink-0">
+            Menampilkan <span class="font-bold text-brand-espresso" x-text="filteredDeliveries.length"></span> surat jalan
         </div>
     </div>
 
-    <!-- Table Container -->
-    <div class="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-xs">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-brand-espresso">
-                <thead class="bg-neutral-50 border-b border-brand-border text-xs uppercase tracking-wider font-semibold text-brand-warm-gray">
-                    <tr>
-                        <th scope="col" class="px-6 py-3.5 whitespace-nowrap">Surat Jalan</th>
-                        <th scope="col" class="px-6 py-3.5 whitespace-nowrap">Toko Mitra &amp; Rute</th>
-                        <th scope="col" class="px-6 py-3.5 whitespace-nowrap">Kurir Bertugas</th>
-                        <th scope="col" class="px-6 py-3.5 whitespace-nowrap">Muatan Barang</th>
-                        <th scope="col" class="px-6 py-3.5 whitespace-nowrap">Status</th>
-                        <th scope="col" class="px-6 py-3.5 text-right whitespace-nowrap">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-brand-border/60">
+    <!-- Table Listing (Identik dengan Toko Mitra & Satuan) -->
+    <div class="overflow-x-auto bg-white rounded-xl border border-brand-border">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-brand-border bg-neutral-50/60 text-brand-espresso text-xs sm:text-sm font-bold uppercase tracking-wider">
+                    <th class="py-3.5 px-6 whitespace-nowrap">Surat Jalan</th>
+                    <th class="py-3.5 px-6 whitespace-nowrap">Toko Mitra &amp; Rute</th>
+                    <th class="py-3.5 px-6 whitespace-nowrap">Kurir Bertugas</th>
+                    <th class="py-3.5 px-6 whitespace-nowrap">Muatan Barang</th>
+                    <th class="py-3.5 px-6 whitespace-nowrap">Status</th>
+                    <th class="py-3.5 px-6 whitespace-nowrap text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-brand-border/60 text-sm">
                     <template x-for="item in filteredDeliveries" :key="item.id">
                         <tr class="hover:bg-neutral-50/70 transition">
                             <!-- 1. Nomor Surat Jalan & Tanggal -->
@@ -377,7 +380,6 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
     <!-- Modal Cancel Confirmation -->
     <div x-cloak x-show="showCancelModal"
