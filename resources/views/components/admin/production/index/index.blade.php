@@ -277,28 +277,18 @@
             <button type="button" @click="activeTab = 'batches'"
                 :class="activeTab === 'batches' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' :
                     'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
-                class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
-                <i class="ti ti-flame text-xl"></i>
+                class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
                 <span>Riwayat Batch Masak</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                    :class="activeTab === 'batches' ? 'bg-brand-soft-cream text-brand-primary' :
-                        'bg-neutral-100 text-brand-warm-gray'"
-                    x-text="batches.length">
-                </span>
+                <span class="text-xs text-brand-warm-gray">(<span x-text="batches.length"></span>)</span>
             </button>
 
             <!-- 2. Tab Kartu Stok Bahan Baku -->
             <button type="button" @click="activeTab = 'mutations'"
                 :class="activeTab === 'mutations' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' :
                     'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
-                class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
-                <i class="ti ti-file-analytics text-xl"></i>
+                class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
                 <span>Kartu Stok Bahan Baku</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                    :class="activeTab === 'mutations' ? 'bg-brand-soft-cream text-brand-primary' :
-                        'bg-neutral-100 text-brand-warm-gray'"
-                    x-text="mutations.length">
-                </span>
+                <span class="text-xs text-brand-warm-gray">(<span x-text="mutations.length"></span>)</span>
             </button>
         </div>
 
@@ -356,14 +346,11 @@
                         <template x-for="batch in filteredBatches" :key="batch.id">
                             <tr class="hover:bg-neutral-50/50 transition">
 
-                                <!-- Kode Batch -->
+                                <!-- Kode Batch (No redundant icon) -->
                                 <td class="py-4 px-6 align-middle whitespace-nowrap">
-                                    <div class="flex items-center gap-2">
-                                        <i class="ti ti-flame text-brand-primary text-lg shrink-0"></i>
-                                        <code
-                                            class="font-mono font-bold text-brand-espresso text-sm bg-neutral-100 px-2 py-0.5 rounded"
-                                            x-text="batch.batch_code"></code>
-                                    </div>
+                                    <code
+                                        class="font-mono font-bold text-brand-espresso text-sm bg-neutral-100 px-2 py-0.5 rounded"
+                                        x-text="batch.batch_code"></code>
                                     <p class="text-xs text-brand-warm-gray mt-1 truncate max-w-50"
                                         x-text="batch.notes || 'Tanpa catatan'"></p>
                                 </td>
@@ -376,17 +363,14 @@
                                         x-text="'Kemasan: ' + (batch.product?.unit || 'pcs')"></span>
                                 </td>
 
-                                <!-- Target vs Hasil QC -->
+                                <!-- Target vs Hasil QC (No badge pill) -->
                                 <td class="py-4 px-6 align-middle text-center whitespace-nowrap">
                                     <div class="inline-flex flex-col items-center gap-1">
-                                        <div class="flex items-center gap-1.5 font-mono text-xs font-bold">
-                                            <span
-                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-50 text-green-700 border border-green-200"
-                                                x-text="batch.actual_qty_good + ' Lolos'"></span>
+                                        <div class="flex items-center gap-1.5 font-mono text-xs font-semibold text-brand-espresso">
+                                            <span x-text="batch.actual_qty_good + ' Lolos'"></span>
                                             <template x-if="batch.actual_qty_bad > 0">
-                                                <span
-                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 border border-red-200"
-                                                    x-text="batch.actual_qty_bad + ' Reject'"></span>
+                                                <span class="text-brand-warm-gray"
+                                                    x-text="'(' + batch.actual_qty_bad + ' Reject)'"></span>
                                             </template>
                                         </div>
                                         <span class="text-xs text-brand-warm-gray font-mono"
@@ -398,27 +382,16 @@
                                 <td class="py-4 px-6 align-middle text-right whitespace-nowrap">
                                     <p class="font-mono font-bold text-brand-espresso"
                                         x-text="'Rp ' + Number(batch.total_material_cost).toLocaleString('id-ID')"></p>
-                                    <p class="text-xs font-mono text-brand-primary mt-0.5"
+                                    <p class="text-xs font-mono text-brand-espresso/80 mt-0.5"
                                         x-text="'Rp ' + Number(batch.unit_cost_produced).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' / unit'">
                                     </p>
                                 </td>
 
-                                <!-- Status Badge -->
+                                <!-- Status (Clean text, no badge pill) -->
                                 <td class="py-4 px-6 align-middle text-center whitespace-nowrap">
-                                    <template x-if="batch.status === 'completed'">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
-                                            <i class="ti ti-circle-check text-sm"></i>
-                                            <span>Selesai</span>
-                                        </span>
-                                    </template>
-                                    <template x-if="batch.status === 'cancelled'">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-                                            <i class="ti ti-ban text-sm"></i>
-                                            <span>Dibatalkan</span>
-                                        </span>
-                                    </template>
+                                    <span class="text-sm font-semibold text-brand-espresso"
+                                        x-text="batch.status === 'completed' ? 'Selesai' : 'Dibatalkan'">
+                                    </span>
                                 </td>
 
                                 <!-- Waktu & Operator -->
@@ -544,30 +517,18 @@
                                         x-text="'Satuan: ' + (mut.raw_material?.display_unit || mut.raw_material?.unit || 'g')"></span>
                                 </td>
 
-                                <!-- Jenis & Referensi -->
+                                <!-- Jenis & Referensi (Clean text, no badge pill) -->
                                 <td class="py-4 px-6 align-middle text-center whitespace-nowrap">
-                                    <template x-if="mut.type === 'out'">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                            <i class="ti ti-arrow-up-right text-xs"></i>
-                                            <span>Produksi (Keluar)</span>
-                                        </span>
-                                    </template>
-                                    <template x-if="mut.type === 'in'">
-                                        <span
-                                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
-                                            <i class="ti ti-arrow-down-left text-xs"></i>
-                                            <span>Masuk (Koreksi)</span>
-                                        </span>
-                                    </template>
-                                    <p class="font-mono text-xs text-brand-primary mt-1"
+                                    <span class="text-xs font-semibold text-brand-espresso"
+                                        x-text="mut.type === 'out' ? 'Produksi (Keluar)' : 'Masuk (Koreksi)'">
+                                    </span>
+                                    <p class="font-mono text-xs text-brand-warm-gray mt-0.5"
                                         x-text="mut.reference_number || '-'"></p>
                                 </td>
 
                                 <!-- Jumlah Perubahan -->
                                 <td class="py-4 px-6 align-middle text-right whitespace-nowrap">
-                                    <span class="font-mono font-bold text-sm"
-                                        :class="mut.type === 'out' ? 'text-red-600' : 'text-emerald-600'"
+                                    <span class="font-mono font-bold text-sm text-brand-espresso"
                                         x-text="(mut.type === 'out' ? '- ' : '+ ') + Number(mut.quantity).toLocaleString('id-ID') + ' ' + (mut.raw_material?.display_unit || mut.raw_material?.unit || 'g')">
                                     </span>
                                 </td>

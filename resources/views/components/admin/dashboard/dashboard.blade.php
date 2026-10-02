@@ -22,7 +22,7 @@
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
                 <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Total Pengguna</span>
-                <i class="ti ti-users text-2xl text-brand-primary"></i>
+                <i class="ti ti-users text-2xl text-brand-warm-gray"></i>
             </div>
             <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
                 {{ $totalUsers }}
@@ -34,7 +34,7 @@
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
                 <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Total Peran (Role)</span>
-                <i class="ti ti-shield-check text-2xl text-brand-primary"></i>
+                <i class="ti ti-shield-check text-2xl text-brand-warm-gray"></i>
             </div>
             <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
                 {{ $totalRoles }}
@@ -46,7 +46,7 @@
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
                 <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Hak Akses (Permission)</span>
-                <i class="ti ti-key text-2xl text-brand-primary"></i>
+                <i class="ti ti-key text-2xl text-brand-warm-gray"></i>
             </div>
             <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
                 {{ $totalPermissions }}
@@ -58,7 +58,7 @@
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
                 <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Varian Produk</span>
-                <i class="ti ti-cookie text-2xl text-brand-primary"></i>
+                <i class="ti ti-cookie text-2xl text-brand-warm-gray"></i>
             </div>
             <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
                 2
@@ -150,8 +150,7 @@
                                 <td class="py-4 px-3">
                                     <div class="flex flex-wrap gap-1.5">
                                         @forelse($user->roles as $role)
-                                            <span
-                                                class="px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold text-brand-espresso bg-brand-soft-cream/60 border border-brand-border">
+                                            <span class="text-sm font-semibold text-brand-espresso capitalize">
                                                 {{ $role->name }}
                                             </span>
                                         @empty

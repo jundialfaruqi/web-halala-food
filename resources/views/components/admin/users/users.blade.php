@@ -221,8 +221,8 @@
                                                 {{ $user['name'] }}
                                             </span>
                                             @if ($user['is_current_user'])
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-brand-soft-cream text-brand-primary">
-                                                    Anda
+                                                <span class="text-xs font-semibold text-brand-warm-gray">
+                                                    (Anda)
                                                 </span>
                                             @endif
                                         </div>
@@ -237,7 +237,7 @@
                             <td class="py-4 px-6 align-middle">
                                 @if ($user['formatted_phone'])
                                     <div class="inline-flex items-center gap-2 text-sm font-medium text-brand-espresso font-mono">
-                                        <i class="ti ti-brand-whatsapp text-green-600 text-base"></i>
+                                        <i class="ti ti-brand-whatsapp text-brand-warm-gray text-base"></i>
                                         <span>{{ $user['formatted_phone'] }}</span>
                                     </div>
                                 @else

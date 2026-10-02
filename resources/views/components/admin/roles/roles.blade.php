@@ -344,37 +344,25 @@
             <!-- 1. Tab Role -->
             <button type="button" @click="activeTab = 'roles'"
                 :class="activeTab === 'roles' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
-                class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
-                <i class="ti ti-shield-lock text-xl"></i>
+                class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
                 <span>Role Pengguna</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                    :class="activeTab === 'roles' ? 'bg-brand-soft-cream text-brand-primary' : 'bg-neutral-100 text-brand-warm-gray'">
-                    {{ $totalRoles }}
-                </span>
+                <span class="text-xs text-brand-warm-gray">({{ $totalRoles }})</span>
             </button>
 
             <!-- 2. Tab Group Permission -->
             <button type="button" @click="activeTab = 'groups'"
                 :class="activeTab === 'groups' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
-                class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
-                <i class="ti ti-folder-check text-xl"></i>
+                class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
                 <span>Grup Permission</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                    :class="activeTab === 'groups' ? 'bg-brand-soft-cream text-brand-primary' : 'bg-neutral-100 text-brand-warm-gray'">
-                    {{ $totalGroups }}
-                </span>
+                <span class="text-xs text-brand-warm-gray">({{ $totalGroups }})</span>
             </button>
 
             <!-- 3. Tab Permission -->
             <button type="button" @click="activeTab = 'permissions'"
                 :class="activeTab === 'permissions' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
-                class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
-                <i class="ti ti-key text-xl"></i>
+                class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
                 <span>Daftar Permission</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                    :class="activeTab === 'permissions' ? 'bg-brand-soft-cream text-brand-primary' : 'bg-neutral-100 text-brand-warm-gray'">
-                    {{ $totalPermissions }}
-                </span>
+                <span class="text-xs text-brand-warm-gray">({{ $totalPermissions }})</span>
             </button>
         </div>
 

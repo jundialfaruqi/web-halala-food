@@ -167,25 +167,18 @@
                     <template x-for="unit in filteredUnits" :key="unit.id">
                         <tr class="hover:bg-neutral-50/50 transition">
 
-                            <!-- Satuan Name -->
+                            <!-- Satuan Name (No icon background box) -->
                             <td class="py-4 px-6 font-semibold text-brand-espresso">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="size-9 rounded-lg bg-brand-soft-cream/60 text-brand-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                                        <span x-text="unit.short_name.substring(0, 3)"></span>
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-brand-espresso" x-text="unit.name"></div>
-                                        <div class="text-xs text-brand-warm-gray font-mono mt-0.5 sm:hidden"
-                                            x-text="unit.short_name"></div>
-                                    </div>
+                                <div>
+                                    <div class="font-bold text-brand-espresso text-base" x-text="unit.name"></div>
+                                    <div class="text-xs text-brand-warm-gray font-mono mt-0.5 sm:hidden"
+                                        x-text="unit.short_name"></div>
                                 </div>
                             </td>
 
-                            <!-- Simbol / Singkatan -->
+                            <!-- Simbol / Singkatan (Clean font-mono, no badge pill) -->
                             <td class="py-4 px-6">
-                                <span
-                                    class="inline-flex items-center px-2.5 py-1 rounded-md bg-neutral-100 text-brand-espresso font-mono font-bold text-xs border border-neutral-200"
+                                <span class="font-mono font-bold text-brand-espresso text-sm"
                                     x-text="unit.short_name">
                                 </span>
                             </td>
@@ -193,26 +186,19 @@
                             <!-- Description -->
                             <td class="py-4 px-6 text-brand-warm-gray max-w-xs truncate" x-text="unit.description"></td>
 
-                            <!-- Status -->
+                            <!-- Status (Clean text toggle, no badge pill) -->
                             <td class="py-4 px-6">
                                 @can('satuan-edit')
                                     <button type="button" @click="toggleStatus(unit.id)" :disabled="isProcessing"
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer select-none"
-                                        :class="unit.is_active ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' :
-                                            'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'"
-                                        title="Klik untuk mengubah status aktif/nonaktif">
-                                        <span class="size-2 rounded-full"
-                                            :class="unit.is_active ? 'bg-emerald-500' : 'bg-neutral-400'"></span>
-                                        <span x-text="unit.is_active ? 'Aktif' : 'Nonaktif'"></span>
+                                        class="text-sm font-semibold hover:underline cursor-pointer transition select-none"
+                                        :class="unit.is_active ? 'text-brand-espresso' : 'text-brand-warm-gray'"
+                                        title="Klik untuk mengubah status aktif/nonaktif"
+                                        x-text="unit.is_active ? 'Aktif' : 'Nonaktif'">
                                     </button>
                                 @else
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold select-none"
-                                        :class="unit.is_active ? 'bg-emerald-50 text-emerald-700' :
-                                            'bg-neutral-100 text-neutral-600'">
-                                        <span class="size-2 rounded-full"
-                                            :class="unit.is_active ? 'bg-emerald-500' : 'bg-neutral-400'"></span>
-                                        <span x-text="unit.is_active ? 'Aktif' : 'Nonaktif'"></span>
+                                    <span class="text-sm font-semibold"
+                                        :class="unit.is_active ? 'text-brand-espresso' : 'text-brand-warm-gray'"
+                                        x-text="unit.is_active ? 'Aktif' : 'Nonaktif'">
                                     </span>
                                 @endcan
                             </td>

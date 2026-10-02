@@ -313,30 +313,22 @@
         </div>
     </div>
 
-    <!-- Tab Navigation Bar (Identik dengan UI Tab Role & Permission) -->
+    <!-- Tab Navigation Bar -->
     <div class="flex border-b border-brand-border gap-4 sm:gap-8 overflow-x-auto">
         <!-- 1. Tab Master Bahan Baku -->
         <button type="button" @click="activeTab = 'materials'"
             :class="activeTab === 'materials' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
-            class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
-            <i class="ti ti-leaf text-xl"></i>
+            class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
             <span>Master Bahan Baku</span>
-            <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                :class="activeTab === 'materials' ? 'bg-brand-soft-cream text-brand-primary' : 'bg-neutral-100 text-brand-warm-gray'"
-                x-text="materials.length">
-            </span>
+            <span class="text-xs text-brand-warm-gray">(<span x-text="materials.length"></span>)</span>
         </button>
 
         <!-- 2. Tab Resep Produk (BOM) -->
         <button type="button" @click="activeTab = 'recipes'"
             :class="activeTab === 'recipes' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
-            class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
-            <i class="ti ti-book-2 text-xl"></i>
+            class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
             <span>Resep Produk (BOM)</span>
-            <span class="text-xs font-bold px-2 py-0.5 rounded-full"
-                :class="activeTab === 'recipes' ? 'bg-brand-soft-cream text-brand-primary' : 'bg-neutral-100 text-brand-warm-gray'"
-                x-text="products.length">
-            </span>
+            <span class="text-xs text-brand-warm-gray">(<span x-text="products.length"></span>)</span>
         </button>
     </div>
 
@@ -392,21 +384,14 @@
                     <template x-for="mat in filteredMaterials" :key="mat.id">
                         <tr class="hover:bg-neutral-50/50 transition">
 
-                            <!-- Nama Bahan -->
+                            <!-- Nama Bahan (No icon background box) -->
                             <td class="py-4 px-6 font-bold text-brand-espresso">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="size-9 rounded-lg bg-brand-soft-cream/60 text-brand-primary flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                                        <i class="ti ti-leaf text-base"></i>
-                                    </div>
-                                    <span x-text="mat.name"></span>
-                                </div>
+                                <span x-text="mat.name"></span>
                             </td>
 
-                            <!-- Satuan Pengukuran -->
+                            <!-- Satuan Pengukuran (No badge pill) -->
                             <td class="py-4 px-6">
-                                <span
-                                    class="inline-flex items-center px-2.5 py-1 rounded-md bg-neutral-100 text-brand-espresso font-mono font-bold text-xs border border-neutral-200"
+                                <span class="font-mono font-bold text-brand-espresso text-sm"
                                     x-text="mat.unit_short">
                                 </span>
                             </td>
@@ -431,36 +416,18 @@
                                         x-text="mat.unit_short"></span></span>
                             </td>
 
-                            <!-- Status Stok Badge -->
+                            <!-- Status Stok (Clean text, no badge pill) -->
                             <td class="py-4 px-6">
-                                <template x-if="mat.stock_status === 'safe'">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">
-                                        <span class="size-2 rounded-full bg-emerald-500"></span>
-                                        <span>Aman</span>
-                                    </span>
-                                </template>
-                                <template x-if="mat.stock_status === 'warning'">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700">
-                                        <span class="size-2 rounded-full bg-amber-500"></span>
-                                        <span>Menipis</span>
-                                    </span>
-                                </template>
-                                <template x-if="mat.stock_status === 'danger'">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700">
-                                        <span class="size-2 rounded-full bg-red-500"></span>
-                                        <span>Habis</span>
-                                    </span>
-                                </template>
+                                <span class="text-sm font-semibold text-brand-espresso"
+                                    x-text="mat.stock_status === 'safe' ? 'Aman' : (mat.stock_status === 'warning' ? 'Menipis' : 'Habis')">
+                                </span>
                             </td>
 
-                            <!-- Resep Terkait -->
+                            <!-- Resep Terkait (Clean text, no badge pill) -->
                             <td class="py-4 px-6">
-                                <span
-                                    class="px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-soft-cream/60 text-brand-espresso"
-                                    x-text="mat.recipes_count + ' Produk'"></span>
+                                <span class="text-sm text-brand-warm-gray"
+                                    x-text="mat.recipes_count + ' Produk'">
+                                </span>
                             </td>
 
                             <!-- Actions -->

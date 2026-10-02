@@ -58,9 +58,8 @@
                         <td class="py-4 px-6 align-top">
                             <div class="flex flex-wrap items-center gap-1.5 max-w-xl">
                                 @if ($role->permissions && $role->permissions->count() > 0)
-                                    <span
-                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-50 text-green-700">
-                                        {{ $role->permissions->count() }} Izin
+                                    <span class="text-xs font-bold text-brand-espresso">
+                                        {{ $role->permissions->count() }} Izin:
                                     </span>
                                     @foreach ($role->permissions->take(4) as $perm)
                                         <span
@@ -83,7 +82,7 @@
                         <td class="py-4 px-6 align-top text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-2">
                                 <button type="button" @click="openEditRoleById({{ $role->id }})"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60 transition cursor-pointer border border-brand-border">
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-brand-espresso hover:text-brand-primary hover:bg-neutral-50 transition cursor-pointer border border-brand-border">
                                     <i class="ti ti-edit text-base"></i>
                                     <span>Edit</span>
                                 </button>
@@ -95,10 +94,9 @@
                                         <span>Hapus</span>
                                     </button>
                                 @else
-                                    <span
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-brand-warm-gray bg-neutral-100 border border-neutral-200"
+                                    <span class="text-xs text-brand-warm-gray italic px-2 py-1"
                                         title="Role sistem utama tidak dapat dihapus">
-                                        <i class="ti ti-lock"></i> Sistem
+                                        Sistem
                                     </span>
                                 @endif
                             </div>
