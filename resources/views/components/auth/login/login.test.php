@@ -3,6 +3,8 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 it('renders login page successfully', function () {
     Livewire::test('auth.login')
@@ -47,4 +49,17 @@ it('fails with invalid credentials', function () {
 
     expect(Auth::check())->toBeFalse();
 });
+
+it('redirects authenticated user accessing login route to dashboard', function () {
+    $user = User::factory()->create([
+        'email' => 'admin-test@halala-food.id',
+        'password' => bcrypt('password123'),
+    ]);
+
+    actingAs($user);
+
+    get(route('login'))
+        ->assertRedirect(route('admin.dashboard'));
+});
+
 

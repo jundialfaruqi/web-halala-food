@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
-Route::livewire('/login', 'auth.login')->name('login');
+Route::livewire('/login', 'auth.login')->name('login')->middleware('guest');
 
 Route::post('/logout', function () {
     Auth::logout();

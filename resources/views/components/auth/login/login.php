@@ -14,6 +14,19 @@ new #[Layout('layouts.app'), Title('Masuk ke Akun - Halala Food')] class extends
 
     public bool $remember = false;
 
+    public function mount(): void
+    {
+        if (Auth::check()) {
+            /** @var \App\Models\User|null $user */
+            $user = Auth::user();
+            $defaultRoute = ($user && $user->roles()->exists())
+                ? route('admin.dashboard')
+                : route('home');
+
+            $this->redirect($defaultRoute, navigate: true);
+        }
+    }
+
     /**
      * @return array<string, array<int, string>>
      */
