@@ -57,4 +57,36 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 
         return redirect()->route('admin.stores');
     })->name('admin.stores.destroy')->middleware('permission:toko-delete');
+
+    // Pengantaran & Surat Jalan (Distribusi)
+    Route::livewire('/deliveries', 'admin.deliveries.index')->name('admin.deliveries')->middleware('permission:pengantaran-view');
+    Route::livewire('/deliveries/create', 'admin.deliveries.create')->name('admin.deliveries.create')->middleware('permission:pengantaran-create');
+    Route::livewire('/deliveries/{delivery}', 'admin.deliveries.show')->name('admin.deliveries.show')->middleware('permission:pengantaran-view');
+    Route::livewire('/deliveries/{delivery}/edit', 'admin.deliveries.edit')->name('admin.deliveries.edit')->middleware('permission:pengantaran-edit');
+    Route::delete('/deliveries/{delivery}', function (\App\Models\Delivery $delivery) {
+        if ($delivery->status === 'selesai') {
+            session()->flash('toast', [
+                'message' => 'Surat jalan yang telah selesai serah terima tidak boleh dihapus.',
+                'type' => 'error',
+            ]);
+            return redirect()->route('admin.deliveries');
+        }
+
+        $deliveryNumber = $delivery->delivery_number;
+        \Illuminate\Support\Facades\DB::transaction(function () use ($delivery) {
+            if ($delivery->status !== 'dibatalkan') {
+                foreach ($delivery->items as $item) {
+                    \App\Models\Product::where('id', $item->product_id)->increment('stock_ready', $item->quantity);
+                }
+            }
+            $delivery->delete();
+        });
+
+        session()->flash('toast', [
+            'message' => "Surat jalan '{$deliveryNumber}' berhasil dihapus.",
+            'type' => 'success',
+        ]);
+
+        return redirect()->route('admin.deliveries');
+    })->name('admin.deliveries.destroy')->middleware('permission:pengantaran-delete');
 });

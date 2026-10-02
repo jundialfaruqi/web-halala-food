@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Delivery;
+use App\Models\DeliveryItem;
 use App\Models\Permission;
 use App\Models\PermissionGroup;
 use App\Models\Product;
@@ -84,6 +86,15 @@ class DatabaseSeeder extends Seeder
                     'toko-delete' => 'Menghapus data toko mitra.',
                 ],
             ],
+            'Pengantaran & Distribusi' => [
+                'description' => 'Kelola surat jalan pengantaran barang jadi ke toko mitra dan tracking kurir.',
+                'permissions' => [
+                    'pengantaran-view' => 'Melihat daftar surat jalan dan tugas pengantaran.',
+                    'pengantaran-create' => 'Membuat surat jalan pengantaran baru.',
+                    'pengantaran-edit' => 'Mengubah surat jalan atau memperbarui status pengantaran.',
+                    'pengantaran-delete' => 'Membatalkan atau menghapus surat jalan.',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -137,7 +148,7 @@ class DatabaseSeeder extends Seeder
         // Dev / Super Admin gets all permissions
         $devRole->syncPermissions(Permission::all());
 
-        // Manager gets operational management + Bahan Baku & Resep permissions
+        // Manager gets operational management + Bahan Baku, Resep, Produksi, Toko, & Pengantaran permissions
         $managerRole->syncPermissions([
             'dashboard-view',
             'user-manage',
@@ -156,12 +167,18 @@ class DatabaseSeeder extends Seeder
             'toko-create',
             'toko-edit',
             'toko-delete',
+            'pengantaran-view',
+            'pengantaran-create',
+            'pengantaran-edit',
+            'pengantaran-delete',
         ]);
 
-        // Kurir gets dashboard access & toko view
+        // Kurir gets dashboard access, toko view, and pengantaran view & status edit
         $kurirRole->syncPermissions([
             'dashboard-view',
             'toko-view',
+            'pengantaran-view',
+            'pengantaran-edit',
         ]);
 
         // 4. Seed Standard Users for the 3 Roles
@@ -388,6 +405,47 @@ class DatabaseSeeder extends Seeder
                 ['name' => $storeData['name']],
                 $storeData
             );
+        }
+
+        // 9. Seed Sample Delivery (Surat Jalan Pengantaran)
+        $barokahStore = Store::where('name', 'Pusat Oleh-Oleh Barokah')->first();
+        $kurirUser = User::where('email', 'kurir@halala-food.id')->first();
+        $managerUser = User::where('email', 'manager@halala-food.id')->first();
+
+        if ($barokahStore && $kurirUser && Delivery::count() === 0) {
+            $delivery = Delivery::create([
+                'delivery_number' => 'SJ-' . now()->format('Ymd') . '-0001',
+                'store_id' => $barokahStore->id,
+                'courier_id' => $kurirUser->id,
+                'created_by' => $managerUser?->id ?? $devUser?->id,
+                'delivery_date' => now()->toDateString(),
+                'status' => 'diproses',
+                'notes' => 'Harap konfirmasi dengan Ibu Hj. Aminah saat tiba di toko.',
+                'total_items' => 25,
+                'total_amount' => 280000.00,
+            ]);
+
+            DeliveryItem::create([
+                'delivery_id' => $delivery->id,
+                'product_id' => $marieWijen->id,
+                'quantity' => 15,
+                'unit_price' => $marieWijen->consignment_price,
+                'subtotal' => 15 * (float) $marieWijen->consignment_price,
+                'notes' => '15 bungkus kemasan pouch',
+            ]);
+
+            DeliveryItem::create([
+                'delivery_id' => $delivery->id,
+                'product_id' => $tingTingSusu->id,
+                'quantity' => 10,
+                'unit_price' => $tingTingSusu->consignment_price,
+                'subtotal' => 10 * (float) $tingTingSusu->consignment_price,
+                'notes' => '10 bungkus kemasan pouch',
+            ]);
+
+            // Decrement ready stock for initial delivery demo
+            $marieWijen->decrement('stock_ready', 15);
+            $tingTingSusu->decrement('stock_ready', 10);
         }
     }
 }
