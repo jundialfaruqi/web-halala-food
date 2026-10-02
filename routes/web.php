@@ -34,4 +34,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         ]);
         return redirect()->route('admin.units');
     })->name('admin.units.destroy')->middleware('permission:satuan-delete');
+
+    // Master Bahan Baku & Resep Produk (BOM)
+    Route::livewire('/raw-materials', 'admin.raw-materials.index')->name('admin.raw-materials')->middleware('permission:bahan-baku-view');
 });

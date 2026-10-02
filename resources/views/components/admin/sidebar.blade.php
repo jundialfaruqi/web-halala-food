@@ -64,20 +64,30 @@
             </div>
 
             {{-- Section: Master Data --}}
-            @can('satuan-view')
+            @canany(['satuan-view', 'bahan-baku-view'])
                 <div class="pt-4 border-t border-brand-border/60">
                     <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                         Master
                     </p>
                     <nav class="space-y-1">
-                        <a href="{{ route('admin.units') }}"
-                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.units*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
-                            <i class="ti ti-scale text-xl {{ request()->routeIs('admin.units*') ? 'text-white' : 'text-brand-primary' }}"></i>
-                            <span>Satuan</span>
-                        </a>
+                        @can('satuan-view')
+                            <a href="{{ route('admin.units') }}"
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.units*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-scale text-xl {{ request()->routeIs('admin.units*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Satuan</span>
+                            </a>
+                        @endcan
+
+                        @can('bahan-baku-view')
+                            <a href="{{ route('admin.raw-materials') }}"
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.raw-materials*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-leaf text-xl {{ request()->routeIs('admin.raw-materials*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Bahan Baku &amp; Resep</span>
+                            </a>
+                        @endcan
                     </nav>
                 </div>
-            @endcan
+            @endcanany
 
             <!-- Section: Pintasan Cepat -->
             <div class="pt-4 border-t border-brand-border/60">

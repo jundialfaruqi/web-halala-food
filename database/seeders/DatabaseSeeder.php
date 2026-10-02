@@ -48,6 +48,16 @@ class DatabaseSeeder extends Seeder
                     'satuan-delete' => 'Menghapus data master satuan.',
                 ],
             ],
+            'Bahan Baku & Resep' => [
+                'description' => 'Kelola inventaris bahan baku, batas minimum stok, dan formula resep produk (BOM).',
+                'permissions' => [
+                    'bahan-baku-view' => 'Melihat daftar stok bahan baku dan formula resep produk.',
+                    'bahan-baku-create' => 'Menambahkan data bahan baku baru.',
+                    'bahan-baku-edit' => 'Mengubah data bahan baku dan stok.',
+                    'bahan-baku-delete' => 'Menghapus data bahan baku.',
+                    'resep-manage' => 'Mengatur formula resep produk (Bill of Material / BOM).',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -101,12 +111,17 @@ class DatabaseSeeder extends Seeder
         // Dev / Super Admin gets all permissions
         $devRole->syncPermissions(Permission::all());
 
-        // Manager gets full operational, user & role management permissions
+        // Manager gets operational management + Bahan Baku & Resep permissions
         $managerRole->syncPermissions([
             'dashboard-view',
             'user-manage',
             'role-manage',
             'permission-manage',
+            'bahan-baku-view',
+            'bahan-baku-create',
+            'bahan-baku-edit',
+            'bahan-baku-delete',
+            'resep-manage',
         ]);
 
         // Kurir gets dashboard access
@@ -176,6 +191,67 @@ class DatabaseSeeder extends Seeder
                 ['short_name' => $unitData['short_name']],
                 $unitData
             );
+        }
+
+        // 6. Seed Sample Products & Dynamic Unit Linking
+        $bungkusUnit = \App\Models\Unit::where('short_name', 'bungkus')->first();
+
+        $marieWijen = \App\Models\Product::firstOrCreate(
+            ['name' => 'Marie Wijen'],
+            [
+                'unit_id' => $bungkusUnit?->id,
+                'unit' => 'bungkus',
+                'consignment_price' => 12000.00,
+                'retail_price' => 15000.00,
+                'stock_ready' => 50,
+                'description' => 'Biskuit Marie salut gula karamel wijen panggang renyah kemasan pouch.',
+                'is_active' => true,
+            ]
+        );
+
+        $tingTingSusu = \App\Models\Product::firstOrCreate(
+            ['name' => 'Ting-Ting Susu'],
+            [
+                'unit_id' => $bungkusUnit?->id,
+                'unit' => 'bungkus',
+                'consignment_price' => 10000.00,
+                'retail_price' => 13000.00,
+                'stock_ready' => 40,
+                'description' => 'Enting-enting kacang tanah olahan susu manis gurih kemasan pouch.',
+                'is_active' => true,
+            ]
+        );
+
+        // 7. Seed Sample Raw Materials linking dynamically to Units
+        $gramUnit = \App\Models\Unit::where('short_name', 'g')->first();
+        $mlUnit = \App\Models\Unit::where('short_name', 'ml')->first();
+        $lembarUnit = \App\Models\Unit::where('short_name', 'lembar')->first();
+
+        $materials = [
+            ['name' => 'Wijen Putih Sangrai', 'unit_id' => $gramUnit?->id, 'unit' => 'g', 'stock' => 15000.00, 'min_stock' => 3000.00, 'cost_per_unit' => 65.00],
+            ['name' => 'Gula Pasir Kristal', 'unit_id' => $gramUnit?->id, 'unit' => 'g', 'stock' => 25000.00, 'min_stock' => 5000.00, 'cost_per_unit' => 17.50],
+            ['name' => 'Kacang Tanah Kupas', 'unit_id' => $gramUnit?->id, 'unit' => 'g', 'stock' => 12000.00, 'min_stock' => 2500.00, 'cost_per_unit' => 35.00],
+            ['name' => 'Susu Kental Manis', 'unit_id' => $mlUnit?->id, 'unit' => 'ml', 'stock' => 8000.00, 'min_stock' => 1500.00, 'cost_per_unit' => 28.00],
+            ['name' => 'Plastik Pouch Zipper & Stiker', 'unit_id' => $lembarUnit?->id, 'unit' => 'lembar', 'stock' => 500.00, 'min_stock' => 100.00, 'cost_per_unit' => 850.00],
+        ];
+
+        $materialModels = [];
+        foreach ($materials as $mat) {
+            $materialModels[$mat['name']] = \App\Models\RawMaterial::firstOrCreate(['name' => $mat['name']], $mat);
+        }
+
+        // 8. Seed Recipes (BOM)
+        if ($marieWijen->recipes()->count() === 0) {
+            \App\Models\ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Wijen Putih Sangrai']->id, 'quantity_needed' => 35]);
+            \App\Models\ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Gula Pasir Kristal']->id, 'quantity_needed' => 40]);
+            \App\Models\ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Plastik Pouch Zipper & Stiker']->id, 'quantity_needed' => 1]);
+        }
+
+        if ($tingTingSusu->recipes()->count() === 0) {
+            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Kacang Tanah Kupas']->id, 'quantity_needed' => 45]);
+            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Gula Pasir Kristal']->id, 'quantity_needed' => 25]);
+            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Susu Kental Manis']->id, 'quantity_needed' => 15]);
+            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Plastik Pouch Zipper & Stiker']->id, 'quantity_needed' => 1]);
         }
     }
 }
