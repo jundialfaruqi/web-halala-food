@@ -167,25 +167,43 @@
     })();
 </script>
 
-<!-- Flash message from Laravel Session on page load -->
-@if (session()->has('success'))
+<!-- Flash message from Laravel Session on page load & Livewire SPA navigations -->
+@php
+    $flashToast = session('toast') ?? 
+        (session('success') ? ['message' => session('success'), 'type' => 'success'] : 
+        (session('error') ? ['message' => session('error'), 'type' => 'error'] : 
+        (session('warning') ? ['message' => session('warning'), 'type' => 'warning'] : 
+        (session('message') ? ['message' => session('message'), 'type' => 'info'] : null))));
+@endphp
+
+@if ($flashToast)
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            window.toast(@json(session('success')), 'success');
-        });
-    </script>
-@endif
-@if (session()->has('error'))
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            window.toast(@json(session('error')), 'error');
-        });
-    </script>
-@endif
-@if (session()->has('message'))
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            window.toast(@json(session('message')), 'info');
-        });
+        (function() {
+            const toastPayload = {!! json_encode($flashToast) !!};
+            function showToast() {
+                if (typeof window.toast === 'function') {
+                    window.toast(toastPayload);
+                } else if (window.Alpine && window.Alpine.store && window.Alpine.store('toasts')) {
+                    window.Alpine.store('toasts').add({
+                        id: Date.now() + Math.random(),
+                        message: toastPayload.message || toastPayload,
+                        type: toastPayload.type || 'success',
+                        title: toastPayload.title || (toastPayload.type === 'error' ? 'Peringatan' : 'Berhasil'),
+                        duration: 4500
+                    });
+                } else {
+                    window.__toastQueue = window.__toastQueue || [];
+                    window.__toastQueue.push(toastPayload);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', showToast, { once: true });
+            } else {
+                showToast();
+            }
+
+            document.addEventListener('livewire:navigated', showToast, { once: true });
+        })();
     </script>
 @endif

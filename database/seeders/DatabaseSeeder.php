@@ -39,6 +39,15 @@ class DatabaseSeeder extends Seeder
                     'permission-manage' => 'Kelola izin dan hak akses teknis aplikasi.',
                 ],
             ],
+            'Master Satuan' => [
+                'description' => 'Kelola data master satuan pengukuran produk dan bahan baku.',
+                'permissions' => [
+                    'satuan-view' => 'Melihat daftar master satuan.',
+                    'satuan-create' => 'Menambahkan data satuan baru.',
+                    'satuan-edit' => 'Mengubah data master satuan.',
+                    'satuan-delete' => 'Menghapus data master satuan.',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -148,6 +157,25 @@ class DatabaseSeeder extends Seeder
                 ]
             );
             $user->syncRoles([$userData['role']]);
+        }
+
+        // 5. Seed Standard Master Units
+        $defaultUnits = [
+            ['name' => 'Kilogram', 'short_name' => 'kg', 'description' => 'Satuan berat standar (1.000 gram)', 'is_active' => true],
+            ['name' => 'Gram', 'short_name' => 'g', 'description' => 'Satuan berat baku resep produksi', 'is_active' => true],
+            ['name' => 'Liter', 'short_name' => 'l', 'description' => 'Satuan volume cairan', 'is_active' => true],
+            ['name' => 'Mililiter', 'short_name' => 'ml', 'description' => 'Satuan volume cairan resep', 'is_active' => true],
+            ['name' => 'Pieces', 'short_name' => 'pcs', 'description' => 'Satuan hitungan per kemasan atau butir', 'is_active' => true],
+            ['name' => 'Bungkus', 'short_name' => 'bungkus', 'description' => 'Satuan kemasan kantong atau pouch', 'is_active' => true],
+            ['name' => 'Toples', 'short_name' => 'toples', 'description' => 'Satuan wadah toples mika', 'is_active' => true],
+            ['name' => 'Lembar', 'short_name' => 'lembar', 'description' => 'Satuan stiker, segel, dan label kemasan', 'is_active' => true],
+        ];
+
+        foreach ($defaultUnits as $unitData) {
+            \App\Models\Unit::firstOrCreate(
+                ['short_name' => $unitData['short_name']],
+                $unitData
+            );
         }
     }
 }
