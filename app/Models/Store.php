@@ -15,8 +15,9 @@ class Store extends Model
         'owner_name',
         'phone',
         'address',
+        'latitude',
+        'longitude',
         'route',
-        'commission_rate',
         'is_active',
         'notes',
     ];
@@ -29,7 +30,8 @@ class Store extends Model
     protected function casts(): array
     {
         return [
-            'commission_rate' => 'decimal:2',
+            'latitude' => 'float',
+            'longitude' => 'float',
             'is_active' => 'boolean',
         ];
     }

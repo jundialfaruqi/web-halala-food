@@ -8,6 +8,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 
 beforeEach(function () {
@@ -43,7 +44,7 @@ test('role dev and manager have all toko permissions while kurir has only toko-v
         ->and($kurirRole->hasPermissionTo('toko-delete'))->toBeFalse();
 });
 
-test('dev, manager, and kurir can access stores page', function () {
+test('dev, manager, and kurir can access stores index page', function () {
     $dev = User::where('email', 'developer@halala-food.id')->first();
     $manager = User::where('email', 'manager@halala-food.id')->first();
     $kurir = User::where('email', 'kurir@halala-food.id')->first();
@@ -67,69 +68,102 @@ test('dev, manager, and kurir can access stores page', function () {
         ->assertDontSee('Tambah Toko Baru'); // Kurir does not have toko-create
 });
 
-test('manager can create a new partner store via component', function () {
+test('manager can access create page and view form with map container and breadcrumb', function () {
     $manager = User::where('email', 'manager@halala-food.id')->first();
     actingAs($manager);
 
-    $component = Livewire::test('admin.stores.index');
+    get(route('admin.stores.create'))
+        ->assertOk()
+        ->assertSee('Tambah Toko Mitra Baru')
+        ->assertSee('Titik Lokasi &amp; Koordinat GPS', false)
+        ->assertSee('Lokasi GPS Saya')
+        ->assertSee('Pilihan cepat:')
+        ->assertSee('Rute Pasar Besar')
+        ->assertSee('Tambah Toko Baru'); // Breadcrumb
+});
 
-    // Validation failure when name is missing
-    $resFail = $component->instance()->createStore([
-        'name' => '',
-    ]);
-    expect($resFail['success'])->toBeFalse()
-        ->and($resFail['message'])->toBe('Nama toko mitra wajib diisi.');
+test('kurir is forbidden from accessing create store page', function () {
+    $kurir = User::where('email', 'kurir@halala-food.id')->first();
+    actingAs($kurir);
 
-    // Success creation
-    $resSuccess = $component->instance()->createStore([
-        'name' => 'Toko Barokah Jaya 2',
-        'owner_name' => 'Hj. Fatimah',
-        'phone' => '081234567899',
-        'address' => 'Jl. Kawi No. 10',
-        'route' => 'Rute Kawi',
-        'commission_rate' => 10.5,
-        'is_active' => true,
-        'notes' => 'Rak kaca paling atas',
-    ]);
+    get(route('admin.stores.create'))
+        ->assertForbidden();
+});
 
-    expect($resSuccess['success'])->toBeTrue()
-        ->and(Store::where('name', 'Toko Barokah Jaya 2')->exists())->toBeTrue();
+test('manager can create a new store with latitude, longitude, and route on dedicated create page', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    actingAs($manager);
 
-    $store = Store::where('name', 'Toko Barokah Jaya 2')->first();
-    expect($store->owner_name)->toBe('Hj. Fatimah')
-        ->and($store->route)->toBe('Rute Kawi')
-        ->and((float) $store->commission_rate)->toBe(10.5)
+    Livewire::test('admin.stores.create')
+        ->set('name', 'Toko Berkah Baru')
+        ->set('owner_name', 'Hj. Siti Nurhaliza')
+        ->set('phone', '081234567899')
+        ->set('address', 'Jl. Ijen No. 25, Kota Malang')
+        ->set('latitude', -7.9723000)
+        ->set('longitude', 112.6256000)
+        ->set('route', 'Rute Ijen')
+        ->set('notes', 'Titik toko di seberang katedral.')
+        ->set('is_active', true)
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('admin.stores'));
+
+    $store = Store::where('name', 'Toko Berkah Baru')->first();
+    expect($store)->not->toBeNull()
+        ->and($store->owner_name)->toBe('Hj. Siti Nurhaliza')
+        ->and($store->phone)->toBe('081234567899')
+        ->and($store->latitude)->toBe(-7.9723)
+        ->and($store->longitude)->toBe(112.6256)
+        ->and($store->route)->toBe('Rute Ijen')
         ->and($store->is_active)->toBeTrue();
 });
 
-test('manager can update an existing partner store', function () {
+test('store creation validates required name', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    actingAs($manager);
+
+    Livewire::test('admin.stores.create')
+        ->set('name', '')
+        ->call('save')
+        ->assertHasErrors(['name' => 'required']);
+});
+
+test('manager can access edit store page and updates coordinates and details', function () {
     $manager = User::where('email', 'manager@halala-food.id')->first();
     actingAs($manager);
 
     $store = Store::where('name', 'Pusat Oleh-Oleh Barokah')->first();
 
-    $component = Livewire::test('admin.stores.index');
-    $res = $component->instance()->updateStore($store->id, [
-        'name' => 'Pusat Oleh-Oleh Barokah Updated',
-        'owner_name' => 'Ibu Hj. Aminah',
-        'phone' => '081299990000',
-        'address' => 'Jl. Pasar Baru No. 99',
-        'route' => 'Rute Pasar Baru',
-        'commission_rate' => 12.0,
-        'is_active' => true,
-        'notes' => 'Catatan diperbarui',
-    ]);
+    get(route('admin.stores.edit', $store->id))
+        ->assertOk()
+        ->assertSee('Ubah Data Toko Mitra')
+        ->assertSee('Pusat Oleh-Oleh Barokah');
 
-    expect($res['success'])->toBeTrue();
+    Livewire::test('admin.stores.edit', ['store' => $store])
+        ->set('name', 'Pusat Oleh-Oleh Barokah Renamed')
+        ->set('latitude', -7.9890123)
+        ->set('longitude', 112.6324567)
+        ->call('update')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('admin.stores'));
 
     $store->refresh();
-    expect($store->name)->toBe('Pusat Oleh-Oleh Barokah Updated')
-        ->and($store->phone)->toBe('081299990000')
-        ->and($store->route)->toBe('Rute Pasar Baru')
-        ->and((float) $store->commission_rate)->toBe(12.0);
+    expect($store->name)->toBe('Pusat Oleh-Oleh Barokah Renamed')
+        ->and($store->latitude)->toBe(-7.9890123)
+        ->and($store->longitude)->toBe(112.6324567);
 });
 
-test('manager can toggle store active status', function () {
+test('kurir is forbidden from accessing edit store page', function () {
+    $kurir = User::where('email', 'kurir@halala-food.id')->first();
+    actingAs($kurir);
+
+    $store = Store::first();
+
+    get(route('admin.stores.edit', $store->id))
+        ->assertForbidden();
+});
+
+test('manager can toggle store active status from index', function () {
     $manager = User::where('email', 'manager@halala-food.id')->first();
     actingAs($manager);
 
@@ -149,7 +183,7 @@ test('manager can toggle store active status', function () {
     expect($store->is_active)->toBeTrue();
 });
 
-test('manager can delete a partner store', function () {
+test('manager can delete store from index component and destroy route', function () {
     $manager = User::where('email', 'manager@halala-food.id')->first();
     actingAs($manager);
 
@@ -163,21 +197,29 @@ test('manager can delete a partner store', function () {
 
     expect($res['success'])->toBeTrue()
         ->and(Store::find($store->id))->toBeNull();
+
+    // Test destroy route
+    $store2 = Store::create([
+        'name' => 'Toko Kedua Untuk Dihapus',
+        'is_active' => true,
+    ]);
+
+    delete(route('admin.stores.destroy', $store2->id))
+        ->assertRedirect(route('admin.stores'));
+
+    expect(Store::find($store2->id))->toBeNull();
 });
 
-test('kurir cannot create, update, or delete stores', function () {
+test('kurir cannot delete or toggle store status', function () {
     $kurir = User::where('email', 'kurir@halala-food.id')->first();
     actingAs($kurir);
 
     $store = Store::first();
     $component = Livewire::test('admin.stores.index');
 
-    $resCreate = $component->instance()->createStore(['name' => 'Hacker Store']);
-    expect($resCreate['success'])->toBeFalse();
-
-    $resUpdate = $component->instance()->updateStore($store->id, ['name' => 'Hacked Store']);
-    expect($resUpdate['success'])->toBeFalse();
-
     $resDelete = $component->instance()->deleteStore($store->id);
     expect($resDelete['success'])->toBeFalse();
+
+    $resToggle = $component->instance()->toggleStatus($store->id);
+    expect($resToggle['success'])->toBeFalse();
 });

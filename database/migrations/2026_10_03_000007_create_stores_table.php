@@ -17,8 +17,9 @@ return new class extends Migration
             $table->string('owner_name')->nullable();
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
+            $table->decimal('latitude', 10, 8)->nullable();
+            $table->decimal('longitude', 11, 8)->nullable();
             $table->string('route')->nullable()->index(); // e.g. Rute Pasar Besar, Rute Kota, Rute Supermarket
-            $table->decimal('commission_rate', 5, 2)->default(0.00); // e.g. 10.00%
             $table->boolean('is_active')->default(true);
             $table->text('notes')->nullable();
             $table->timestamps();

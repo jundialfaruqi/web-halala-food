@@ -45,4 +45,16 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 
     // Mitra Toko & Distribusi
     Route::livewire('/stores', 'admin.stores.index')->name('admin.stores')->middleware('permission:toko-view');
+    Route::livewire('/stores/create', 'admin.stores.create')->name('admin.stores.create')->middleware('permission:toko-create');
+    Route::livewire('/stores/{store}/edit', 'admin.stores.edit')->name('admin.stores.edit')->middleware('permission:toko-edit');
+    Route::delete('/stores/{store}', function (\App\Models\Store $store) {
+        $storeName = $store->name;
+        $store->delete();
+        session()->flash('toast', [
+            'message' => "Toko mitra '{$storeName}' berhasil dihapus.",
+            'type' => 'success',
+        ]);
+
+        return redirect()->route('admin.stores');
+    })->name('admin.stores.destroy')->middleware('permission:toko-delete');
 });

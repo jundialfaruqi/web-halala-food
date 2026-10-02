@@ -32,6 +32,14 @@
                 <span class="text-brand-espresso font-semibold">Bahan Baku &amp; Resep</span>
             @elseif(request()->routeIs('admin.production*'))
                 <span class="text-brand-espresso font-semibold">Produksi (Batch Masak)</span>
+            @elseif(request()->routeIs('admin.stores.create'))
+                <a href="{{ route('admin.stores') }}" class="hover:text-brand-primary transition">Toko Mitra</a>
+                <i class="ti ti-chevron-right text-xs"></i>
+                <span class="text-brand-espresso font-semibold">Tambah Toko</span>
+            @elseif(request()->routeIs('admin.stores.edit'))
+                <a href="{{ route('admin.stores') }}" class="hover:text-brand-primary transition">Toko Mitra</a>
+                <i class="ti ti-chevron-right text-xs"></i>
+                <span class="text-brand-espresso font-semibold">Ubah Toko</span>
             @elseif(request()->routeIs('admin.stores*'))
                 <span class="text-brand-espresso font-semibold">Toko Mitra</span>
             @else
