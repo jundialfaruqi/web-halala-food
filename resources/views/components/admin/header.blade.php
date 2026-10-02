@@ -10,9 +10,33 @@
         </button>
 
         <nav aria-label="Breadcrumb" class="hidden sm:flex items-center gap-2 text-sm text-brand-warm-gray font-medium">
-            <span>Admin</span>
+            <a href="{{ route('admin.dashboard') }}" class="hover:text-brand-primary transition">Admin</a>
             <i class="ti ti-chevron-right text-xs"></i>
-            <span class="text-brand-espresso font-semibold">Dashboard</span>
+            @if(request()->routeIs('admin.dashboard'))
+                <span class="text-brand-espresso font-semibold">Dashboard</span>
+            @elseif(request()->routeIs('admin.users*'))
+                <span class="text-brand-espresso font-semibold">Pengguna</span>
+            @elseif(request()->routeIs('admin.roles*'))
+                <span class="text-brand-espresso font-semibold">Role &amp; Permission</span>
+            @elseif(request()->routeIs('admin.units.create'))
+                <a href="{{ route('admin.units') }}" class="hover:text-brand-primary transition">Master Satuan</a>
+                <i class="ti ti-chevron-right text-xs"></i>
+                <span class="text-brand-espresso font-semibold">Tambah Satuan</span>
+            @elseif(request()->routeIs('admin.units.edit'))
+                <a href="{{ route('admin.units') }}" class="hover:text-brand-primary transition">Master Satuan</a>
+                <i class="ti ti-chevron-right text-xs"></i>
+                <span class="text-brand-espresso font-semibold">Ubah Satuan</span>
+            @elseif(request()->routeIs('admin.units*'))
+                <span class="text-brand-espresso font-semibold">Master Satuan</span>
+            @elseif(request()->routeIs('admin.raw-materials*'))
+                <span class="text-brand-espresso font-semibold">Bahan Baku &amp; Resep</span>
+            @elseif(request()->routeIs('admin.production*'))
+                <span class="text-brand-espresso font-semibold">Produksi (Batch Masak)</span>
+            @elseif(request()->routeIs('admin.stores*'))
+                <span class="text-brand-espresso font-semibold">Toko Mitra</span>
+            @else
+                <span class="text-brand-espresso font-semibold">Sistem</span>
+            @endif
         </nav>
     </div>
 

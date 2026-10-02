@@ -42,4 +42,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 
     // Produksi & Manufaktur (Eksekusi Batch Masak)
     Route::livewire('/production', 'admin.production.index')->name('admin.production')->middleware('permission:produksi-view');
+
+    // Mitra Toko & Distribusi
+    Route::livewire('/stores', 'admin.stores.index')->name('admin.stores')->middleware('permission:toko-view');
 });

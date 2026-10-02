@@ -3,6 +3,8 @@
     <!-- Header & Breadcrumb -->
     <div class="space-y-1">
         <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-warm-gray mb-2">
+            <a href="{{ route('admin.dashboard') }}" class="hover:text-brand-primary transition">Admin</a>
+            <i class="ti ti-chevron-right text-xs"></i>
             <a href="{{ route('admin.units') }}" class="hover:text-brand-primary transition">Master Satuan</a>
             <i class="ti ti-chevron-right text-xs"></i>
             <span class="text-brand-primary">Tambah Satuan Baru</span>

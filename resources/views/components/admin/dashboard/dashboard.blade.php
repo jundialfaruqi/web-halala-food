@@ -1,5 +1,20 @@
 <div class="space-y-6 sm:space-y-8">
 
+    <!-- Header & Breadcrumb -->
+    <div class="space-y-1">
+        <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-warm-gray mb-1">
+            <span class="text-brand-warm-gray">Admin</span>
+            <i class="ti ti-chevron-right text-xs"></i>
+            <span class="text-brand-primary">Dashboard</span>
+        </nav>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-brand-espresso tracking-tight">
+            Dashboard Utama
+        </h1>
+        <p class="text-sm sm:text-base text-brand-warm-gray">
+            Ringkasan metrik performa operasional, inventaris, dan pengguna sistem Halala Food.
+        </p>
+    </div>
+
     <!-- 1. Metric Statistics Cards (Clean, Large Numbers, No Color Box) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 

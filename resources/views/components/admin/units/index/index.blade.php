@@ -91,12 +91,14 @@
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2">
         <div>
-            <div
+            <nav aria-label="Breadcrumb"
                 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-warm-gray mb-1">
+                <a href="{{ route('admin.dashboard') }}" class="hover:text-brand-primary transition">Admin</a>
+                <i class="ti ti-chevron-right text-xs"></i>
                 <span>Master Data</span>
                 <i class="ti ti-chevron-right text-xs"></i>
                 <span class="text-brand-primary">Satuan</span>
-            </div>
+            </nav>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-brand-espresso tracking-tight">
                 Master Satuan
             </h1>

@@ -10,6 +10,7 @@ use App\Models\ProductionBatchMaterial;
 use App\Models\ProductRecipe;
 use App\Models\RawMaterial;
 use App\Models\StockMutation;
+use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -72,6 +73,15 @@ class DatabaseSeeder extends Seeder
                     'produksi-create' => 'Membuat dan mengeksekusi batch produksi baru.',
                     'produksi-edit' => 'Mengubah catatan atau status batch produksi.',
                     'produksi-delete' => 'Membatalkan atau menghapus catatan batch produksi.',
+                ],
+            ],
+            'Mitra Toko' => [
+                'description' => 'Kelola direktori mitra toko, rute pengantaran kurir, dan komisi titip jual.',
+                'permissions' => [
+                    'toko-view' => 'Melihat daftar toko mitra dan rute pengantaran.',
+                    'toko-create' => 'Menambahkan data toko mitra baru.',
+                    'toko-edit' => 'Mengubah data toko mitra.',
+                    'toko-delete' => 'Menghapus data toko mitra.',
                 ],
             ],
         ];
@@ -142,11 +152,16 @@ class DatabaseSeeder extends Seeder
             'produksi-create',
             'produksi-edit',
             'produksi-delete',
+            'toko-view',
+            'toko-create',
+            'toko-edit',
+            'toko-delete',
         ]);
 
-        // Kurir gets dashboard access
+        // Kurir gets dashboard access & toko view
         $kurirRole->syncPermissions([
             'dashboard-view',
+            'toko-view',
         ]);
 
         // 4. Seed Standard Users for the 3 Roles
@@ -329,6 +344,47 @@ class DatabaseSeeder extends Seeder
                     ]);
                 }
             }
+        }
+
+        // 8. Seed Sample Partner Stores
+        $sampleStores = [
+            [
+                'name' => 'Pusat Oleh-Oleh Barokah',
+                'owner_name' => 'Ibu Hj. Aminah',
+                'phone' => '081234567890',
+                'address' => 'Jl. Raya Pasar Besar No. 12, Kota Malang',
+                'route' => 'Rute Pasar Besar',
+                'commission_rate' => 10.00,
+                'is_active' => true,
+                'notes' => 'Rak display kaca dekat kasir utama. Jadwal pengantaran tiap hari Sabtu pagi.',
+            ],
+            [
+                'name' => 'Toko Snack Berkah Jaya',
+                'owner_name' => 'Pak Bambang',
+                'phone' => '085798765432',
+                'address' => 'Jl. Ahmad Yani No. 45, Klojen',
+                'route' => 'Rute Kota',
+                'commission_rate' => 12.50,
+                'is_active' => true,
+                'notes' => 'Titip di etalase depan. Penagihan konsinyasi tiap awal bulan.',
+            ],
+            [
+                'name' => 'Supermarket Harmoni Jaya',
+                'owner_name' => 'Bpk. Hendra Wijaya',
+                'phone' => '081377889900',
+                'address' => 'Jl. Jenderal Sudirman No. 88, Kav. 3',
+                'route' => 'Rute Supermarket',
+                'commission_rate' => 15.00,
+                'is_active' => true,
+                'notes' => 'Penerimaan barang di loading dock belakang pkl 08.00-11.00 WIB.',
+            ],
+        ];
+
+        foreach ($sampleStores as $storeData) {
+            Store::firstOrCreate(
+                ['name' => $storeData['name']],
+                $storeData
+            );
         }
     }
 }
