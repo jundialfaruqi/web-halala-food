@@ -39,6 +39,16 @@ class RawMaterial extends Model
         return $this->hasMany(ProductRecipe::class);
     }
 
+    public function mutations(): HasMany
+    {
+        return $this->hasMany(StockMutation::class);
+    }
+
+    public function batchMaterials(): HasMany
+    {
+        return $this->hasMany(ProductionBatchMaterial::class);
+    }
+
     /**
      * Get the active display unit short name.
      */

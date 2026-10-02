@@ -42,6 +42,11 @@ class Product extends Model
         return $this->hasMany(ProductRecipe::class);
     }
 
+    public function productionBatches(): HasMany
+    {
+        return $this->hasMany(ProductionBatch::class);
+    }
+
     /**
      * Calculate Bill of Material (BOM) material cost per 1 unit product.
      */

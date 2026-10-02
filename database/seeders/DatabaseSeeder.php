@@ -4,6 +4,13 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\PermissionGroup;
+use App\Models\Product;
+use App\Models\ProductionBatch;
+use App\Models\ProductionBatchMaterial;
+use App\Models\ProductRecipe;
+use App\Models\RawMaterial;
+use App\Models\StockMutation;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -56,6 +63,15 @@ class DatabaseSeeder extends Seeder
                     'bahan-baku-edit' => 'Mengubah data bahan baku dan stok.',
                     'bahan-baku-delete' => 'Menghapus data bahan baku.',
                     'resep-manage' => 'Mengatur formula resep produk (Bill of Material / BOM).',
+                ],
+            ],
+            'Produksi & Manufaktur' => [
+                'description' => 'Kelola eksekusi batch masak dapur, konversi bahan baku ke barang jadi, dan mutasi kartu stok.',
+                'permissions' => [
+                    'produksi-view' => 'Melihat daftar riwayat batch masak dan kartu stok.',
+                    'produksi-create' => 'Membuat dan mengeksekusi batch produksi baru.',
+                    'produksi-edit' => 'Mengubah catatan atau status batch produksi.',
+                    'produksi-delete' => 'Membatalkan atau menghapus catatan batch produksi.',
                 ],
             ],
         ];
@@ -122,6 +138,10 @@ class DatabaseSeeder extends Seeder
             'bahan-baku-edit',
             'bahan-baku-delete',
             'resep-manage',
+            'produksi-view',
+            'produksi-create',
+            'produksi-edit',
+            'produksi-delete',
         ]);
 
         // Kurir gets dashboard access
@@ -187,16 +207,16 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($defaultUnits as $unitData) {
-            \App\Models\Unit::firstOrCreate(
+            Unit::firstOrCreate(
                 ['short_name' => $unitData['short_name']],
                 $unitData
             );
         }
 
         // 6. Seed Sample Products & Dynamic Unit Linking
-        $bungkusUnit = \App\Models\Unit::where('short_name', 'bungkus')->first();
+        $bungkusUnit = Unit::where('short_name', 'bungkus')->first();
 
-        $marieWijen = \App\Models\Product::firstOrCreate(
+        $marieWijen = Product::firstOrCreate(
             ['name' => 'Marie Wijen'],
             [
                 'unit_id' => $bungkusUnit?->id,
@@ -209,7 +229,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $tingTingSusu = \App\Models\Product::firstOrCreate(
+        $tingTingSusu = Product::firstOrCreate(
             ['name' => 'Ting-Ting Susu'],
             [
                 'unit_id' => $bungkusUnit?->id,
@@ -223,9 +243,9 @@ class DatabaseSeeder extends Seeder
         );
 
         // 7. Seed Sample Raw Materials linking dynamically to Units
-        $gramUnit = \App\Models\Unit::where('short_name', 'g')->first();
-        $mlUnit = \App\Models\Unit::where('short_name', 'ml')->first();
-        $lembarUnit = \App\Models\Unit::where('short_name', 'lembar')->first();
+        $gramUnit = Unit::where('short_name', 'g')->first();
+        $mlUnit = Unit::where('short_name', 'ml')->first();
+        $lembarUnit = Unit::where('short_name', 'lembar')->first();
 
         $materials = [
             ['name' => 'Wijen Putih Sangrai', 'unit_id' => $gramUnit?->id, 'unit' => 'g', 'stock' => 15000.00, 'min_stock' => 3000.00, 'cost_per_unit' => 65.00],
@@ -237,21 +257,78 @@ class DatabaseSeeder extends Seeder
 
         $materialModels = [];
         foreach ($materials as $mat) {
-            $materialModels[$mat['name']] = \App\Models\RawMaterial::firstOrCreate(['name' => $mat['name']], $mat);
+            $materialModels[$mat['name']] = RawMaterial::firstOrCreate(['name' => $mat['name']], $mat);
         }
 
         // 8. Seed Recipes (BOM)
         if ($marieWijen->recipes()->count() === 0) {
-            \App\Models\ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Wijen Putih Sangrai']->id, 'quantity_needed' => 35]);
-            \App\Models\ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Gula Pasir Kristal']->id, 'quantity_needed' => 40]);
-            \App\Models\ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Plastik Pouch Zipper & Stiker']->id, 'quantity_needed' => 1]);
+            ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Wijen Putih Sangrai']->id, 'quantity_needed' => 35]);
+            ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Gula Pasir Kristal']->id, 'quantity_needed' => 40]);
+            ProductRecipe::create(['product_id' => $marieWijen->id, 'raw_material_id' => $materialModels['Plastik Pouch Zipper & Stiker']->id, 'quantity_needed' => 1]);
         }
 
         if ($tingTingSusu->recipes()->count() === 0) {
-            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Kacang Tanah Kupas']->id, 'quantity_needed' => 45]);
-            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Gula Pasir Kristal']->id, 'quantity_needed' => 25]);
-            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Susu Kental Manis']->id, 'quantity_needed' => 15]);
-            \App\Models\ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Plastik Pouch Zipper & Stiker']->id, 'quantity_needed' => 1]);
+            ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Kacang Tanah Kupas']->id, 'quantity_needed' => 45]);
+            ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Gula Pasir Kristal']->id, 'quantity_needed' => 25]);
+            ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Susu Kental Manis']->id, 'quantity_needed' => 15]);
+            ProductRecipe::create(['product_id' => $tingTingSusu->id, 'raw_material_id' => $materialModels['Plastik Pouch Zipper & Stiker']->id, 'quantity_needed' => 1]);
+        }
+
+        // 9. Seed Sample Initial Completed Production Batch
+        $devUser = User::where('email', 'developer@halala-food.id')->first();
+        if ($devUser && ProductionBatch::count() === 0) {
+            $batchCode = 'PRD-'.now()->format('Ymd').'-0001';
+            $sampleBatch = ProductionBatch::create([
+                'batch_code' => $batchCode,
+                'product_id' => $tingTingSusu->id,
+                'user_id' => $devUser->id,
+                'planned_qty' => 50,
+                'actual_qty_good' => 48,
+                'actual_qty_bad' => 2,
+                'total_material_cost' => 164125.00,
+                'unit_cost_produced' => 3419.27,
+                'status' => 'completed',
+                'notes' => 'Batch perdana percontohan Ting-Ting Susu Halala. 2 bungkus reject saat sealing kemasan.',
+                'started_at' => now()->subHours(3),
+                'completed_at' => now()->subHours(1),
+            ]);
+
+            $tingTingSusu->increment('stock_ready', 48);
+
+            // Snapshot materials used
+            foreach ($tingTingSusu->recipes as $recipe) {
+                $rawMat = $recipe->rawMaterial;
+                $usedQty = (float) $recipe->quantity_needed * 50;
+                $costPerUnit = (float) ($rawMat?->cost_per_unit ?? 0);
+                $subtotal = $usedQty * $costPerUnit;
+
+                ProductionBatchMaterial::create([
+                    'production_batch_id' => $sampleBatch->id,
+                    'raw_material_id' => $recipe->raw_material_id,
+                    'unit_name' => $rawMat?->display_unit ?? 'gram',
+                    'planned_qty' => $usedQty,
+                    'actual_used_qty' => $usedQty,
+                    'cost_per_unit' => $costPerUnit,
+                    'subtotal_cost' => $subtotal,
+                ]);
+
+                // Create stock mutation entry
+                if ($rawMat) {
+                    StockMutation::create([
+                        'raw_material_id' => $rawMat->id,
+                        'reference_type' => 'production',
+                        'reference_id' => $sampleBatch->id,
+                        'reference_number' => $batchCode,
+                        'type' => 'out',
+                        'quantity' => $usedQty,
+                        'stock_before' => (float) $rawMat->stock + $usedQty,
+                        'stock_after' => (float) $rawMat->stock,
+                        'cost_per_unit' => $costPerUnit,
+                        'notes' => "Alokasi bahan untuk {$batchCode} ({$tingTingSusu->name} x 50)",
+                        'user_id' => $devUser->id,
+                    ]);
+                }
+            }
         }
     }
 }

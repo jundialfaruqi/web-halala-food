@@ -1,5 +1,28 @@
-<div x-data="{
-    activeTab: 'materials', // 'materials' or 'recipes'
+<div class="space-y-6" x-data="{
+    activeTab: (function() {
+        const hash = window.location.hash.replace('#', '');
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryTab = urlParams.get('tab');
+        if (['materials', 'recipes'].includes(hash)) return hash;
+        if (['materials', 'recipes'].includes(queryTab)) return queryTab;
+        return 'materials';
+    })(),
+
+    init() {
+        this.$watch('activeTab', (tab) => {
+            const url = new URL(window.location.href);
+            url.hash = tab;
+            history.replaceState(null, '', url.toString());
+        });
+
+        window.addEventListener('hashchange', () => {
+            const currentHash = window.location.hash.replace('#', '');
+            if (['materials', 'recipes'].includes(currentHash)) {
+                this.activeTab = currentHash;
+            }
+        });
+    },
+
     search: '',
     statusFilter: 'all',
     isProcessing: false,
@@ -288,28 +311,30 @@
         </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="flex items-center border-b border-brand-border">
+    <!-- Tab Navigation Bar (Identik dengan UI Tab Role & Permission) -->
+    <div class="flex border-b border-brand-border gap-4 sm:gap-8 overflow-x-auto">
+        <!-- 1. Tab Master Bahan Baku -->
         <button type="button" @click="activeTab = 'materials'"
-            class="flex items-center gap-2.5 px-6 py-3.5 border-b-2 text-sm sm:text-base font-bold transition cursor-pointer"
-            :class="activeTab === 'materials' ? 'border-brand-primary text-brand-primary' :
-                'border-transparent text-brand-warm-gray hover:text-brand-espresso'">
+            :class="activeTab === 'materials' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
+            class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
             <i class="ti ti-leaf text-xl"></i>
-            <span>Daftar Bahan Baku</span>
-            <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold"
-                :class="activeTab === 'materials' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-neutral-100 text-neutral-600'"
-                x-text="materials.length"></span>
+            <span>Master Bahan Baku</span>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                :class="activeTab === 'materials' ? 'bg-brand-soft-cream text-brand-primary' : 'bg-neutral-100 text-brand-warm-gray'"
+                x-text="materials.length">
+            </span>
         </button>
 
+        <!-- 2. Tab Resep Produk (BOM) -->
         <button type="button" @click="activeTab = 'recipes'"
-            class="flex items-center gap-2.5 px-6 py-3.5 border-b-2 text-sm sm:text-base font-bold transition cursor-pointer"
-            :class="activeTab === 'recipes' ? 'border-brand-primary text-brand-primary' :
-                'border-transparent text-brand-warm-gray hover:text-brand-espresso'">
+            :class="activeTab === 'recipes' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
+            class="flex items-center gap-2 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
             <i class="ti ti-book-2 text-xl"></i>
             <span>Resep Produk (BOM)</span>
-            <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold"
-                :class="activeTab === 'recipes' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-neutral-100 text-neutral-600'"
-                x-text="products.length"></span>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full"
+                :class="activeTab === 'recipes' ? 'bg-brand-soft-cream text-brand-primary' : 'bg-neutral-100 text-brand-warm-gray'"
+                x-text="products.length">
+            </span>
         </button>
     </div>
 
