@@ -376,14 +376,14 @@
                 <thead>
                     <tr
                         class="border-b border-brand-border bg-neutral-50/60 text-brand-espresso text-xs sm:text-sm font-bold uppercase tracking-wider">
-                        <th class="py-3.5 px-6">Bahan Baku</th>
-                        <th class="py-3.5 px-6">Satuan Baku</th>
-                        <th class="py-3.5 px-6">Stok Saat Ini</th>
-                        <th class="py-3.5 px-6">Batas Minimum</th>
-                        <th class="py-3.5 px-6">Harga Beli Satuan</th>
-                        <th class="py-3.5 px-6">Status Stok</th>
-                        <th class="py-3.5 px-6">Resep</th>
-                        <th class="py-3.5 px-6 text-right">Aksi</th>
+                        <th class="py-3.5 px-6 whitespace-nowrap">Bahan Baku</th>
+                        <th class="py-3.5 px-6 whitespace-nowrap">Satuan Baku</th>
+                        <th class="py-3.5 px-6 whitespace-nowrap">Stok Saat Ini</th>
+                        <th class="py-3.5 px-6 whitespace-nowrap">Batas Minimum</th>
+                        <th class="py-3.5 px-6 whitespace-nowrap">Harga Beli Satuan</th>
+                        <th class="py-3.5 px-6 whitespace-nowrap">Status Stok</th>
+                        <th class="py-3.5 px-6 whitespace-nowrap">Resep</th>
+                        <th class="py-3.5 px-6 text-right whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-brand-border/60 text-sm">
@@ -569,9 +569,9 @@
                                     <thead
                                         class="bg-neutral-50 border-b border-brand-border/60 text-brand-espresso font-bold">
                                         <tr>
-                                            <th class="py-2.5 px-3">Bahan Baku</th>
-                                            <th class="py-2.5 px-3 text-right">Takaran</th>
-                                            <th class="py-2.5 px-3 text-right">Subtotal Biaya</th>
+                                            <th class="py-2.5 px-3 whitespace-nowrap">Bahan Baku</th>
+                                            <th class="py-2.5 px-3 text-right whitespace-nowrap">Takaran</th>
+                                            <th class="py-2.5 px-3 text-right whitespace-nowrap">Subtotal Biaya</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-brand-border/40">
