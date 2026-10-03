@@ -682,6 +682,27 @@ class DatabaseSeeder extends Seeder
         if ($firstPurchase && ! \App\Models\JournalEntry::where('reference_type', 'purchase')->where('reference_id', $firstPurchase->id)->exists()) {
             \App\Services\AccountingService::recordPurchase($firstPurchase);
         }
+        if ($firstPurchase && ! \App\Models\CashTransaction::where('reference_type', 'purchase')->where('reference_id', $firstPurchase->id)->exists()) {
+            $account = \App\Models\Account::where('name', 'like', '%kas%')->first() ?? \App\Models\Account::first();
+            if ($account) {
+                $firstPurchase->loadMissing('items.rawMaterial.unitModel');
+                $itemDetails = [];
+                foreach ($firstPurchase->items as $it) {
+                    $u = $it->rawMaterial?->unitModel?->short_name ?? $it->rawMaterial?->display_unit ?? '';
+                    $itemDetails[] = "{$it->rawMaterial?->name} (" . number_format((float) $it->quantity, 0, ',', '.') . " {$u})";
+                }
+                \App\Models\CashTransaction::create([
+                    'transaction_date' => $firstPurchase->purchase_date,
+                    'account_id' => $account->id,
+                    'type' => 'expense',
+                    'category' => 'Belanja Bahan Baku',
+                    'amount' => $firstPurchase->total_amount,
+                    'reference_type' => 'purchase',
+                    'reference_id' => $firstPurchase->id,
+                    'description' => "Pembelian Bahan Baku ({$firstPurchase->purchase_number}): " . implode(', ', $itemDetails) . " - Supplier: {$firstPurchase->supplier_name}",
+                ]);
+            }
+        }
 
         $firstBatch = ProductionBatch::where('status', 'completed')->first();
         if ($firstBatch && ! \App\Models\JournalEntry::where('reference_type', 'production')->where('reference_id', $firstBatch->id)->exists()) {

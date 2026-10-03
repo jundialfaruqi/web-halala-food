@@ -163,8 +163,9 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                 'created_by' => Auth::id(),
             ]);
 
+            $itemDetails = [];
             foreach ($this->items as $item) {
-                $rawMat = RawMaterial::lockForUpdate()->find($item['raw_material_id']);
+                $rawMat = RawMaterial::lockForUpdate()->with('unitModel')->find($item['raw_material_id']);
                 if (! $rawMat) {
                     continue;
                 }
@@ -172,6 +173,10 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                 $qty = (float) $item['quantity'];
                 $cost = (float) $item['cost_per_unit'];
                 $subtotal = round($qty * $cost, 2);
+
+                $unitStr = $rawMat->unitModel?->short_name ?? $rawMat->display_unit ?? '';
+                $formattedQty = number_format($qty, (floor($qty) == $qty ? 0 : 2), ',', '.');
+                $itemDetails[] = "{$rawMat->name} ({$formattedQty} {$unitStr})";
 
                 RawMaterialPurchaseItem::create([
                     'purchase_id' => $purchase->id,
@@ -213,6 +218,9 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                 if ($account) {
                     $account->decrement('balance', $total);
 
+                    $itemsString = implode(', ', $itemDetails);
+                    $description = "Pembelian Bahan Baku ({$purchase->purchase_number}): " . ($itemsString ?: 'Item bahan') . " - Supplier: {$purchase->supplier_name}";
+
                     CashTransaction::create([
                         'transaction_date' => $this->purchase_date,
                         'account_id' => $account->id,
@@ -221,7 +229,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                         'amount' => $total,
                         'reference_type' => 'purchase',
                         'reference_id' => $purchase->id,
-                        'description' => "Pembelian Bahan Baku ({$purchase->purchase_number}) - Supplier: {$purchase->supplier_name}",
+                        'description' => $description,
                     ]);
                 }
             }
