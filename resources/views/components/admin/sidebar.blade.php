@@ -191,19 +191,55 @@
                 </div>
             @endcanany
 
-            {{-- Section: Keuangan & Piutang --}}
-            @canany(['faktur-view', 'laporan-view'])
+            {{-- Section: Keuangan & Akuntansi --}}
+            @canany(['buku-kas-view', 'faktur-view', 'jurnal-view', 'laporan-keuangan-view', 'laporan-view'])
                 <div class="pt-4 border-t border-brand-border/60">
                     <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                         Keuangan
                     </p>
                     <nav class="space-y-1">
+                        @can('buku-kas-view')
+                            <a href="{{ route('admin.cash-book') }}" wire:navigate
+                                @if(request()->routeIs('admin.cash-book*')) data-sidebar-active="true" @endif
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.cash-book*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-wallet text-xl {{ request()->routeIs('admin.cash-book*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Buku Kas</span>
+                            </a>
+                        @endcan
+
                         @can('faktur-view')
                             <a href="{{ route('admin.invoices') }}" wire:navigate
                                 @if(request()->routeIs('admin.invoices*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.invoices*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-receipt-2 text-xl {{ request()->routeIs('admin.invoices*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Faktur &amp; Piutang Toko</span>
+                            </a>
+                        @endcan
+
+                        @can('jurnal-view')
+                            <a href="{{ route('admin.accounting.journals') }}" wire:navigate
+                                @if(request()->routeIs('admin.accounting.journals*')) data-sidebar-active="true" @endif
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.accounting.journals*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-book-2 text-xl {{ request()->routeIs('admin.accounting.journals*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Jurnal Akuntansi</span>
+                            </a>
+                        @endcan
+
+                        @can('jurnal-view')
+                            <a href="{{ route('admin.accounting.ledger') }}" wire:navigate
+                                @if(request()->routeIs('admin.accounting.ledger*')) data-sidebar-active="true" @endif
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.accounting.ledger*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-notebook text-xl {{ request()->routeIs('admin.accounting.ledger*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Buku Besar</span>
+                            </a>
+                        @endcan
+
+                        @can('laporan-keuangan-view')
+                            <a href="{{ route('admin.accounting.financial-statements') }}" wire:navigate
+                                @if(request()->routeIs('admin.accounting.financial-statements*')) data-sidebar-active="true" @endif
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.accounting.financial-statements*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-scale text-xl {{ request()->routeIs('admin.accounting.financial-statements*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Laba Rugi &amp; Neraca</span>
                             </a>
                         @endcan
 

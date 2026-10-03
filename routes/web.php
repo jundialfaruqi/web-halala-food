@@ -123,11 +123,20 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return redirect()->route('admin.deliveries');
     })->name('admin.deliveries.destroy')->middleware('permission:pengantaran-delete');
 
+    // Buku Kas & Keuangan
+    Route::livewire('/cash-book', 'admin.cash-book.index')->name('admin.cash-book')->middleware('permission:buku-kas-view');
+
     // Faktur Penagihan & Piutang Toko (Keuangan)
     Route::livewire('/invoices', 'admin.invoices.index')->name('admin.invoices')->middleware('permission:faktur-view');
     Route::livewire('/invoices/create', 'admin.invoices.create')->name('admin.invoices.create')->middleware('permission:faktur-create');
     Route::livewire('/invoices/{invoice}', 'admin.invoices.show')->name('admin.invoices.show')->middleware('permission:faktur-view');
     Route::livewire('/invoices/{invoice}/edit', 'admin.invoices.edit')->name('admin.invoices.edit')->middleware('permission:faktur-edit');
+
+    // Jurnal Umum & Akuntansi
+    Route::livewire('/accounting/journals', 'admin.accounting.journals.index')->name('admin.accounting.journals')->middleware('permission:jurnal-view');
+    Route::livewire('/accounting/ledger', 'admin.accounting.ledger.index')->name('admin.accounting.ledger')->middleware('permission:jurnal-view');
+    Route::livewire('/accounting/financial-statements', 'admin.accounting.financial-statements.index')->name('admin.accounting.financial-statements')->middleware('permission:laporan-keuangan-view');
+
     Route::livewire('/reports', 'admin.reports.index')->name('admin.reports')->middleware('permission:laporan-view');
     Route::delete('/invoices/{invoice}', function (\App\Models\Invoice $invoice) {
         if ($invoice->status === 'lunas') {

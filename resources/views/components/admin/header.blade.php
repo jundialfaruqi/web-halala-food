@@ -86,6 +86,14 @@
                 <span class="text-brand-espresso font-semibold">Ubah Faktur</span>
             @elseif(request()->routeIs('admin.invoices*'))
                 <span class="text-brand-espresso font-semibold">Faktur &amp; Piutang Toko</span>
+            @elseif(request()->routeIs('admin.cash-book*'))
+                <span class="text-brand-espresso font-semibold">Buku Kas &amp; Keuangan</span>
+            @elseif(request()->routeIs('admin.accounting.journals*'))
+                <span class="text-brand-espresso font-semibold">Jurnal Umum Akuntansi</span>
+            @elseif(request()->routeIs('admin.accounting.ledger*'))
+                <span class="text-brand-espresso font-semibold">Buku Besar</span>
+            @elseif(request()->routeIs('admin.accounting.financial-statements*'))
+                <span class="text-brand-espresso font-semibold">Laporan Keuangan Formal</span>
             @elseif(request()->routeIs('admin.reports*'))
                 <span class="text-brand-espresso font-semibold">Laporan Bisnis</span>
             @elseif(request()->routeIs('admin.settings*'))

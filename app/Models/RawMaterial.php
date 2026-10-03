@@ -29,6 +29,17 @@ class RawMaterial extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::saved(function ($material) {
+            \App\Services\AccountingService::syncMaterialAccount($material);
+        });
+
+        static::deleted(function ($material) {
+            \App\Services\AccountingService::removeMaterialAccount($material);
+        });
+    }
+
     public function unitModel(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'unit_id');

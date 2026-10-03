@@ -89,6 +89,11 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
                 ->where('reference_id', $purchase->id)
                 ->delete();
 
+            // Remove associated journal entries
+            \App\Models\JournalEntry::where('reference_type', 'purchase')
+                ->where('reference_id', $purchase->id)
+                ->delete();
+
             $purchase->items()->delete();
             $purchase->delete();
         });

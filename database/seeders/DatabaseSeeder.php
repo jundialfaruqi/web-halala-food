@@ -133,6 +133,21 @@ class DatabaseSeeder extends Seeder
                     'pembelian-delete' => 'Membatalkan atau menghapus riwayat pembelian bahan baku.',
                 ],
             ],
+            'Buku Kas' => [
+                'description' => 'Kelola mutasi buku kas harian, penerimaan kas, pengeluaran operasional, dan penarikan prive.',
+                'permissions' => [
+                    'buku-kas-view' => 'Melihat mutasi buku kas dan saldo rekening usaha.',
+                    'buku-kas-create' => 'Mencatat transaksi kas masuk, kas keluar, dan penarikan prive.',
+                    'buku-kas-delete' => 'Menghapus catatan transaksi buku kas.',
+                ],
+            ],
+            'Akuntansi & Jurnal' => [
+                'description' => 'Akses bagan akun perkiraan (COA), jurnal umum akuntansi, buku besar, dan laporan keuangan formal (laba rugi & neraca).',
+                'permissions' => [
+                    'jurnal-view' => 'Melihat jurnal umum akuntansi dan mutasi buku besar.',
+                    'laporan-keuangan-view' => 'Melihat dan mencetak laporan laba rugi serta neraca keuangan formal.',
+                ],
+            ],
             'Laporan & Analisis' => [
                 'description' => 'Akses laporan komprehensif laba rugi, omset penjualan, piutang mitra toko, dan analisa retur barang.',
                 'permissions' => [
@@ -228,6 +243,11 @@ class DatabaseSeeder extends Seeder
             'pembelian-view',
             'pembelian-create',
             'pembelian-delete',
+            'buku-kas-view',
+            'buku-kas-create',
+            'buku-kas-delete',
+            'jurnal-view',
+            'laporan-keuangan-view',
             'laporan-view',
         ]);
 
@@ -623,5 +643,48 @@ class DatabaseSeeder extends Seeder
 
         // Initialize default business settings if not already present
         \App\Models\BusinessSetting::getSettings();
+
+        // Initialize Chart of Accounts (COA)
+        $this->call(AccountingSeeder::class);
+
+        // Initialize Default Cash & Bank Accounts if not exists
+        if (\App\Models\Account::count() === 0) {
+            \App\Models\Account::create([
+                'name' => 'Kas Tunai Usaha',
+                'type' => 'business',
+                'balance' => 2500000.00,
+                'description' => 'Uang tunai kas kecil di dapur / tempat usaha',
+            ]);
+
+            \App\Models\Account::create([
+                'name' => 'Rekening BCA Usaha',
+                'type' => 'business',
+                'balance' => 15000000.00,
+                'description' => 'Rekening bank utama untuk pembayaran supplier & transfer toko',
+            ]);
+
+            \App\Models\Account::create([
+                'name' => 'Kas Belanja Pribadi',
+                'type' => 'personal',
+                'balance' => 1000000.00,
+                'description' => 'Dana rumah tangga & belanja dapur keluarga',
+            ]);
+        }
+
+        // Auto-journal seeded initial purchase, batch, and invoice if entries not yet recorded
+        $firstPurchase = RawMaterialPurchase::first();
+        if ($firstPurchase && ! \App\Models\JournalEntry::where('reference_type', 'purchase')->where('reference_id', $firstPurchase->id)->exists()) {
+            \App\Services\AccountingService::recordPurchase($firstPurchase);
+        }
+
+        $firstBatch = ProductionBatch::where('status', 'completed')->first();
+        if ($firstBatch && ! \App\Models\JournalEntry::where('reference_type', 'production')->where('reference_id', $firstBatch->id)->exists()) {
+            \App\Services\AccountingService::recordProduction($firstBatch);
+        }
+
+        $firstInvoice = Invoice::first();
+        if ($firstInvoice && ! \App\Models\JournalEntry::where('reference_type', 'invoice')->where('reference_id', $firstInvoice->id)->exists()) {
+            \App\Services\AccountingService::recordInvoiceSettlement($firstInvoice, (float) $firstInvoice->paid_amount, (float) $firstInvoice->paid_amount * 0.4);
+        }
     }
 }

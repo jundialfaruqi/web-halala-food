@@ -177,6 +177,9 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                 }
                 $rawMat->save();
             }
+
+            // Catat ke Jurnal Akuntansi otomatis
+            \App\Services\AccountingService::recordPurchase($purchase);
         });
 
         session()->flash('success', "Transaksi pembelian {$this->purchase_number} berhasil dicatat dan stok bahan otomatis diperbarui.");

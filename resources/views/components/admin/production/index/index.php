@@ -7,6 +7,7 @@ use App\Models\RawMaterial;
 use App\Models\StockMutation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -22,7 +23,7 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
      */
     public function executeBatch(array $data): array
     {
-        if (! Auth::user()?->can('produksi-create')) {
+        if (Gate::denies('produksi-create')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk mengeksekusi produksi.'];
         }
 
@@ -160,6 +161,9 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
             // Increment finished goods ready stock
             $product->increment('stock_ready', $actualGood);
 
+            // Catat jurnal pemakaian bahan baku & penambahan produk jadi
+            \App\Services\AccountingService::recordProduction($batch);
+
             return [
                 'success' => true,
                 'message' => "Batch masak {$batchCode} berhasil diselesaikan! Stok bahan baku terpotong dan {$actualGood} {$product->unit} barang jadi siap jual bertambah ke gudang.",
@@ -175,7 +179,7 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
      */
     public function cancelBatch(int $batchId): array
     {
-        if (! Auth::user()?->can('produksi-delete')) {
+        if (Gate::denies('produksi-delete')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk membatalkan batch produksi.'];
         }
 
@@ -228,6 +232,11 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
             if ($batch->product && $batch->actual_qty_good > 0) {
                 $batch->product->decrement('stock_ready', $batch->actual_qty_good);
             }
+
+            // Batalkan catatan jurnal akuntansi batch produksi
+            \App\Models\JournalEntry::where('reference_type', 'production')
+                ->where('reference_id', $batch->id)
+                ->delete();
 
             $batch->update(['status' => 'cancelled']);
 
