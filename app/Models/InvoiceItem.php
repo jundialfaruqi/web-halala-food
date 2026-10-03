@@ -13,6 +13,10 @@ class InvoiceItem extends Model
     protected $fillable = [
         'invoice_id',
         'product_id',
+        'delivered_quantity',
+        'remaining_quantity',
+        'damaged_quantity',
+        'returned_quantity',
         'quantity',
         'unit_price',
         'subtotal',
@@ -22,6 +26,10 @@ class InvoiceItem extends Model
     protected function casts(): array
     {
         return [
+            'delivered_quantity' => 'integer',
+            'remaining_quantity' => 'integer',
+            'damaged_quantity' => 'integer',
+            'returned_quantity' => 'integer',
             'quantity' => 'integer',
             'unit_price' => 'decimal:2',
             'subtotal' => 'decimal:2',

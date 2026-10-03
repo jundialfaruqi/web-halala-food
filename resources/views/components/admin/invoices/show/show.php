@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
+use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -11,6 +13,26 @@ use Livewire\Component;
 new #[Layout('components.layouts.admin')] class extends Component
 {
     public Invoice $invoice;
+
+    // Reconciliation Form State (Saat Barang Dijemput & Ditagih)
+    public bool $showReconciliation = false;
+
+    /**
+     * @var array<int, array{
+     *     id: int,
+     *     product_id: int,
+     *     product_name: string,
+     *     unit: string,
+     *     delivered_quantity: int,
+     *     remaining_quantity: int,
+     *     damaged_quantity: int,
+     *     returned_quantity: int,
+     *     quantity: int,
+     *     unit_price: float,
+     *     subtotal: float
+     * }>
+     */
+    public array $reconciliationItems = [];
 
     // Payment Form Fields
     public ?float $payment_amount = null;
@@ -53,6 +75,166 @@ new #[Layout('components.layouts.admin')] class extends Component
     public function fillFullPayment(): void
     {
         $this->payment_amount = (float) $this->invoice->remaining_balance;
+    }
+
+    public function openReconciliation(): void
+    {
+        $this->reconciliationItems = [];
+        foreach ($this->invoice->items as $item) {
+            $delivered = $item->delivered_quantity !== null && $item->delivered_quantity > 0
+                ? (int) $item->delivered_quantity
+                : (int) $item->quantity;
+            $remaining = (int) ($item->remaining_quantity ?? 0);
+            $damaged = (int) ($item->damaged_quantity ?? 0);
+            $returned = (int) ($item->returned_quantity ?? 0);
+
+            $hasPriorReconciliation = $item->remaining_quantity > 0 || $item->damaged_quantity > 0 || $item->returned_quantity > 0 || ($item->delivered_quantity !== null && $item->delivered_quantity != $item->quantity);
+            $sold = $hasPriorReconciliation ? max(0, $delivered - $remaining - $damaged - $returned) : (int) $item->quantity;
+            $price = (float) $item->unit_price;
+
+            $this->reconciliationItems[] = [
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'product_name' => $item->product?->name ?? 'Produk',
+                'unit' => $item->product?->unitModel?->name ?? $item->product?->unit ?? 'pcs',
+                'delivered_quantity' => $delivered,
+                'remaining_quantity' => $remaining,
+                'damaged_quantity' => $damaged,
+                'returned_quantity' => $returned,
+                'quantity' => $sold,
+                'unit_price' => $price,
+                'subtotal' => $sold * $price,
+            ];
+        }
+        $this->showReconciliation = true;
+    }
+
+    public function closeReconciliation(): void
+    {
+        $this->showReconciliation = false;
+        $this->reconciliationItems = [];
+    }
+
+    public function updatedReconciliationItems(mixed $value, ?string $key = null): void
+    {
+        if (! $key) {
+            return;
+        }
+
+        $parts = explode('.', $key);
+        if (count($parts) >= 2) {
+            $index = (int) $parts[0];
+            $field = $parts[1];
+
+            if (in_array($field, ['remaining_quantity', 'damaged_quantity', 'returned_quantity'])) {
+                if (isset($this->reconciliationItems[$index])) {
+                    $delivered = (int) ($this->reconciliationItems[$index]['delivered_quantity'] ?? 0);
+                    $remaining = max(0, (int) ($this->reconciliationItems[$index]['remaining_quantity'] ?? 0));
+                    $damaged = max(0, (int) ($this->reconciliationItems[$index]['damaged_quantity'] ?? 0));
+                    $returned = max(0, (int) ($this->reconciliationItems[$index]['returned_quantity'] ?? 0));
+
+                    $sold = max(0, $delivered - $remaining - $damaged - $returned);
+                    $price = (float) ($this->reconciliationItems[$index]['unit_price'] ?? 0);
+
+                    $this->reconciliationItems[$index]['remaining_quantity'] = $remaining;
+                    $this->reconciliationItems[$index]['damaged_quantity'] = $damaged;
+                    $this->reconciliationItems[$index]['returned_quantity'] = $returned;
+                    $this->reconciliationItems[$index]['quantity'] = $sold;
+                    $this->reconciliationItems[$index]['subtotal'] = $sold * $price;
+                }
+            }
+        }
+    }
+
+    public function saveReconciliation(): void
+    {
+        if (Gate::denies('faktur-edit')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk merekonsiliasi faktur.');
+        }
+
+        if ($this->invoice->status === 'dibatalkan') {
+            session()->flash('toast', [
+                'message' => 'Faktur yang telah dibatalkan tidak dapat direkonsiliasi.',
+                'type' => 'error',
+            ]);
+            return;
+        }
+
+        $this->validate([
+            'reconciliationItems' => ['required', 'array', 'min:1'],
+            'reconciliationItems.*.remaining_quantity' => ['required', 'integer', 'min:0'],
+            'reconciliationItems.*.damaged_quantity' => ['required', 'integer', 'min:0'],
+            'reconciliationItems.*.returned_quantity' => ['required', 'integer', 'min:0'],
+        ]);
+
+        foreach ($this->reconciliationItems as $idx => $rItem) {
+            $delivered = (int) $rItem['delivered_quantity'];
+            $totalOut = (int) $rItem['remaining_quantity'] + (int) $rItem['damaged_quantity'] + (int) $rItem['returned_quantity'];
+            if ($totalOut > $delivered) {
+                $this->addError("reconciliationItems.{$idx}.remaining_quantity", "Total sisa, rusak, dan retur ({$totalOut}) melebihi jumlah terkirim ({$delivered}) untuk {$rItem['product_name']}.");
+                return;
+            }
+        }
+
+        DB::transaction(function () {
+            foreach ($this->reconciliationItems as $rItem) {
+                $itemModel = InvoiceItem::where('invoice_id', $this->invoice->id)->find($rItem['id']);
+                if ($itemModel) {
+                    $oldReturned = (int) ($itemModel->returned_quantity ?? 0);
+                    $newReturned = (int) $rItem['returned_quantity'];
+                    $diffReturned = $newReturned - $oldReturned;
+
+                    if ($diffReturned !== 0) {
+                        Product::where('id', $itemModel->product_id)->increment('stock_ready', $diffReturned);
+                    }
+
+                    $delivered = (int) $rItem['delivered_quantity'];
+                    $remaining = (int) $rItem['remaining_quantity'];
+                    $damaged = (int) $rItem['damaged_quantity'];
+                    $sold = max(0, $delivered - $remaining - $damaged - $newReturned);
+                    $price = (float) $rItem['unit_price'];
+
+                    $itemModel->update([
+                        'delivered_quantity' => $delivered,
+                        'remaining_quantity' => $remaining,
+                        'damaged_quantity' => $damaged,
+                        'returned_quantity' => $newReturned,
+                        'quantity' => $sold,
+                        'subtotal' => $sold * $price,
+                    ]);
+                }
+            }
+
+            $newSubtotal = (float) InvoiceItem::where('invoice_id', $this->invoice->id)->sum('subtotal');
+            $discount = (float) $this->invoice->discount;
+            $newTotalAmount = max(0.0, $newSubtotal - $discount);
+            $paidAmount = (float) $this->invoice->paid_amount;
+            $newRemainingBalance = max(0.0, $newTotalAmount - $paidAmount);
+
+            $newStatus = 'belum_dibayar';
+            if ($paidAmount >= $newTotalAmount && $newTotalAmount > 0) {
+                $newStatus = 'lunas';
+            } elseif ($paidAmount > 0) {
+                $newStatus = 'sebagian';
+            }
+
+            $this->invoice->update([
+                'subtotal' => $newSubtotal,
+                'total_amount' => $newTotalAmount,
+                'remaining_balance' => $newRemainingBalance,
+                'status' => $newStatus,
+            ]);
+        });
+
+        $this->invoice->refresh();
+        $this->invoice->load(['items.product.unitModel', 'payments.user']);
+        $this->resetPaymentForm();
+        $this->showReconciliation = false;
+
+        session()->flash('toast', [
+            'message' => 'Rekonsiliasi titip jual berhasil disimpan. Tagihan baru sebesar Rp ' . number_format($this->invoice->total_amount, 0, ',', '.') . '.',
+            'type' => 'success',
+        ]);
     }
 
     public function recordPayment(): void

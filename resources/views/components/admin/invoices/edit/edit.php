@@ -24,7 +24,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
     public ?string $notes = '';
 
     /**
-     * @var array<int, array{product_id: int|string, quantity: int|string, unit_price: float|int, subtotal: float|int}>
+     * @var array<int, array{product_id: int|string, delivered_quantity: int|string, remaining_quantity: int|string, damaged_quantity: int|string, returned_quantity: int|string, quantity: int|string, unit_price: float|int, subtotal: float|int}>
      */
     public array $items = [];
 
@@ -55,7 +55,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
         foreach ($invoice->items as $item) {
             $this->items[] = [
                 'product_id' => $item->product_id,
-                'quantity' => $item->quantity,
+                'quantity' => (int) $item->quantity,
                 'unit_price' => (float) $item->unit_price,
                 'subtotal' => (float) $item->subtotal,
             ];
@@ -104,7 +104,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
                         $this->calculateSubtotal($index);
                     }
                 }
-            } elseif ($field === 'quantity' || $field === 'unit_price') {
+            } elseif (in_array($field, ['quantity', 'unit_price'])) {
                 $this->calculateSubtotal($index);
             }
         }
@@ -113,7 +113,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
     public function calculateSubtotal(int $index): void
     {
         if (isset($this->items[$index])) {
-            $qty = max(1, (int) ($this->items[$index]['quantity'] ?? 1));
+            $qty = max(0, (int) ($this->items[$index]['quantity'] ?? 0));
             $price = (float) ($this->items[$index]['unit_price'] ?? 0);
             $this->items[$index]['subtotal'] = $qty * $price;
         }
@@ -143,7 +143,11 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
             'notes' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id', 'distinct'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.delivered_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.damaged_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.returned_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.quantity' => ['required', 'integer', 'min:0'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
         ], [
             'store_id.required' => 'Pilih toko mitra tujuan penagihan.',
@@ -173,19 +177,39 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
                 'notes' => $this->notes,
             ]);
 
+            // Revert previously returned items from warehouse inventory before deleting
+            foreach ($this->invoice->items as $oldItem) {
+                if ($oldItem->returned_quantity > 0) {
+                    Product::where('id', $oldItem->product_id)->decrement('stock_ready', $oldItem->returned_quantity);
+                }
+            }
+
             // Replace line items
             $this->invoice->items()->delete();
             foreach ($this->items as $item) {
                 $qty = (int) $item['quantity'];
                 $price = (float) $item['unit_price'];
+                $delivered = isset($item['delivered_quantity']) && $item['delivered_quantity'] !== '' ? (int) $item['delivered_quantity'] : $qty;
+                $remaining = (int) ($item['remaining_quantity'] ?? 0);
+                $damaged = (int) ($item['damaged_quantity'] ?? 0);
+                $returned = (int) ($item['returned_quantity'] ?? 0);
 
                 InvoiceItem::create([
                     'invoice_id' => $this->invoice->id,
                     'product_id' => $item['product_id'],
+                    'delivered_quantity' => $delivered,
+                    'remaining_quantity' => $remaining,
+                    'damaged_quantity' => $damaged,
+                    'returned_quantity' => $returned,
                     'quantity' => $qty,
                     'unit_price' => $price,
                     'subtotal' => $qty * $price,
                 ]);
+
+                // Increment warehouse stock for newly returned items
+                if ($returned > 0) {
+                    Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
+                }
             }
 
             $this->invoice->recalculateStatusAndBalance();

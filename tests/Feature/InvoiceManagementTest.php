@@ -281,3 +281,156 @@ test('invoice show page renders whatsapp billing url with store phone and detail
         ->assertOk()
         ->assertSee('Kirim WhatsApp');
 });
+
+test('manager can create invoice with consignment reconciliation (damaged, returned, remaining items)', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    $store = Store::first();
+    $product = Product::first();
+
+    $initialStock = $product->stock_ready;
+
+    actingAs($manager);
+
+    $delivered = 50;
+    $remaining = 10;
+    $damaged = 3;
+    $returned = 5;
+    $sold = $delivered - $remaining - $damaged - $returned; // 32
+    $unitPrice = 12000.0;
+    $expectedSubtotal = $sold * $unitPrice; // 32 * 12000 = 384000
+
+    Livewire::test('admin.invoices.create')
+        ->set('invoice_number', 'INV-RECON-0001')
+        ->set('store_id', $store->id)
+        ->set('invoice_date', now()->toDateString())
+        ->set('due_date', now()->addDays(14)->toDateString())
+        ->set('items', [
+            [
+                'product_id' => $product->id,
+                'delivered_quantity' => $delivered,
+                'remaining_quantity' => $remaining,
+                'damaged_quantity' => $damaged,
+                'returned_quantity' => $returned,
+                'quantity' => $sold,
+                'unit_price' => $unitPrice,
+                'subtotal' => $expectedSubtotal,
+            ],
+        ])
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect();
+
+    $invoice = Invoice::with('items')->where('invoice_number', 'INV-RECON-0001')->first();
+    expect($invoice)->not->toBeNull()
+        ->and((float) $invoice->subtotal)->toBe((float) $expectedSubtotal)
+        ->and((float) $invoice->total_amount)->toBe((float) $expectedSubtotal);
+
+    $item = $invoice->items->first();
+    expect($item->delivered_quantity)->toBe($delivered)
+        ->and($item->remaining_quantity)->toBe($remaining)
+        ->and($item->damaged_quantity)->toBe($damaged)
+        ->and($item->returned_quantity)->toBe($returned)
+        ->and($item->quantity)->toBe($sold);
+
+    // Warehouse stock is incremented by returned items brought back
+    $product->refresh();
+    expect($product->stock_ready)->toBe($initialStock + $returned);
+
+    // Verify invoice show page renders reconciliation details
+    get(route('admin.invoices.show', $invoice))
+        ->assertOk()
+        ->assertSee('Rincian Barang &amp; Rekonsiliasi Titip Jual', false)
+        ->assertSee('Rusak/BS:')
+        ->assertSee('Retur:');
+});
+
+test('manager can reconcile consignment goods and bill the client during pickup visit on invoice show page', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    $store = Store::first();
+    $product = Product::first();
+
+    $initialStock = $product->stock_ready;
+
+    actingAs($manager);
+
+    // 1. Initial drop-off / invoice creation (50 pcs dropped off)
+    $droppedOffQty = 50;
+    $unitPrice = 12000.0;
+    $initialTotal = $droppedOffQty * $unitPrice; // 600,000
+
+    Livewire::test('admin.invoices.create')
+        ->set('invoice_number', 'INV-VISIT-0001')
+        ->set('store_id', $store->id)
+        ->set('invoice_date', now()->toDateString())
+        ->set('due_date', now()->addDays(14)->toDateString())
+        ->set('items', [
+            [
+                'product_id' => $product->id,
+                'quantity' => $droppedOffQty,
+                'unit_price' => $unitPrice,
+                'subtotal' => $initialTotal,
+            ],
+        ])
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect();
+
+    $invoice = Invoice::with('items')->where('invoice_number', 'INV-VISIT-0001')->first();
+    expect($invoice)->not->toBeNull()
+        ->and((float) $invoice->total_amount)->toBe((float) $initialTotal)
+        ->and((float) $invoice->remaining_balance)->toBe((float) $initialTotal);
+
+    $item = $invoice->items->first();
+    expect($item->delivered_quantity)->toBe($droppedOffQty)
+        ->and($item->quantity)->toBe($droppedOffQty)
+        ->and($item->remaining_quantity)->toBe(0)
+        ->and($item->damaged_quantity)->toBe(0)
+        ->and($item->returned_quantity)->toBe(0);
+
+    // 2. Later visit: Courier arrives to collect unsold/damaged items and bill (jemput & tagih)
+    // Sisa 10, Rusak 3, Retur 5 => Laku terjual = 50 - 10 - 3 - 5 = 32
+    $remaining = 10;
+    $damaged = 3;
+    $returned = 5;
+    $sold = 32;
+    $expectedReconciledTotal = $sold * $unitPrice; // 384,000
+
+    $component = Livewire::test('admin.invoices.show', ['invoice' => $invoice])
+        ->call('openReconciliation')
+        ->assertSet('showReconciliation', true)
+        ->set('reconciliationItems.0.remaining_quantity', $remaining)
+        ->set('reconciliationItems.0.damaged_quantity', $damaged)
+        ->set('reconciliationItems.0.returned_quantity', $returned)
+        ->call('saveReconciliation')
+        ->assertHasNoErrors()
+        ->assertSet('showReconciliation', false);
+
+    // Invoice has been updated to reflect actual goods sold
+    $invoice->refresh();
+    expect((float) $invoice->total_amount)->toBe((float) $expectedReconciledTotal)
+        ->and((float) $invoice->remaining_balance)->toBe((float) $expectedReconciledTotal);
+
+    $item->refresh();
+    expect($item->delivered_quantity)->toBe($droppedOffQty)
+        ->and($item->remaining_quantity)->toBe($remaining)
+        ->and($item->damaged_quantity)->toBe($damaged)
+        ->and($item->returned_quantity)->toBe($returned)
+        ->and($item->quantity)->toBe($sold)
+        ->and((float) $item->subtotal)->toBe((float) $expectedReconciledTotal);
+
+    // Returned items (5 pcs) returned to warehouse stock
+    $product->refresh();
+    expect($product->stock_ready)->toBe($initialStock + $returned);
+
+    // 3. Payment form is ready with the new reconciled amount
+    expect((float) $component->get('payment_amount'))->toBe((float) $expectedReconciledTotal);
+
+    // Settle the exact reconciled bill
+    $component->call('recordPayment')
+        ->assertHasNoErrors();
+
+    $invoice->refresh();
+    expect($invoice->status)->toBe('lunas')
+        ->and((float) $invoice->remaining_balance)->toBe(0.0)
+        ->and((float) $invoice->paid_amount)->toBe((float) $expectedReconciledTotal);
+});
