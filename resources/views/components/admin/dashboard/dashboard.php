@@ -9,7 +9,7 @@ use Livewire\WithPagination;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-new #[Layout('layouts.admin'), Title('Dashboard Admin - Halala Food')] class extends Component
+new #[Layout('components.layouts.admin'), Title('Dashboard Admin - Halala Food')] class extends Component
 {
     use WithPagination;
 

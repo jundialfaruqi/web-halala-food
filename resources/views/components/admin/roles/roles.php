@@ -13,7 +13,7 @@ use Livewire\Component;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
-new #[Layout('layouts.admin'), Title('Role & Permission - Halala Food')] class extends Component
+new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food')] class extends Component
 {
     /**
      * Save (Create or Update) a Role

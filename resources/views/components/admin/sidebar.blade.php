@@ -12,7 +12,7 @@
     <!-- Top Section: Logo & Brand -->
     <div class="flex flex-col flex-1 min-h-0">
         <div class="h-20 flex items-center justify-between px-6 border-b border-brand-border">
-            <a href="{{ route('admin.dashboard') }}" wire:navigate @click="sessionStorage.setItem('admin_sidebar_scroll', '0')" class="flex items-center">
+            <a href="{{ route('admin.dashboard') }}" wire:navigate @click="window.__adminSidebarScroll = 0; sessionStorage.setItem('admin_sidebar_scroll', '0')" class="flex items-center">
                 <img src="{{ asset('assets/logo/logo.webp') }}" alt="Halala Food"
                     class="h-10 sm:h-11 w-auto object-contain">
             </a>
@@ -27,6 +27,7 @@
 
         <!-- Navigation Menu -->
         <div id="admin-sidebar-scroll"
+            style="scroll-behavior: auto !important;"
             x-data="{
                 init() {
                     this.restore();
@@ -39,26 +40,23 @@
                     }
                 },
                 save() {
-                    sessionStorage.setItem('admin_sidebar_scroll', this.$el.scrollTop);
+                    window.__adminSidebarScroll = this.$el.scrollTop;
+                    sessionStorage.setItem('admin_sidebar_scroll', String(this.$el.scrollTop));
                 },
                 restore() {
                     const el = this.$el;
-                    const apply = () => {
-                        const saved = sessionStorage.getItem('admin_sidebar_scroll');
-                        if (saved !== null) {
-                            el.scrollTop = parseInt(saved, 10);
-                        } else {
-                            const active = el.querySelector('[data-sidebar-active=\"true\"]');
-                            if (active) {
-                                active.scrollIntoView({ block: 'nearest', behavior: 'instant' });
-                            }
+                    const saved = window.__adminSidebarScroll ?? sessionStorage.getItem('admin_sidebar_scroll');
+                    if (saved !== null && saved !== undefined && saved !== '') {
+                        el.scrollTop = parseInt(saved, 10);
+                    } else {
+                        const active = el.querySelector('[data-sidebar-active=\"true\"]');
+                        if (active) {
+                            el.scrollTop = Math.max(0, active.offsetTop - 120);
                         }
-                    };
-                    apply();
-                    requestAnimationFrame(apply);
+                    }
                 }
             }"
-            @scroll.debounce.50ms="save()"
+            @scroll="save()"
             @click="if ($event.target.closest('a')) { save(); if (window.innerWidth < 1024) sidebarOpen = false; }"
             class="flex-1 overflow-y-auto py-6 space-y-6">
             <div>
@@ -261,15 +259,26 @@
             (function() {
                 var el = document.getElementById('admin-sidebar-scroll');
                 if (el) {
-                    var saved = sessionStorage.getItem('admin_sidebar_scroll');
-                    if (saved !== null) {
+                    var saved = window.__adminSidebarScroll ?? sessionStorage.getItem('admin_sidebar_scroll');
+                    if (saved !== null && saved !== undefined && saved !== '') {
                         el.scrollTop = parseInt(saved, 10);
                     } else {
                         var active = el.querySelector('[data-sidebar-active="true"]');
                         if (active) {
-                            active.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+                            el.scrollTop = Math.max(0, active.offsetTop - 120);
                         }
                     }
+                }
+
+                if (!window.__sidebarNavListenerAttached) {
+                    window.__sidebarNavListenerAttached = true;
+                    document.addEventListener('livewire:navigating', function() {
+                        var scrollContainer = document.getElementById('admin-sidebar-scroll');
+                        if (scrollContainer) {
+                            window.__adminSidebarScroll = scrollContainer.scrollTop;
+                            sessionStorage.setItem('admin_sidebar_scroll', String(scrollContainer.scrollTop));
+                        }
+                    });
                 }
             })();
         </script>

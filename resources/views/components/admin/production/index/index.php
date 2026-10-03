@@ -12,7 +12,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('layouts.admin'), Title('Produksi & Manufaktur - Halala Food')] class extends Component
+new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala Food')] class extends Component
 {
     /**
      * Execute a new cooking batch with atomic material deduction & finished goods increment.
