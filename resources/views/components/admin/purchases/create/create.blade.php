@@ -2,17 +2,21 @@
 
     <!-- Header Section with Breadcrumbs -->
     <div>
-        <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-warm-gray mb-1">
+        <nav aria-label="Breadcrumb"
+            class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-warm-gray mb-1">
             <a href="{{ route('admin.dashboard') }}" class="hover:text-brand-primary transition">Admin</a>
             <i class="ti ti-chevron-right text-xs"></i>
             <span>Operasional</span>
             <i class="ti ti-chevron-right text-xs"></i>
-            <a href="{{ route('admin.purchases') }}" wire:navigate class="hover:text-brand-primary transition">Pembelian Bahan</a>
+            <a href="{{ route('admin.purchases') }}" wire:navigate class="hover:text-brand-primary transition">Pembelian
+                Bahan</a>
             <i class="ti ti-chevron-right text-xs"></i>
             <span class="text-brand-primary">Catat Pembelian</span>
         </nav>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-brand-espresso tracking-tight">Catat Pembelian Bahan Baku</h1>
-        <p class="text-sm sm:text-base text-brand-warm-gray mt-1">Input nota belanja bahan baku dapur dari supplier untuk menambah stok dan mencatat pengeluaran kas.</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-brand-espresso tracking-tight">Catat Pembelian Bahan Baku
+        </h1>
+        <p class="text-sm sm:text-base text-brand-warm-gray mt-1">Input nota belanja bahan baku dapur dari supplier
+            untuk menambah stok dan mencatat pengeluaran kas.</p>
     </div>
 
     <!-- Main Form Container -->
@@ -20,12 +24,14 @@
 
         <!-- Card 1: Informasi Nota & Supplier -->
         <div class="bg-white border border-brand-border rounded-2xl p-6 shadow-xs space-y-6">
-            <h2 class="text-base font-bold text-brand-espresso pb-3 border-b border-brand-border">Informasi Nota &amp; Supplier</h2>
+            <h2 class="text-base font-bold text-brand-espresso pb-3 border-b border-brand-border">Informasi Nota &amp;
+                Supplier</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- No. Transaksi -->
                 <div>
-                    <label for="purchase_number" class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
+                    <label for="purchase_number"
+                        class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
                         Nomor Pembelian <span class="text-red-500">*</span>
                     </label>
                     <input type="text" id="purchase_number" wire:model="purchase_number"
@@ -37,7 +43,8 @@
 
                 <!-- Tanggal Pembelian -->
                 <div>
-                    <label for="purchase_date" class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
+                    <label for="purchase_date"
+                        class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
                         Tanggal Pembelian <span class="text-red-500">*</span>
                     </label>
                     <input type="date" id="purchase_date" wire:model="purchase_date"
@@ -49,7 +56,8 @@
 
                 <!-- Nama Supplier -->
                 <div>
-                    <label for="supplier_name" class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
+                    <label for="supplier_name"
+                        class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
                         Nama Toko / Supplier <span class="text-red-500">*</span>
                     </label>
                     <input type="text" id="supplier_name" wire:model="supplier_name"
@@ -62,7 +70,8 @@
 
                 <!-- Metode Pembayaran -->
                 <div>
-                    <label for="payment_method" class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
+                    <label for="payment_method"
+                        class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
                         Metode Pembayaran <span class="text-red-500">*</span>
                     </label>
                     <select id="payment_method" wire:model.live="payment_method"
@@ -79,7 +88,8 @@
                 <!-- Sumber Kas / Rekening Pembayaran -->
                 @if ($payment_method !== 'tempo')
                     <div>
-                        <label for="account_id" class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
+                        <label for="account_id"
+                            class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
                             Sumber Kas / Rekening <span class="text-red-500">*</span>
                         </label>
                         <select id="account_id" wire:model="account_id"
@@ -97,8 +107,10 @@
                     </div>
                 @else
                     <div class="flex items-center">
-                        <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-brand-warm-gray w-full">
-                            <i class="ti ti-info-circle mr-1"></i> Pembayaran tempo dicatat sebagai <strong>Hutang Usaha</strong>. Tidak memotong saldo kas saat ini.
+                        <div
+                            class="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-brand-warm-gray w-full">
+                            <i class="ti ti-info-circle mr-1"></i> Pembayaran tempo dicatat sebagai <strong>Hutang
+                                Usaha</strong>. Tidak memotong saldo kas saat ini.
                         </div>
                     </div>
                 @endif
@@ -123,7 +135,8 @@
             <div class="flex items-center justify-between pb-3 border-b border-brand-border">
                 <div>
                     <h2 class="text-base font-bold text-brand-espresso">Daftar Bahan Baku Dibeli</h2>
-                    <p class="text-xs text-brand-warm-gray mt-0.5">Pilih bahan baku, masukkan kuantitas dan harga satuan.</p>
+                    <p class="text-xs text-brand-warm-gray mt-0.5">Pilih bahan baku, masukkan kuantitas dan harga
+                        satuan.</p>
                 </div>
                 <button type="button" wire:click="addItem"
                     class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-brand-primary border border-brand-primary/30 hover:bg-brand-soft-cream/40 transition cursor-pointer">
@@ -138,7 +151,7 @@
 
             <div class="space-y-4">
                 @foreach ($items as $index => $row)
-                    <div class="p-4 rounded-xl border border-brand-border bg-brand-soft-cream/10 space-y-3">
+                    <div class="space-y-3">
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
                             <!-- Bahan Baku Selection -->
                             <div class="md:col-span-4">
@@ -164,8 +177,8 @@
                                 <label class="block text-xs font-semibold text-brand-warm-gray mb-1">
                                     Jumlah (Qty) <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" step="any" wire:model.live.debounce.300ms="items.{{ $index }}.quantity"
-                                    placeholder="0"
+                                <input type="number" step="any"
+                                    wire:model.live.debounce.300ms="items.{{ $index }}.quantity" placeholder="0"
                                     class="w-full px-3 py-2 rounded-lg border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary">
                                 @error("items.{$index}.quantity")
                                     <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
@@ -177,7 +190,8 @@
                                 <label class="block text-xs font-semibold text-brand-warm-gray mb-1">
                                     Harga Satuan (Rp) <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" step="any" wire:model.live.debounce.300ms="items.{{ $index }}.cost_per_unit"
+                                <input type="number" step="any"
+                                    wire:model.live.debounce.300ms="items.{{ $index }}.cost_per_unit"
                                     placeholder="0"
                                     class="w-full px-3 py-2 rounded-lg border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary">
                                 @error("items.{$index}.cost_per_unit")
@@ -190,7 +204,8 @@
                                 <label class="block text-xs font-semibold text-brand-warm-gray mb-1">
                                     Subtotal (Rp)
                                 </label>
-                                <div class="px-3 py-2 rounded-lg bg-neutral-100 text-sm font-bold text-brand-espresso text-right">
+                                <div
+                                    class="px-3 py-2 rounded-lg bg-neutral-100 text-sm font-bold text-brand-espresso text-right">
                                     Rp {{ number_format($row['subtotal'] ?? 0, 0, ',', '.') }}
                                 </div>
                             </div>
@@ -218,7 +233,8 @@
             </div>
 
             <!-- Grand Total Ringkasan -->
-            <div class="pt-4 border-t border-brand-border flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
+            <div
+                class="pt-4 border-t border-brand-border flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4">
                 <span class="text-sm font-bold text-brand-espresso">Total Biaya Pengadaan:</span>
                 <span class="text-2xl font-extrabold text-brand-espresso">
                     Rp {{ number_format($this->totalAmount, 0, ',', '.') }}
