@@ -70,7 +70,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
             'price_per_package' => '',
             'quantity' => '',
             'cost_per_unit' => '',
-            'subtotal' => 0.0,
+            'subtotal' => '',
             'notes' => '',
         ];
     }
@@ -101,45 +101,89 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
             return;
         }
 
-        $pkgCount = (float) ($this->items[$index]['package_count'] ?? 0);
-        $content = (float) ($this->items[$index]['content_per_package'] ?? 0);
-        $pricePerPkg = (float) ($this->items[$index]['price_per_package'] ?? 0);
-        $subtotal = (float) ($this->items[$index]['subtotal'] ?? 0);
+        $rawPkgCount = $this->items[$index]['package_count'] ?? '';
+        $rawContent = $this->items[$index]['content_per_package'] ?? '';
+        $rawPrice = $this->items[$index]['price_per_package'] ?? '';
+        $rawSubtotal = $this->items[$index]['subtotal'] ?? '';
+
+        $pkgCount = (float) $rawPkgCount;
+        $content = (float) $rawContent;
 
         // 1. Hitung total stok fisik (quantity dalam base unit)
         if ($pkgCount > 0 && $content > 0) {
             $totalQty = round($pkgCount * $content, 4);
             $this->items[$index]['quantity'] = $totalQty;
-        } elseif ($pkgCount > 0 && empty($content)) {
-            // Jika belum ada isi kemasan, set kuantitas sementara sama dengan jumlah kemasan
-            if (empty($this->items[$index]['quantity'])) {
-                $this->items[$index]['quantity'] = $pkgCount;
+        } elseif ($pkgCount > 0 && empty($rawContent)) {
+            $totalQty = $pkgCount;
+            $this->items[$index]['quantity'] = $pkgCount;
+        } else {
+            $totalQty = 0.0;
+            if ($rawPkgCount === '' || $pkgCount <= 0) {
+                $this->items[$index]['quantity'] = '';
             }
         }
 
         $totalQty = (float) ($this->items[$index]['quantity'] ?? 0);
 
         // 2. Kalkulasi harga dua arah (bi-directional)
-        if ($changedField === 'subtotal') {
-            // Pengguna mengetik Total Belanja di struk (misal: 400.000)
-            if ($pkgCount > 0) {
-                $this->items[$index]['price_per_package'] = round($subtotal / $pkgCount, 2);
+        if ($changedField === 'price_per_package') {
+            if ($rawPrice === '' || $rawPrice === null) {
+                // Pengguna mengosongkan harga per kemasan -> reset subtotal dan HPP
+                $this->items[$index]['price_per_package'] = '';
+                $this->items[$index]['subtotal'] = '';
+                $this->items[$index]['cost_per_unit'] = '';
+            } else {
+                $pricePerPkg = (float) $rawPrice;
+                if ($pkgCount > 0) {
+                    $subtotal = round($pkgCount * $pricePerPkg, 2);
+                    $this->items[$index]['subtotal'] = $subtotal;
+                    if ($totalQty > 0) {
+                        $this->items[$index]['cost_per_unit'] = round($subtotal / $totalQty, 4);
+                    } else {
+                        $this->items[$index]['cost_per_unit'] = '';
+                    }
+                } else {
+                    $this->items[$index]['subtotal'] = '';
+                    $this->items[$index]['cost_per_unit'] = '';
+                }
             }
-            if ($totalQty > 0) {
-                $this->items[$index]['cost_per_unit'] = round($subtotal / $totalQty, 4);
+        } elseif ($changedField === 'subtotal') {
+            if ($rawSubtotal === '' || $rawSubtotal === null) {
+                // Pengguna mengosongkan total belanja -> reset harga per kemasan dan HPP
+                $this->items[$index]['subtotal'] = '';
+                $this->items[$index]['price_per_package'] = '';
+                $this->items[$index]['cost_per_unit'] = '';
+            } else {
+                $subtotal = (float) $rawSubtotal;
+                if ($pkgCount > 0) {
+                    $this->items[$index]['price_per_package'] = round($subtotal / $pkgCount, 2);
+                } else {
+                    $this->items[$index]['price_per_package'] = '';
+                }
+                if ($totalQty > 0) {
+                    $this->items[$index]['cost_per_unit'] = round($subtotal / $totalQty, 4);
+                } else {
+                    $this->items[$index]['cost_per_unit'] = '';
+                }
             }
         } else {
-            // Pengguna mengetik Harga per Kemasan (misal: 40.000) atau mengubah jumlah kemasan / isi
-            if ($pricePerPkg > 0 && $pkgCount > 0) {
+            // Field lain yang berubah: package_count atau content_per_package
+            $pricePerPkg = (float) $rawPrice;
+            $subtotal = (float) $rawSubtotal;
+
+            if ($rawPrice !== '' && $pricePerPkg > 0 && $pkgCount > 0) {
                 $subtotal = round($pkgCount * $pricePerPkg, 2);
                 $this->items[$index]['subtotal'] = $subtotal;
-            } elseif ($subtotal > 0 && $pkgCount > 0 && empty($this->items[$index]['price_per_package'])) {
+                if ($totalQty > 0) {
+                    $this->items[$index]['cost_per_unit'] = round($subtotal / $totalQty, 4);
+                }
+            } elseif ($rawSubtotal !== '' && $subtotal > 0 && $pkgCount > 0) {
                 $this->items[$index]['price_per_package'] = round($subtotal / $pkgCount, 2);
-            }
-
-            $currentSubtotal = (float) ($this->items[$index]['subtotal'] ?? 0);
-            if ($totalQty > 0 && $currentSubtotal > 0) {
-                $this->items[$index]['cost_per_unit'] = round($currentSubtotal / $totalQty, 4);
+                if ($totalQty > 0) {
+                    $this->items[$index]['cost_per_unit'] = round($subtotal / $totalQty, 4);
+                }
+            } elseif ($pkgCount <= 0) {
+                $this->items[$index]['cost_per_unit'] = '';
             }
         }
     }

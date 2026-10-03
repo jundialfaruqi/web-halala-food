@@ -226,3 +226,41 @@ test('package mode auto-calculates subtotal and HPP when price_per_package is en
         ->and((float) $material->cost_per_unit)->toBe(60.0);
 });
 
+test('clearing price_per_package or subtotal resets dependent fields and unlocks recalculation', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    $material = RawMaterial::where('name', 'Wijen Putih Sangrai')->first();
+
+    actingAs($manager);
+
+    $component = Livewire::test('admin.purchases.create')
+        ->set('items.0.raw_material_id', $material->id)
+        ->set('items.0.package_count', 10)
+        ->set('items.0.content_per_package', 500)
+        // 1. User inputs price_per_package
+        ->set('items.0.price_per_package', 40000);
+
+    expect((float) $component->get('items.0.subtotal'))->toBe(400000.0)
+        ->and((float) $component->get('items.0.cost_per_unit'))->toBe(80.0);
+
+    // 2. User deletes/clears price_per_package
+    $component->set('items.0.price_per_package', '');
+
+    expect($component->get('items.0.price_per_package'))->toBe('')
+        ->and($component->get('items.0.subtotal'))->toBe('')
+        ->and($component->get('items.0.cost_per_unit'))->toBe('');
+
+    // 3. User can now type into subtotal without old values re-locking
+    $component->set('items.0.subtotal', 350000);
+
+    expect((float) $component->get('items.0.price_per_package'))->toBe(35000.0)
+        ->and((float) $component->get('items.0.cost_per_unit'))->toBe(70.0);
+
+    // 4. User clears subtotal
+    $component->set('items.0.subtotal', '');
+
+    expect($component->get('items.0.subtotal'))->toBe('')
+        ->and($component->get('items.0.price_per_package'))->toBe('')
+        ->and($component->get('items.0.cost_per_unit'))->toBe('');
+});
+
+
