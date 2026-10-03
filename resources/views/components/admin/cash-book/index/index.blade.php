@@ -405,13 +405,78 @@
                             @enderror
                         </div>
 
-                        <div>
+                        <div x-data="{
+                            formatRupiah(val) {
+                                if (!val && val !== 0) return '';
+                                let clean = val.toString().replace(/[^0-9]/g, '').replace(/^0+/, '');
+                                if (!clean) return '';
+                                return 'Rp ' + clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                            },
+                            cleanNumber(val) {
+                                let clean = (val || '').toString().replace(/[^0-9]/g, '').replace(/^0+/, '');
+                                return clean ? parseInt(clean, 10) : 0;
+                            },
+                            onInput(e) {
+                                let oldVal = e.target.value;
+                                let oldPos = e.target.selectionEnd || oldVal.length;
+                                let charsFromRight = oldVal.length - oldPos;
+
+                                let raw = this.cleanNumber(oldVal);
+                                let formatted = raw > 0 ? this.formatRupiah(raw) : '';
+                                e.target.value = formatted;
+
+                                if (formatted) {
+                                    let newPos = Math.max(3, formatted.length - charsFromRight);
+                                    e.target.setSelectionRange(newPos, newPos);
+                                }
+
+                                $wire.set('amount', raw, false);
+                                if (this.$refs.hiddenAmount) {
+                                    this.$refs.hiddenAmount.value = raw;
+                                    this.$refs.hiddenAmount.dispatchEvent(new Event('input', { bubbles: true }));
+                                }
+                            },
+                            onBlur(e) {
+                                let raw = this.cleanNumber(e.target.value);
+                                e.target.value = raw > 0 ? this.formatRupiah(raw) : '';
+                                $wire.set('amount', raw, false);
+                                if (this.$refs.hiddenAmount) {
+                                    this.$refs.hiddenAmount.value = raw;
+                                    this.$refs.hiddenAmount.dispatchEvent(new Event('input', { bubbles: true }));
+                                }
+                            },
+                            init() {
+                                let current = @js($amount);
+                                let input = this.$refs.displayInput;
+                                if (current && current > 0) {
+                                    input.value = this.formatRupiah(current);
+                                } else {
+                                    input.value = '';
+                                }
+                                this.$watch('$wire.amount', (newVal) => {
+                                    let raw = this.cleanNumber(newVal);
+                                    let currentRaw = this.cleanNumber(input.value);
+                                    if (raw !== currentRaw) {
+                                        input.value = raw > 0 ? this.formatRupiah(raw) : '';
+                                    }
+                                });
+                            }
+                        }">
                             <label
                                 class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                                 Nominal Transaksi (Rp) <span class="text-red-600">*</span>
                             </label>
-                            <input type="number" step="any" min="1" wire:model="amount" placeholder="0"
-                                class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl font-mono text-base font-bold text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                            <div class="relative">
+                                <input type="text"
+                                    x-ref="displayInput"
+                                    inputmode="numeric"
+                                    autocomplete="off"
+                                    @input="onInput($event)"
+                                    @blur="onBlur($event)"
+                                    placeholder="Rp 0"
+                                    class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl font-mono text-base font-bold text-brand-espresso focus:outline-none focus:border-brand-primary transition" />
+                                <input type="hidden" wire:model="amount" x-ref="hiddenAmount" />
+                            </div>
                             @error('amount')
                                 <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
                             @enderror
@@ -553,13 +618,77 @@
                         @enderror
                     </div>
 
-                    <div>
+                    <div x-data="{
+                        formatRupiah(val) {
+                            if (!val && val !== 0) return '';
+                            let clean = val.toString().replace(/[^0-9]/g, '').replace(/^0+/, '');
+                            if (!clean) return '';
+                            return 'Rp ' + clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                        },
+                        cleanNumber(val) {
+                            let clean = (val || '').toString().replace(/[^0-9]/g, '').replace(/^0+/, '');
+                            return clean ? parseInt(clean, 10) : 0;
+                        },
+                        onInput(e) {
+                            let oldVal = e.target.value;
+                            let oldPos = e.target.selectionEnd || oldVal.length;
+                            let charsFromRight = oldVal.length - oldPos;
+
+                            let raw = this.cleanNumber(oldVal);
+                            let formatted = raw > 0 ? this.formatRupiah(raw) : '';
+                            e.target.value = formatted;
+
+                            if (formatted) {
+                                let newPos = Math.max(3, formatted.length - charsFromRight);
+                                e.target.setSelectionRange(newPos, newPos);
+                            }
+
+                            $wire.set('initial_balance', raw, false);
+                            if (this.$refs.hiddenInitialBalance) {
+                                this.$refs.hiddenInitialBalance.value = raw;
+                                this.$refs.hiddenInitialBalance.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        },
+                        onBlur(e) {
+                            let raw = this.cleanNumber(e.target.value);
+                            e.target.value = raw > 0 ? this.formatRupiah(raw) : '';
+                            $wire.set('initial_balance', raw, false);
+                            if (this.$refs.hiddenInitialBalance) {
+                                this.$refs.hiddenInitialBalance.value = raw;
+                                this.$refs.hiddenInitialBalance.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        },
+                        init() {
+                            let current = @js($initial_balance);
+                            let input = this.$refs.displayInitialBalance;
+                            if (current && current > 0) {
+                                input.value = this.formatRupiah(current);
+                            } else {
+                                input.value = '';
+                            }
+                            this.$watch('$wire.initial_balance', (newVal) => {
+                                let raw = this.cleanNumber(newVal);
+                                let currentRaw = this.cleanNumber(input.value);
+                                if (raw !== currentRaw) {
+                                    input.value = raw > 0 ? this.formatRupiah(raw) : '';
+                                }
+                            });
+                        }
+                    }">
                         <label class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                             Saldo Awal (Rp) <span class="text-red-600">*</span>
                         </label>
-                        <input type="number" step="any" min="0" wire:model="initial_balance"
-                            placeholder="0"
-                            class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl font-mono text-base font-bold text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                        <div class="relative">
+                            <input type="text"
+                                x-ref="displayInitialBalance"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                @input="onInput($event)"
+                                @blur="onBlur($event)"
+                                placeholder="Rp 0"
+                                class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl font-mono text-base font-bold text-brand-espresso focus:outline-none focus:border-brand-primary transition" />
+                            <input type="hidden" wire:model="initial_balance" x-ref="hiddenInitialBalance" />
+                        </div>
                         @error('initial_balance')
                             <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
                         @enderror

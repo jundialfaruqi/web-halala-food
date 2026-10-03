@@ -47,7 +47,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
     public string $category = '';
 
-    public float $amount = 0;
+    public int|float|string $amount = 0;
 
     public string $description = '';
 
@@ -56,7 +56,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
     public string $account_type = 'business';
 
-    public float $initial_balance = 0;
+    public int|float|string $initial_balance = 0;
 
     public string $account_description = '';
 
@@ -125,6 +125,11 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
             abort(403, 'Anda tidak memiliki hak akses untuk menambah akun kas.');
         }
 
+        if (is_string($this->initial_balance)) {
+            $cleaned = preg_replace('/[^0-9]/', '', $this->initial_balance);
+            $this->initial_balance = $cleaned !== '' ? (float) $cleaned : 0.0;
+        }
+
         $this->validate([
             'account_name' => 'required|string|max:255',
             'account_type' => 'required|in:business,personal',
@@ -183,6 +188,11 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
     public function prepareTransactionConfirmation(): void
     {
+        if (is_string($this->amount)) {
+            $cleaned = preg_replace('/[^0-9]/', '', $this->amount);
+            $this->amount = $cleaned !== '' ? (float) $cleaned : 0.0;
+        }
+
         $this->validate([
             'transaction_date' => 'required|date',
             'account_id' => 'required|exists:accounts,id',
@@ -208,6 +218,11 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
     {
         if (Gate::denies('buku-kas-create')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mencatat transaksi kas.');
+        }
+
+        if (is_string($this->amount)) {
+            $cleaned = preg_replace('/[^0-9]/', '', $this->amount);
+            $this->amount = $cleaned !== '' ? (float) $cleaned : 0.0;
         }
 
         $this->validate([

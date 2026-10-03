@@ -138,3 +138,54 @@ test('manager can delete a cash transaction and balance is restored', function (
     expect(CashTransaction::find($trx->id))->toBeNull();
     expect(JournalEntry::where('reference_type', 'cash_transaction')->where('reference_id', $trx->id)->exists())->toBeFalse();
 });
+
+test('transaction modal renders client-side rupiah input and handles formatted string amount seamlessly', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    $account = Account::first();
+
+    actingAs($manager);
+
+    // Open transaction modal
+    $component = Livewire::test('admin.cash-book.index')
+        ->call('openTransactionModal', 'income')
+        ->assertSee('formatRupiah')
+        ->assertSee('Nominal Transaksi (Rp)')
+        ->assertSee('placeholder="Rp 0"', false)
+        ->set('transaction_date', now()->toDateString())
+        ->set('account_id', $account->id)
+        ->set('category', 'Setoran Modal')
+        ->set('amount', 'Rp 250.000') // formatted string from client
+        ->call('prepareTransactionConfirmation')
+        ->assertHasNoErrors()
+        ->assertSet('showConfirmTransactionModal', true)
+        ->call('saveTransaction')
+        ->assertHasNoErrors();
+
+    $account->refresh();
+    expect((float) $account->balance)->toBe(1250000.0);
+
+    $trx = CashTransaction::where('account_id', $account->id)->latest('id')->first();
+    expect($trx)->not->toBeNull()
+        ->and((float) $trx->amount)->toBe(250000.0);
+});
+
+test('add account modal renders client-side rupiah input and handles formatted string initial_balance', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+
+    actingAs($manager);
+
+    Livewire::test('admin.cash-book.index')
+        ->call('openAccountModal')
+        ->assertSee('Saldo Awal (Rp)')
+        ->assertSee('displayInitialBalance')
+        ->set('account_name', 'Kas Bank Operasional')
+        ->set('account_type', 'business')
+        ->set('initial_balance', 'Rp 750.000') // Formatted string from client browser
+        ->call('saveAccount')
+        ->assertHasNoErrors()
+        ->assertSet('showAccountModal', false);
+
+    $acc = Account::where('name', 'Kas Bank Operasional')->first();
+    expect($acc)->not->toBeNull()
+        ->and((float) $acc->balance)->toBe(750000.0);
+});
