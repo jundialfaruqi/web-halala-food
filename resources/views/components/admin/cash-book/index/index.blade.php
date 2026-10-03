@@ -48,9 +48,11 @@
 
     <!-- Alert Flash Notification -->
     @if (session()->has('success'))
-        <div class="p-4 rounded-xl border border-brand-border bg-white text-brand-espresso text-sm font-medium flex items-center justify-between">
+        <div
+            class="p-4 rounded-xl border border-brand-border bg-white text-brand-espresso text-sm font-medium flex items-center justify-between">
             <span>{{ session('success') }}</span>
-            <button type="button" @click="$el.parentElement.remove()" class="text-brand-warm-gray hover:text-brand-espresso cursor-pointer">
+            <button type="button" @click="$el.parentElement.remove()"
+                class="text-brand-warm-gray hover:text-brand-espresso cursor-pointer">
                 <i class="ti ti-x"></i>
             </button>
         </div>
@@ -73,10 +75,11 @@
             </p>
 
             <div class="space-y-1.5 pt-2 border-t border-brand-border/40 text-sm">
-                @foreach($accounts as $acc)
+                @foreach ($accounts as $acc)
                     <div class="flex justify-between items-center py-0.5">
                         <span class="text-brand-warm-gray font-medium">{{ $acc->name }}</span>
-                        <span class="font-mono font-bold text-brand-espresso">Rp {{ number_format($acc->balance, 0, ',', '.') }}</span>
+                        <span class="font-mono font-bold text-brand-espresso">Rp
+                            {{ number_format($acc->balance, 0, ',', '.') }}</span>
                     </div>
                 @endforeach
             </div>
@@ -85,14 +88,16 @@
         <!-- Pemasukan & Pengeluaran Operasional -->
         <div class="p-5 rounded-xl border border-brand-border bg-white flex flex-col justify-between space-y-4">
             <div>
-                <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Pemasukan (Periode Ini)</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Pemasukan
+                    (Periode Ini)</span>
                 <p class="text-2xl font-mono font-extrabold text-brand-espresso mt-1">
                     Rp {{ number_format($filteredIncome, 0, ',', '.') }}
                 </p>
                 <p class="text-xs text-brand-warm-gray mt-1">Penerimaan penjualan, piutang &amp; setoran modal</p>
             </div>
             <div class="pt-3 border-t border-brand-border/40">
-                <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Biaya Usaha (Periode Ini)</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Biaya Usaha
+                    (Periode Ini)</span>
                 <p class="text-2xl font-mono font-extrabold text-brand-espresso mt-1">
                     Rp {{ number_format($filteredExpense, 0, ',', '.') }}
                 </p>
@@ -104,7 +109,8 @@
         <div class="p-5 rounded-xl border border-brand-border bg-white flex flex-col justify-between space-y-4">
             <div>
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Prive (Periode Ini)</span>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Prive
+                        (Periode Ini)</span>
                     <span class="text-xs font-mono font-bold text-brand-warm-gray">Akun 3-2000</span>
                 </div>
                 <p class="text-2xl font-mono font-extrabold text-brand-espresso mt-1">
@@ -113,7 +119,8 @@
                 <p class="text-xs text-brand-warm-gray mt-1">Penarikan dana kas usaha oleh pemilik</p>
             </div>
             <div class="pt-3 border-t border-brand-border/40 text-xs text-brand-warm-gray space-y-1">
-                <p><strong class="text-brand-espresso font-semibold">Prive:</strong> Pengambilan uang kas usaha yang dicatat mengurangi ekuitas modal pemilik di Neraca.</p>
+                <p><strong class="text-brand-espresso font-semibold">Prive:</strong> Pengambilan uang kas usaha yang
+                    dicatat mengurangi ekuitas modal pemilik di Neraca.</p>
             </div>
         </div>
     </div>
@@ -123,16 +130,16 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <!-- Search -->
             <div class="relative">
-                <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg pointer-events-none"></i>
-                <input type="text" wire:model.live.debounce.300ms="search"
-                    placeholder="Cari kategori, keterangan..."
+                <i
+                    class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg pointer-events-none"></i>
+                <input type="text" wire:model.live.debounce.300ms="search" placeholder="Cari kategori, keterangan..."
                     class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:border-brand-primary">
             </div>
 
             <!-- Type Filter -->
             <div>
                 <select wire:model.live="typeFilter"
-                    class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
+                    class="w-full px-4 py-3 bg-white border border-brand-border rounded-xl text-base text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
                     <option value="all">Semua Jenis Transaksi</option>
                     <option value="income">Pemasukan Usaha (+)</option>
                     <option value="expense">Pengeluaran Usaha (-)</option>
@@ -143,9 +150,9 @@
             <!-- Account Filter -->
             <div>
                 <select wire:model.live="accountFilter"
-                    class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
+                    class="w-full px-4 py-3 bg-white border border-brand-border rounded-xl text-base text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
                     <option value="">Semua Akun &amp; Rekening</option>
-                    @foreach($accounts as $acc)
+                    @foreach ($accounts as $acc)
                         <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                     @endforeach
                 </select>
@@ -154,39 +161,44 @@
             <!-- Quick Period Buttons -->
             <div class="flex items-center gap-1.5">
                 <button type="button" wire:click="setQuickDate('today')"
-                    class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold border border-brand-border bg-white text-brand-espresso hover:bg-neutral-50 transition cursor-pointer text-center">
+                    class="flex-1 py-2.5 px-3 rounded-xl text-base font-semibold border border-brand-border bg-white text-brand-espresso hover:bg-neutral-50 transition cursor-pointer text-center">
                     Hari Ini
                 </button>
                 <button type="button" wire:click="setQuickDate('this_month')"
-                    class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold border border-brand-border bg-white text-brand-espresso hover:bg-neutral-50 transition cursor-pointer text-center">
+                    class="flex-1 py-2.5 px-3 rounded-xl text-base font-semibold border border-brand-border bg-white text-brand-espresso hover:bg-neutral-50 transition cursor-pointer text-center">
                     Bulan Ini
                 </button>
                 <button type="button" wire:click="setQuickDate('all')"
-                    class="flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold border border-brand-border bg-white text-brand-espresso hover:bg-neutral-50 transition cursor-pointer text-center">
+                    class="flex-1 py-2.5 px-3 rounded-xl text-base font-semibold border border-brand-border bg-white text-brand-espresso hover:bg-neutral-50 transition cursor-pointer text-center">
                     Semua
                 </button>
             </div>
         </div>
 
-        @if($hasActiveFilters)
-            <div class="p-3.5 bg-neutral-50 rounded-xl border border-brand-border flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+        @if ($hasActiveFilters)
+            <div
+                class="p-3.5 bg-neutral-50 rounded-xl border border-brand-border flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
                 <div class="flex items-center gap-2 text-brand-warm-gray">
                     <span class="font-bold text-brand-espresso">{{ $transactions->total() }}</span> transaksi ditemukan
                 </div>
                 <div class="flex flex-wrap items-center gap-4">
                     <div>
                         <span class="text-brand-warm-gray">Pemasukan:</span>
-                        <span class="font-mono font-bold text-brand-espresso ml-1">+ Rp {{ number_format($filteredIncome, 0, ',', '.') }}</span>
+                        <span class="font-mono font-bold text-brand-espresso ml-1">+ Rp
+                            {{ number_format($filteredIncome, 0, ',', '.') }}</span>
                     </div>
                     <div>
                         <span class="text-brand-warm-gray">Pengeluaran:</span>
-                        <span class="font-mono font-bold text-brand-espresso ml-1">- Rp {{ number_format($filteredExpense, 0, ',', '.') }}</span>
+                        <span class="font-mono font-bold text-brand-espresso ml-1">- Rp
+                            {{ number_format($filteredExpense, 0, ',', '.') }}</span>
                     </div>
                     <div>
                         <span class="text-brand-warm-gray">Prive:</span>
-                        <span class="font-mono font-bold text-brand-espresso ml-1">Rp {{ number_format($filteredPrive, 0, ',', '.') }}</span>
+                        <span class="font-mono font-bold text-brand-espresso ml-1">Rp
+                            {{ number_format($filteredPrive, 0, ',', '.') }}</span>
                     </div>
-                    <button type="button" wire:click="resetFilters" class="text-brand-primary hover:underline font-bold cursor-pointer">
+                    <button type="button" wire:click="resetFilters"
+                        class="text-brand-primary hover:underline font-bold cursor-pointer">
                         ✕ Reset Filter
                     </button>
                 </div>
@@ -198,7 +210,8 @@
     <div class="overflow-x-auto bg-white rounded-xl border border-brand-border">
         <table class="w-full text-left border-collapse">
             <thead>
-                <tr class="border-b border-brand-border bg-neutral-50/60 text-brand-espresso text-xs sm:text-sm font-bold uppercase tracking-wider">
+                <tr
+                    class="border-b border-brand-border bg-neutral-50/60 text-brand-espresso text-xs sm:text-sm font-bold uppercase tracking-wider">
                     <th class="py-3.5 px-6 whitespace-nowrap">Tanggal</th>
                     <th class="py-3.5 px-6 whitespace-nowrap">Jenis &amp; Kategori</th>
                     <th class="py-3.5 px-6 whitespace-nowrap">Akun / Rekening</th>
@@ -216,7 +229,7 @@
                         <td class="py-4 px-6">
                             <p class="font-bold text-brand-espresso">{{ $trx->category }}</p>
                             <p class="text-xs text-brand-warm-gray uppercase tracking-wider mt-0.5">
-                                @if($trx->type === 'income')
+                                @if ($trx->type === 'income')
                                     Pemasukan Usaha
                                 @elseif($trx->type === 'expense')
                                     Pengeluaran Usaha
@@ -231,8 +244,10 @@
                         <td class="py-4 px-6 text-brand-warm-gray">
                             {{ $trx->description ?: '-' }}
                         </td>
-                        <td class="py-4 px-6 text-right font-mono font-extrabold text-base whitespace-nowrap text-brand-espresso">
-                            {{ $trx->type === 'income' ? '+' : '-' }} Rp {{ number_format($trx->amount, 0, ',', '.') }}
+                        <td
+                            class="py-4 px-6 text-right font-mono font-extrabold text-base whitespace-nowrap text-brand-espresso">
+                            {{ $trx->type === 'income' ? '+' : '-' }} Rp
+                            {{ number_format($trx->amount, 0, ',', '.') }}
                         </td>
                         <td class="py-4 px-6 text-right whitespace-nowrap">
                             @can('buku-kas-delete')
@@ -255,20 +270,23 @@
         </table>
     </div>
 
-    @if($transactions->hasPages())
+    @if ($transactions->hasPages())
         <div class="pt-2">
             {{ $transactions->links() }}
         </div>
     @endif
 
     <!-- Modal Form Catat Transaksi Kas -->
-    @if($showTransactionModal)
+    @if ($showTransactionModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-xs p-4">
-            <div class="bg-white w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-brand-border shadow-2xl overflow-hidden">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-neutral-50/50 shrink-0">
+            <div
+                class="bg-white w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-brand-border shadow-2xl overflow-hidden">
+                <div
+                    class="flex items-center justify-between px-6 py-4 border-b border-brand-border bg-neutral-50/50 shrink-0">
                     <div>
                         <h3 class="text-lg font-bold text-brand-espresso">Catat Transaksi Kas</h3>
-                        <p class="text-xs text-brand-warm-gray">Catat pemasukan, pengeluaran, atau penarikan kas usaha</p>
+                        <p class="text-xs text-brand-warm-gray">Catat pemasukan, pengeluaran, atau penarikan kas usaha
+                        </p>
                     </div>
                     <button type="button" wire:click="$set('showTransactionModal', false)"
                         class="text-brand-warm-gray hover:text-brand-espresso text-xl font-bold cursor-pointer">
@@ -276,19 +294,24 @@
                     </button>
                 </div>
 
-                <form wire:submit="prepareTransactionConfirmation" class="flex flex-col flex-1 overflow-hidden min-h-0">
+                <form wire:submit="prepareTransactionConfirmation"
+                    class="flex flex-col flex-1 overflow-hidden min-h-0">
                     <div class="p-6 overflow-y-auto space-y-4 flex-1">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
+                                <label
+                                    class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                                     Tanggal Transaksi <span class="text-red-600">*</span>
                                 </label>
                                 <input type="date" wire:model="transaction_date"
                                     class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary" />
-                                @error('transaction_date') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                                @error('transaction_date')
+                                    <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                                @enderror
                             </div>
                             <div>
-                                <label class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
+                                <label
+                                    class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                                     Jenis Transaksi <span class="text-red-600">*</span>
                                 </label>
                                 <select wire:model.live="type"
@@ -297,23 +320,29 @@
                                     <option value="income">Pemasukan Usaha (+)</option>
                                     <option value="prive">Prive</option>
                                 </select>
-                                @error('type') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                                @error('type')
+                                    <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
+                            <label
+                                class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                                 Akun / Rekening Kas <span class="text-red-600">*</span>
                             </label>
                             <select wire:model="account_id"
                                 class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary">
-                                @foreach($accounts as $acc)
+                                @foreach ($accounts as $acc)
                                     <option value="{{ $acc->id }}">
-                                        {{ $acc->name }} (Saldo: Rp {{ number_format($acc->balance, 0, ',', '.') }})
+                                        {{ $acc->name }} (Saldo: Rp
+                                        {{ number_format($acc->balance, 0, ',', '.') }})
                                     </option>
                                 @endforeach
                             </select>
-                            @error('account_id') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                            @error('account_id')
+                                <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <!-- Pilihan Kategori Cepat -->
@@ -322,7 +351,7 @@
                                 Kategori / Pos Transaksi <span class="text-red-600">*</span>
                             </label>
                             <div class="flex flex-wrap gap-2">
-                                @if($type === 'income')
+                                @if ($type === 'income')
                                     <button type="button" wire:click="$set('category', 'Setoran Modal')"
                                         class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $category === 'Setoran Modal' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50' }}">
                                         Setoran Modal
@@ -371,31 +400,38 @@
                             <input type="text" wire:model="category"
                                 placeholder="Ketik atau pilih nama kategori..."
                                 class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary" />
-                            @error('category') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                            @error('category')
+                                <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
+                            <label
+                                class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                                 Nominal Transaksi (Rp) <span class="text-red-600">*</span>
                             </label>
-                            <input type="number" step="any" min="1" wire:model="amount"
-                                placeholder="0"
+                            <input type="number" step="any" min="1" wire:model="amount" placeholder="0"
                                 class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl font-mono text-base font-bold text-brand-espresso focus:outline-none focus:border-brand-primary" />
-                            @error('amount') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                            @error('amount')
+                                <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                            @enderror
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
+                            <label
+                                class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                                 Keterangan Tambahan
                             </label>
-                            <textarea wire:model="description" rows="2"
-                                placeholder="Catatan transaksi (opsional)..."
+                            <textarea wire:model="description" rows="2" placeholder="Catatan transaksi (opsional)..."
                                 class="w-full px-4 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary"></textarea>
-                            @error('description') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                            @error('description')
+                                <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                            @enderror
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-brand-border bg-neutral-50/50 shrink-0">
+                    <div
+                        class="flex items-center justify-end gap-3 px-6 py-4 border-t border-brand-border bg-neutral-50/50 shrink-0">
                         <button type="button" wire:click="$set('showTransactionModal', false)"
                             class="px-4 py-2.5 rounded-xl font-bold text-sm text-brand-espresso bg-white border border-brand-border hover:bg-neutral-50 transition cursor-pointer">
                             Batal
@@ -411,11 +447,11 @@
     @endif
 
     <!-- Modal Konfirmasi Transaksi Kas -->
-    @if($showConfirmTransactionModal)
+    @if ($showConfirmTransactionModal)
         @php
             $selectedAccount = $accounts->firstWhere('id', $account_id);
             $currentBalance = $selectedAccount?->balance ?? 0;
-            $newBalance = $type === 'income' ? ($currentBalance + (float) $amount) : ($currentBalance - (float) $amount);
+            $newBalance = $type === 'income' ? $currentBalance + (float) $amount : $currentBalance - (float) $amount;
         @endphp
         <div class="fixed inset-0 z-60 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-xs p-4">
             <div class="bg-white w-full max-w-md rounded-2xl p-6 border border-brand-border shadow-2xl space-y-4">
@@ -439,7 +475,8 @@
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between py-1 border-b border-brand-border/40">
                         <span class="text-brand-warm-gray">Tanggal:</span>
-                        <span class="font-bold text-brand-espresso">{{ $transaction_date ? \Carbon\Carbon::parse($transaction_date)->format('d/m/Y') : '-' }}</span>
+                        <span
+                            class="font-bold text-brand-espresso">{{ $transaction_date ? \Carbon\Carbon::parse($transaction_date)->format('d/m/Y') : '-' }}</span>
                     </div>
                     <div class="flex justify-between py-1 border-b border-brand-border/40">
                         <span class="text-brand-warm-gray">Akun Kas:</span>
@@ -449,7 +486,7 @@
                         <span class="text-brand-warm-gray">Kategori:</span>
                         <span class="font-bold text-brand-espresso">{{ $category }}</span>
                     </div>
-                    @if($description)
+                    @if ($description)
                         <div class="flex justify-between py-1 border-b border-brand-border/40">
                             <span class="text-brand-warm-gray">Keterangan:</span>
                             <span class="font-medium text-brand-espresso text-right">{{ $description }}</span>
@@ -457,7 +494,8 @@
                     @endif
                     <div class="flex justify-between py-1 text-xs text-brand-warm-gray">
                         <span>Estimasi Saldo Baru:</span>
-                        <span class="font-mono font-bold text-brand-espresso text-sm">Rp {{ number_format($newBalance, 0, ',', '.') }}</span>
+                        <span class="font-mono font-bold text-brand-espresso text-sm">Rp
+                            {{ number_format($newBalance, 0, ',', '.') }}</span>
                     </div>
                 </div>
 
@@ -477,7 +515,7 @@
     @endif
 
     <!-- Modal Form Tambah Akun Kas -->
-    @if($showAccountModal)
+    @if ($showAccountModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-xs p-4">
             <div class="bg-white w-full max-w-md rounded-2xl p-6 border border-brand-border shadow-2xl space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-brand-border">
@@ -496,7 +534,9 @@
                         <input type="text" wire:model="account_name"
                             placeholder="Misal: Kas Toko, Rekening Mandiri..."
                             class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary" />
-                        @error('account_name') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                        @error('account_name')
+                            <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <div>
@@ -508,7 +548,9 @@
                             <option value="business">Kas Usaha (Operasional / Hasil Tagihan)</option>
                             <option value="personal">Kas Pribadi (Kebutuhan Belanja Keluarga)</option>
                         </select>
-                        @error('account_type') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                        @error('account_type')
+                            <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <div>
@@ -518,7 +560,9 @@
                         <input type="number" step="any" min="0" wire:model="initial_balance"
                             placeholder="0"
                             class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl font-mono text-base font-bold text-brand-espresso focus:outline-none focus:border-brand-primary" />
-                        @error('initial_balance') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
+                        @error('initial_balance')
+                            <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span>
+                        @enderror
                     </div>
 
                     <div>
@@ -546,7 +590,7 @@
     @endif
 
     <!-- Modal Konfirmasi Hapus Transaksi -->
-    @if($deletingTransactionId)
+    @if ($deletingTransactionId)
         <div class="fixed inset-0 z-60 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-xs p-4">
             <div class="bg-white w-full max-w-sm rounded-2xl p-6 border border-brand-border shadow-2xl space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-brand-border">
@@ -558,7 +602,8 @@
                 </div>
 
                 <p class="text-sm text-brand-warm-gray leading-relaxed">
-                    Apakah Anda yakin ingin membatalkan transaksi ini? Saldo rekening kas dan ayat jurnal terkait akan dikembalikan ke posisi semula.
+                    Apakah Anda yakin ingin membatalkan transaksi ini? Saldo rekening kas dan ayat jurnal terkait akan
+                    dikembalikan ke posisi semula.
                 </p>
 
                 <div class="flex items-center justify-end gap-3 pt-2">
