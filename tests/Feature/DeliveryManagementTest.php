@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\Delivery;
+use App\Models\DeliveryItem;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
@@ -17,6 +19,59 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    $unit = Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+
+    $product = Product::firstOrCreate(
+        ['name' => 'Marie Wijen'],
+        [
+            'unit_id' => $unit->id,
+            'consignment_price' => 12000,
+            'retail_price' => 15000,
+            'stock' => 50,
+            'stock_ready' => 50,
+            'min_stock' => 10,
+            'is_active' => true,
+        ]
+    );
+
+    $store = Store::firstOrCreate(
+        ['name' => 'Pusat Oleh-Oleh Barokah'],
+        [
+            'owner_name' => 'H. Ahmad Barokah',
+            'phone' => '081234567890',
+            'address' => 'Jl. Pasar Besar No. 12, Malang',
+            'latitude' => -7.983908,
+            'longitude' => 112.630852,
+            'route' => 'Rute Pasar Besar',
+            'notes' => 'Toko utama grosir oleh-oleh',
+            'is_active' => true,
+        ]
+    );
+
+    $kurir = User::where('email', 'kurir@halala-food.id')->first();
+
+    $delivery = Delivery::firstOrCreate(
+        ['delivery_number' => 'SJ-2026-0001'],
+        [
+            'store_id' => $store->id,
+            'courier_id' => $kurir?->id,
+            'delivery_date' => now()->toDateString(),
+            'status' => 'diproses',
+            'total_items' => 10,
+            'total_value' => 120000,
+            'notes' => 'Pengantaran stok pagi',
+        ]
+    );
+
+    DeliveryItem::firstOrCreate(
+        ['delivery_id' => $delivery->id, 'product_id' => $product->id],
+        [
+            'quantity' => 10,
+            'unit_price' => 12000,
+            'subtotal' => 120000,
+        ]
+    );
 });
 
 test('unauthenticated users are redirected from deliveries page to login', function () {

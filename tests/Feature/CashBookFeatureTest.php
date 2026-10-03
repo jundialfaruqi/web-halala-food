@@ -16,6 +16,17 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    Account::firstOrCreate(
+        ['code' => '1-10001'],
+        [
+            'name' => 'Kas Operasional',
+            'type' => 'asset',
+            'category' => 'Kas & Bank',
+            'balance' => 1000000.0,
+            'is_active' => true,
+        ]
+    );
 });
 
 test('unauthenticated users are redirected from cash book to login', function () {

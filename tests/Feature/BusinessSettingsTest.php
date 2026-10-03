@@ -98,15 +98,42 @@ test('invoice and delivery detail pages render dynamic business settings and ban
         ],
     ]);
 
+    $store = \App\Models\Store::create([
+        'name' => 'Toko Barokah',
+        'owner_name' => 'Pak Budi',
+        'phone' => '081234567890',
+        'address' => 'Jl. Kebon Jeruk',
+        'is_active' => true,
+    ]);
+
+    $invoice = Invoice::create([
+        'invoice_number' => 'INV-TEST-001',
+        'store_id' => $store->id,
+        'invoice_date' => now()->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
+        'subtotal' => 100000,
+        'total_amount' => 100000,
+        'paid_amount' => 0,
+        'remaining_balance' => 100000,
+        'status' => 'belum_dibayar',
+    ]);
+
+    $delivery = Delivery::create([
+        'delivery_number' => 'SJ-TEST-001',
+        'store_id' => $store->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'diproses',
+        'total_items' => 5,
+        'total_value' => 50000,
+    ]);
+
     actingAs($manager);
 
-    $invoice = Invoice::first();
     get(route('admin.invoices.show', $invoice))
         ->assertOk()
         ->assertSee('HALALA CEMILAN NUSANTARA')
         ->assertSee('BANK JATIM SYARIAH: 600-1122-3344 a.n CV Halala Cemilan');
 
-    $delivery = Delivery::first();
     get(route('admin.deliveries.show', $delivery))
         ->assertOk()
         ->assertSee('HALALA CEMILAN NUSANTARA');

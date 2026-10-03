@@ -16,6 +16,33 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    $unit = Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+    $rawUnit = Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
+
+    $product = Product::firstOrCreate(
+        ['name' => 'Marie Wijen'],
+        [
+            'unit_id' => $unit->id,
+            'unit' => 'bungkus',
+            'consignment_price' => 12000.00,
+            'retail_price' => 15000.00,
+            'stock_ready' => 50,
+            'is_active' => true,
+        ]
+    );
+
+    $mat = \App\Models\RawMaterial::firstOrCreate(
+        ['name' => 'Wijen Putih Sangrai'],
+        ['unit_id' => $rawUnit->id, 'unit' => 'g', 'stock' => 5000, 'cost_per_unit' => 0.05]
+    );
+
+    \App\Models\ProductRecipe::firstOrCreate([
+        'product_id' => $product->id,
+        'raw_material_id' => $mat->id,
+    ], [
+        'quantity_needed' => 30.00,
+    ]);
 });
 
 test('unauthenticated users are redirected from products page to login', function () {

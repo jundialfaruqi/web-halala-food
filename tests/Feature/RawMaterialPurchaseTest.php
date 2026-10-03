@@ -16,6 +16,24 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    \App\Models\Account::firstOrCreate(
+        ['name' => 'Kas Tunai Usaha'],
+        ['type' => 'business', 'balance' => 1000000.00]
+    );
+
+    $unit = \App\Models\Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
+
+    \App\Models\RawMaterial::firstOrCreate(
+        ['name' => 'Wijen Putih Sangrai'],
+        [
+            'unit_id' => $unit->id,
+            'unit' => 'g',
+            'stock' => 10000,
+            'min_stock' => 2000,
+            'cost_per_unit' => 0.05,
+        ]
+    );
 });
 
 test('unauthenticated users are redirected from purchases page to login', function () {

@@ -15,6 +15,35 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+    $bungkus = Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+    $gram = Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
+
+    $mat1 = RawMaterial::firstOrCreate(
+        ['name' => 'Wijen Putih Sangrai'],
+        ['unit_id' => $gram->id, 'unit' => 'g', 'stock' => 10000, 'min_stock' => 2000, 'cost_per_unit' => 65.0]
+    );
+    $mat2 = RawMaterial::firstOrCreate(
+        ['name' => 'Gula Pasir Kristal'],
+        ['unit_id' => $gram->id, 'unit' => 'g', 'stock' => 25000, 'min_stock' => 5000, 'cost_per_unit' => 17.5]
+    );
+
+    $product = Product::firstOrCreate(
+        ['name' => 'Marie Wijen'],
+        [
+            'unit_id' => $bungkus->id,
+            'consignment_price' => 12000,
+            'retail_price' => 15000,
+            'stock' => 50,
+            'min_stock' => 10,
+            'is_active' => true,
+        ]
+    );
+
+    ProductRecipe::firstOrCreate(
+        ['product_id' => $product->id, 'raw_material_id' => $mat1->id],
+        ['quantity_needed' => 40]
+    );
 });
 
 test('unauthenticated users are redirected from raw materials page to login', function () {

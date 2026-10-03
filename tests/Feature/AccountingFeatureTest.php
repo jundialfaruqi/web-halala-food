@@ -14,6 +14,7 @@ use function Pest\Laravel\seed;
 
 beforeEach(function () {
     seed(DatabaseSeeder::class);
+    seed(\Database\Seeders\AccountingSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
 });
 
@@ -142,6 +143,16 @@ test('manager can view financial statements with income statement and balance sh
 });
 
 test('each raw material has a dedicated account in chart of accounts and ledger', function () {
+    \App\Models\RawMaterial::firstOrCreate(
+        ['name' => 'Wijen Putih Sangrai'],
+        [
+            'unit' => 'g',
+            'stock' => 10000,
+            'min_stock' => 2000,
+            'cost_per_unit' => 65.0,
+        ]
+    );
+
     $materials = \App\Models\RawMaterial::all();
     expect($materials->count())->toBeGreaterThan(0);
 

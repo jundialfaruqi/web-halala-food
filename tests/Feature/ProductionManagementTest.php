@@ -17,6 +17,39 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    $unit = \App\Models\Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+    $rawUnit = \App\Models\Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
+
+    $product = Product::firstOrCreate(
+        ['name' => 'Marie Wijen'],
+        [
+            'unit_id' => $unit->id,
+            'unit' => 'bungkus',
+            'consignment_price' => 12000.00,
+            'retail_price' => 15000.00,
+            'stock_ready' => 50,
+            'is_active' => true,
+        ]
+    );
+
+    $wijen = RawMaterial::firstOrCreate(
+        ['name' => 'Wijen Putih Sangrai'],
+        [
+            'unit_id' => $rawUnit->id,
+            'unit' => 'g',
+            'stock' => 15000.00,
+            'min_stock' => 5000.00,
+            'cost_per_unit' => 0.05,
+        ]
+    );
+
+    \App\Models\ProductRecipe::firstOrCreate([
+        'product_id' => $product->id,
+        'raw_material_id' => $wijen->id,
+    ], [
+        'quantity_needed' => 30.00,
+    ]);
 });
 
 test('unauthenticated users are redirected from production page to login', function () {
@@ -201,12 +234,33 @@ test('cancelling a batch restores raw materials and decrements product ready sto
     $dev = User::where('email', 'developer@halala-food.id')->first();
     actingAs($dev);
 
-    // Grab the seeded sample batch
-    $batch = ProductionBatch::with(['product', 'batchMaterials.rawMaterial'])
-        ->where('status', 'completed')
-        ->first();
+    $product = Product::where('name', 'Marie Wijen')->first();
+    $wijen = RawMaterial::where('name', 'Wijen Putih Sangrai')->first();
 
-    expect($batch)->not->toBeNull();
+    $batch = ProductionBatch::create([
+        'batch_code' => 'BATCH-TEST-CANCEL',
+        'product_id' => $product->id,
+        'user_id' => $dev->id,
+        'planned_qty' => 10,
+        'actual_qty_good' => 10,
+        'actual_qty_bad' => 0,
+        'total_material_cost' => 15000.0,
+        'unit_cost_produced' => 1500.0,
+        'status' => 'completed',
+        'completed_at' => now(),
+    ]);
+
+    \App\Models\ProductionBatchMaterial::create([
+        'production_batch_id' => $batch->id,
+        'raw_material_id' => $wijen->id,
+        'unit_name' => 'g',
+        'planned_qty' => 300.0,
+        'actual_used_qty' => 300.0,
+        'cost_per_unit' => 50.0,
+        'subtotal_cost' => 15000.0,
+    ]);
+
+    $batch->load(['product', 'batchMaterials.rawMaterial']);
 
     $product = $batch->product;
     $initialProductStock = $product->stock_ready;

@@ -5,6 +5,7 @@ use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
@@ -19,6 +20,71 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    $unit = Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+
+    $product = Product::firstOrCreate(
+        ['name' => 'Marie Wijen'],
+        [
+            'unit_id' => $unit->id,
+            'consignment_price' => 12000,
+            'retail_price' => 15000,
+            'stock' => 50,
+            'stock_ready' => 50,
+            'min_stock' => 10,
+            'is_active' => true,
+        ]
+    );
+
+    $store = Store::firstOrCreate(
+        ['name' => 'Pusat Oleh-Oleh Barokah'],
+        [
+            'owner_name' => 'H. Ahmad Barokah',
+            'phone' => '081234567890',
+            'address' => 'Jl. Pasar Besar No. 12, Malang',
+            'latitude' => -7.983908,
+            'longitude' => 112.630852,
+            'route' => 'Rute Pasar Besar',
+            'notes' => 'Toko utama grosir oleh-oleh',
+            'is_active' => true,
+        ]
+    );
+
+    $invoice = Invoice::firstOrCreate(
+        ['invoice_number' => 'INV-2026-0001'],
+        [
+            'store_id' => $store->id,
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'subtotal' => 200000.0,
+            'discount' => 0.0,
+            'total_amount' => 200000.0,
+            'paid_amount' => 50000.0,
+            'remaining_balance' => 150000.0,
+            'status' => 'sebagian',
+            'notes' => 'Tagihan konsinyasi',
+        ]
+    );
+
+    InvoiceItem::firstOrCreate(
+        ['invoice_id' => $invoice->id, 'product_id' => $product->id],
+        [
+            'quantity' => 20,
+            'unit_price' => 10000.0,
+            'subtotal' => 200000.0,
+        ]
+    );
+
+    InvoicePayment::firstOrCreate(
+        ['invoice_id' => $invoice->id, 'payment_number' => 'PAY-2026-0001'],
+        [
+            'reference_number' => 'TRF-INIT-01',
+            'amount' => 50000.0,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'transfer_bank',
+            'notes' => 'Pembayaran awal sebagian',
+        ]
+    );
 });
 
 test('unauthenticated users are redirected from invoices page to login', function () {

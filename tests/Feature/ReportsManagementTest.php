@@ -61,7 +61,18 @@ test('reports component can switch tabs and period filters', function () {
 
 test('reports calculates hpp from completed production batches without database error', function () {
     $manager = User::where('email', 'manager@halala-food.id')->first();
-    $product = \App\Models\Product::first();
+    $unit = \App\Models\Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+    $product = \App\Models\Product::firstOrCreate(
+        ['name' => 'Marie Wijen'],
+        [
+            'unit_id' => $unit->id,
+            'consignment_price' => 12000,
+            'retail_price' => 15000,
+            'stock' => 50,
+            'min_stock' => 10,
+            'is_active' => true,
+        ]
+    );
 
     \App\Models\ProductionBatch::create([
         'batch_code' => 'PRD-TEST-HPP',
@@ -81,5 +92,5 @@ test('reports calculates hpp from completed production batches without database 
     Livewire::test('admin.reports.index')
         ->assertOk()
         ->assertSee('HPP Bahan Baku Terpakai')
-        ->assertSee('289.125');
+        ->assertSee('125.000');
 });

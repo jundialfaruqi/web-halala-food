@@ -15,6 +15,20 @@ use function Pest\Laravel\seed;
 beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+    Store::firstOrCreate(
+        ['name' => 'Pusat Oleh-Oleh Barokah'],
+        [
+            'owner_name' => 'H. Ahmad Barokah',
+            'phone' => '081234567890',
+            'address' => 'Jl. Pasar Besar No. 12, Malang',
+            'latitude' => -7.983908,
+            'longitude' => 112.630852,
+            'route' => 'Rute Pasar Besar',
+            'notes' => 'Toko utama grosir oleh-oleh',
+            'is_active' => true,
+        ]
+    );
 });
 
 test('unauthenticated users are redirected from stores page to login', function () {
