@@ -8,6 +8,8 @@ use App\Models\RawMaterial;
 use App\Models\Store;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -60,10 +62,22 @@ new #[Layout('components.layouts.admin'), Title('Dashboard - Halala Food')] clas
         $pendingDeliveriesCount = Delivery::whereIn('status', ['diproses', 'dikirim'])->count();
         $readyProductsStock = (int) Product::sum('stock_ready');
 
+        $user = Auth::user();
+        $isCourier = $user && method_exists($user, 'hasRole') && $user->hasRole('kurir');
+
+        $completedDeliveriesCount = Delivery::where('status', 'selesai')
+            ->when($isCourier, function ($q) use ($user) {
+                $q->where('courier_id', $user->id);
+            })
+            ->count();
+
+        $canManageUsers = Gate::allows('user-manage');
+        $canViewMaterials = Gate::allows('bahan-baku-view');
+
         // Low stock raw materials (<= min_stock)
-        $lowStockMaterials = RawMaterial::whereColumn('stock', '<=', 'min_stock')
-            ->take(5)
-            ->get();
+        $lowStockMaterials = $canViewMaterials
+            ? RawMaterial::whereColumn('stock', '<=', 'min_stock')->take(5)->get()
+            : collect();
 
         // Recent deliveries
         $recentDeliveries = Delivery::with(['store', 'courier'])
@@ -78,26 +92,35 @@ new #[Layout('components.layouts.admin'), Title('Dashboard - Halala Food')] clas
             ->take(5)
             ->get();
 
-        // User management query (for team section & test compatibility)
-        $usersQuery = User::query()
-            ->with('roles')
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
-                });
-            })
-            ->when($this->selectedRole, function ($query) {
-                $query->whereHas('roles', function ($q) {
-                    $q->where('name', $this->selectedRole);
-                });
-            })
-            ->latest();
+        // User management query (only if user has 'user-manage' permission)
+        if ($canManageUsers) {
+            $usersQuery = User::query()
+                ->with('roles')
+                ->when($this->search, function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('name', 'like', '%' . $this->search . '%')
+                            ->orWhere('email', 'like', '%' . $this->search . '%');
+                    });
+                })
+                ->when($this->selectedRole, function ($query) {
+                    $query->whereHas('roles', function ($q) {
+                        $q->where('name', $this->selectedRole);
+                    });
+                })
+                ->latest();
 
-        $roles = class_exists(Role::class) ? Role::withCount('users')->get() : collect();
-        $totalUsers = User::count();
-        $totalRoles = class_exists(Role::class) ? Role::count() : 0;
-        $totalPermissions = class_exists(Permission::class) ? Permission::count() : 0;
+            $users = $usersQuery->paginate(5);
+            $roles = class_exists(Role::class) ? Role::withCount('users')->get() : collect();
+            $totalUsers = User::count();
+            $totalRoles = class_exists(Role::class) ? Role::count() : 0;
+            $totalPermissions = class_exists(Permission::class) ? Permission::count() : 0;
+        } else {
+            $users = User::whereRaw('1 = 0')->paginate(5);
+            $roles = collect();
+            $totalUsers = 0;
+            $totalRoles = 0;
+            $totalPermissions = 0;
+        }
 
         return [
             'monthlyInvoiced' => $monthlyInvoiced,
@@ -105,12 +128,13 @@ new #[Layout('components.layouts.admin'), Title('Dashboard - Halala Food')] clas
             'totalCashBalance' => $totalCashBalance,
             'activeStoresCount' => $activeStoresCount,
             'pendingDeliveriesCount' => $pendingDeliveriesCount,
+            'completedDeliveriesCount' => $completedDeliveriesCount,
             'readyProductsStock' => $readyProductsStock,
             'lowStockMaterials' => $lowStockMaterials,
             'recentDeliveries' => $recentDeliveries,
             'pendingInvoices' => $pendingInvoices,
 
-            'users' => $usersQuery->paginate(5),
+            'users' => $users,
             'totalUsers' => $totalUsers,
             'totalRoles' => $totalRoles,
             'totalPermissions' => $totalPermissions,

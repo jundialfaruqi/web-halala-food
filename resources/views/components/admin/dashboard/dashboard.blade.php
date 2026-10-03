@@ -18,17 +18,30 @@
     <!-- 1. Ringkasan Metrik Usaha (Tanpa Icon BG, Tanpa Badge, Warna Minimalis) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 
-        <!-- Metrik 1: Total Omset Bulan Ini -->
-        <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Omset Bulan Ini</span>
-                <i class="ti ti-receipt text-2xl text-brand-warm-gray"></i>
+        {{-- Metrik 1: Total Omset (Finance/Manager) / Pengantaran Selesai (Kurir) --}}
+        @can('laporan-keuangan-view')
+            <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Omset Bulan Ini</span>
+                    <i class="ti ti-receipt text-2xl text-brand-warm-gray"></i>
+                </div>
+                <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
+                    Rp {{ number_format($monthlyInvoiced, 0, ',', '.') }}
+                </div>
+                <p class="text-xs text-brand-warm-gray">Total tagihan faktur penjualan konsinyasi</p>
             </div>
-            <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
-                Rp {{ number_format($monthlyInvoiced, 0, ',', '.') }}
+        @else
+            <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Pengantaran Selesai</span>
+                    <i class="ti ti-circle-check text-2xl text-brand-warm-gray"></i>
+                </div>
+                <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
+                    {{ $completedDeliveriesCount }} Surat Jalan
+                </div>
+                <p class="text-xs text-brand-warm-gray">Pengantaran sukses diserahterimakan</p>
             </div>
-            <p class="text-xs text-brand-warm-gray">Total tagihan faktur penjualan konsinyasi</p>
-        </div>
+        @endcan
 
         <!-- Metrik 2: Piutang Toko Berjalan -->
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
@@ -184,40 +197,41 @@
             </div>
 
             <!-- Card: Status Inventaris Bahan Baku -->
-            <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 space-y-3">
-                <div class="flex items-center justify-between pb-3 border-b border-brand-border">
-                    <h3 class="text-lg font-bold text-brand-espresso">Peringatan Bahan Baku</h3>
-                    @can('bahan-baku-view')
+            @can('bahan-baku-view')
+                <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 space-y-3">
+                    <div class="flex items-center justify-between pb-3 border-b border-brand-border">
+                        <h3 class="text-lg font-bold text-brand-espresso">Peringatan Bahan Baku</h3>
                         <a href="{{ route('admin.raw-materials') }}" wire:navigate class="text-xs font-bold text-brand-primary hover:underline">
                             Bahan Baku Dapur →
                         </a>
-                    @endcan
-                </div>
-
-                @if($lowStockMaterials->isNotEmpty())
-                    <div class="space-y-2">
-                        @foreach($lowStockMaterials as $mat)
-                            <div class="flex items-center justify-between py-1.5 border-b border-brand-border/40 last:border-b-0 text-sm">
-                                <span class="font-medium text-brand-espresso">{{ $mat->name }}</span>
-                                <span class="font-mono text-xs font-bold text-brand-espresso">
-                                    {{ number_format($mat->stock, 0, ',', '.') }} / min {{ number_format($mat->min_stock, 0, ',', '.') }} {{ $mat->display_unit }}
-                                </span>
-                            </div>
-                        @endforeach
                     </div>
-                @else
-                    <p class="py-2 text-sm text-brand-warm-gray">
-                        Semua persediaan bahan baku dapur dalam kondisi aman di atas batas minimum.
-                    </p>
-                @endif
-            </div>
+
+                    @if($lowStockMaterials->isNotEmpty())
+                        <div class="space-y-2">
+                            @foreach($lowStockMaterials as $mat)
+                                <div class="flex items-center justify-between py-1.5 border-b border-brand-border/40 last:border-b-0 text-sm">
+                                    <span class="font-medium text-brand-espresso">{{ $mat->name }}</span>
+                                    <span class="font-mono text-xs font-bold text-brand-espresso">
+                                        {{ number_format($mat->stock, 0, ',', '.') }} / min {{ number_format($mat->min_stock, 0, ',', '.') }} {{ $mat->display_unit }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="py-2 text-sm text-brand-warm-gray">
+                            Semua persediaan bahan baku dapur dalam kondisi aman di atas batas minimum.
+                        </p>
+                    @endif
+                </div>
+            @endcan
 
         </div>
 
     </div>
 
     <!-- 3. Manajemen Tim & Pengguna Sistem -->
-    <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 sm:p-8 space-y-6">
+    @can('user-manage')
+        <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 sm:p-8 space-y-6">
 
         <!-- Table Header & Controls -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-brand-border">
@@ -308,7 +322,7 @@
                 {{ $users->links() }}
             </div>
         @endif
-
     </div>
+    @endcan
 
 </div>
