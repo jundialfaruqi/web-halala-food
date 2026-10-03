@@ -317,7 +317,8 @@
     <div class="flex border-b border-brand-border gap-4 sm:gap-8 overflow-x-auto">
         <!-- 1. Tab Master Bahan Baku -->
         <button type="button" @click="activeTab = 'materials'"
-            :class="activeTab === 'materials' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
+            :class="activeTab === 'materials' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' :
+                'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
             class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
             <span>Master Bahan Baku</span>
             <span class="text-xs text-brand-warm-gray">(<span x-text="materials.length"></span>)</span>
@@ -325,7 +326,8 @@
 
         <!-- 2. Tab Resep Produk (BOM) -->
         <button type="button" @click="activeTab = 'recipes'"
-            :class="activeTab === 'recipes' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' : 'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
+            :class="activeTab === 'recipes' ? 'border-b-2 border-brand-primary text-brand-primary font-bold' :
+                'border-b-2 border-transparent text-brand-warm-gray hover:text-brand-espresso font-medium'"
             class="flex items-center gap-1.5 pb-3.5 text-base sm:text-lg transition cursor-pointer shrink-0">
             <span>Resep Produk (BOM)</span>
             <span class="text-xs text-brand-warm-gray">(<span x-text="products.length"></span>)</span>
@@ -391,8 +393,7 @@
 
                             <!-- Satuan Pengukuran (No badge pill) -->
                             <td class="py-4 px-6">
-                                <span class="font-mono font-bold text-brand-espresso text-sm"
-                                    x-text="mat.unit_short">
+                                <span class="font-mono font-bold text-brand-espresso text-sm" x-text="mat.unit_short">
                                 </span>
                             </td>
 
@@ -425,8 +426,7 @@
 
                             <!-- Resep Terkait (Clean text, no badge pill) -->
                             <td class="py-4 px-6">
-                                <span class="text-sm text-brand-warm-gray"
-                                    x-text="mat.recipes_count + ' Produk'">
+                                <span class="text-sm text-brand-warm-gray" x-text="mat.recipes_count + ' Produk'">
                                 </span>
                             </td>
 
@@ -617,7 +617,6 @@
                             <label class="text-sm font-bold text-brand-espresso">
                                 Satuan Pengukuran Baku <span class="text-red-500">*</span>
                             </label>
-                            <span class="text-xs text-brand-primary font-semibold">Tersinkron Master Satuan</span>
                         </div>
                         <select x-model="materialForm.unit_id"
                             class="select select-lg w-full bg-white border border-brand-border rounded-xl text-base text-brand-espresso font-medium capitalize">
@@ -702,7 +701,7 @@
                             <div>
                                 <label class="block font-semibold text-brand-espresso mb-1">Satuan Dasar</label>
                                 <select x-model="calcSelectedUnitId"
-                                    class="select select-sm w-full bg-white border border-brand-border rounded-lg text-xs capitalize">
+                                    class="select w-full bg-white border border-brand-border rounded-lg text-xs capitalize">
                                     <template x-for="u in units" :key="u.id">
                                         <option :value="u.id" x-text="u.name + ' (' + u.short_name + ')'">
                                         </option>
