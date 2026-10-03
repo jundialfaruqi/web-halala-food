@@ -167,4 +167,11 @@ new #[Layout('components.layouts.admin')] class extends Component
             'type' => 'success',
         ]);
     }
+
+    public function with(): array
+    {
+        return [
+            'businessSetting' => \App\Models\BusinessSetting::getSettings(),
+        ];
+    }
 };

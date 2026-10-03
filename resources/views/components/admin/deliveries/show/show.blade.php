@@ -128,9 +128,16 @@
         <!-- Printable Document Header -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-brand-border">
             <div>
-                <div class="text-xl font-extrabold text-brand-espresso">HALALA FOOD</div>
-                <div class="text-xs text-brand-warm-gray mt-0.5">Produksi &amp; Distribusi Makanan Ringan Halal</div>
-                <div class="text-xs text-brand-warm-gray">Malang, Jawa Timur &bull; WhatsApp: 0812-9988-7766</div>
+                <div class="text-xl font-extrabold text-brand-espresso">{{ $businessSetting->company_name }}</div>
+                @if ($businessSetting->tagline)
+                    <div class="text-xs text-brand-warm-gray mt-0.5">{{ $businessSetting->tagline }}</div>
+                @endif
+                <div class="text-xs text-brand-warm-gray">
+                    {{ $businessSetting->address ?: 'Malang, Jawa Timur' }}
+                    @if ($businessSetting->phone)
+                        &bull; WhatsApp: {{ $businessSetting->phone }}
+                    @endif
+                </div>
             </div>
 
             <div class="text-left sm:text-right">

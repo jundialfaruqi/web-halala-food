@@ -114,4 +114,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 
         return redirect()->route('admin.invoices');
     })->name('admin.invoices.destroy')->middleware('permission:faktur-delete');
+
+    // Pengaturan Usaha (Profil & Rekening)
+    Route::livewire('/settings', 'admin.settings')->name('admin.settings')->middleware('permission:pengaturan-view');
 });

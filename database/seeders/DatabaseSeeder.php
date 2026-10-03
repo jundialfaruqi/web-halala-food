@@ -107,6 +107,13 @@ class DatabaseSeeder extends Seeder
                     'faktur-delete' => 'Membatalkan atau menghapus faktur tagihan.',
                 ],
             ],
+            'Pengaturan Usaha' => [
+                'description' => 'Kelola profil usaha, kontak resmi, rekening bank pembayaran, dan format cetak dokumen.',
+                'permissions' => [
+                    'pengaturan-view' => 'Melihat profil usaha dan rekening pembayaran.',
+                    'pengaturan-edit' => 'Mengubah profil usaha, kontak, dan rekening pembayaran.',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -187,6 +194,8 @@ class DatabaseSeeder extends Seeder
             'faktur-create',
             'faktur-edit',
             'faktur-delete',
+            'pengaturan-view',
+            'pengaturan-edit',
         ]);
 
         // Kurir gets dashboard access, toko view, pengantaran, and faktur view
@@ -513,5 +522,8 @@ class DatabaseSeeder extends Seeder
                 'notes' => 'Pembayaran termin 1 via transfer bank BCA oleh Ibu Hj. Aminah.',
             ]);
         }
+
+        // Initialize default business settings if not already present
+        \App\Models\BusinessSetting::getSettings();
     }
 }

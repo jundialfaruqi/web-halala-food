@@ -221,9 +221,16 @@
         <!-- Document Header -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-brand-border">
             <div>
-                <div class="text-xl font-extrabold text-brand-espresso">HALALA FOOD</div>
-                <div class="text-xs text-brand-warm-gray mt-0.5">Produksi &amp; Distribusi Makanan Ringan Halal</div>
-                <div class="text-xs text-brand-warm-gray">Malang, Jawa Timur &bull; WhatsApp: 0812-9988-7766</div>
+                <div class="text-xl font-extrabold text-brand-espresso">{{ $businessSetting->company_name }}</div>
+                @if ($businessSetting->tagline)
+                    <div class="text-xs text-brand-warm-gray mt-0.5">{{ $businessSetting->tagline }}</div>
+                @endif
+                <div class="text-xs text-brand-warm-gray">
+                    {{ $businessSetting->address ?: 'Malang, Jawa Timur' }}
+                    @if ($businessSetting->phone)
+                        &bull; WhatsApp: {{ $businessSetting->phone }}
+                    @endif
+                </div>
             </div>
 
             <div class="text-left sm:text-right">
@@ -278,11 +285,16 @@
                             ({{ $invoice->delivery->delivery_date?->translatedFormat('d M Y') }})
                         </div>
                     @endif
-                    <div class="pt-2">
-                        <div class="font-semibold text-brand-espresso">Rekening Resmi Pembayaran:</div>
-                        <div class="font-mono text-brand-espresso font-bold mt-0.5">BCA: 816-1234-5678 a.n Halala Food CV</div>
-                        <div class="font-mono text-brand-espresso font-bold">Mandiri: 144-00-9876-5432 a.n Halala Food CV</div>
-                    </div>
+                    @if (! empty($businessSetting->bank_accounts))
+                        <div class="pt-2">
+                            <div class="font-semibold text-brand-espresso">Rekening Resmi Pembayaran:</div>
+                            @foreach ($businessSetting->bank_accounts as $bank)
+                                <div class="font-mono text-brand-espresso font-bold mt-0.5">
+                                    {{ $bank['bank_name'] ?? 'Bank' }}: {{ $bank['account_number'] ?? '-' }} {{ !empty($bank['account_name']) ? "a.n {$bank['account_name']}" : '' }}
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
 
                 @if ($invoice->notes)
