@@ -76,25 +76,32 @@
         </div>
     </div>
 
-    <!-- Filter & Search Section -->
-    <div class="bg-white border border-brand-border rounded-2xl p-4 sm:p-5 space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
-            <div class="sm:col-span-8 relative">
-                <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-base pointer-events-none"></i>
+    <!-- Filter & Search Bar (Identik dengan format seragam aplikasi) -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
+            <!-- Search Input -->
+            <div class="relative flex-1 max-w-md">
+                <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg pointer-events-none"></i>
                 <input type="text" wire:model.live.debounce.300ms="search"
-                    placeholder="Cari no. pembelian, supplier, atau nama bahan..."
-                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-brand-border text-sm text-brand-espresso placeholder-brand-warm-gray/60 focus:outline-hidden focus:border-brand-primary bg-white">
+                    placeholder="Cari no. transaksi, supplier, bahan..."
+                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:border-brand-primary">
             </div>
 
-            <div class="sm:col-span-4">
+            <!-- Metode Pembayaran Filter -->
+            <div class="shrink-0">
                 <select wire:model.live="paymentMethod"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-brand-border text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary bg-white">
+                    class="w-full sm:w-auto px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
                     <option value="">Semua Metode Pembayaran</option>
                     <option value="tunai">Tunai / Kas Kecil</option>
                     <option value="transfer_bank">Transfer Bank</option>
                     <option value="tempo">Tempo / Kredit Supplier</option>
                 </select>
             </div>
+        </div>
+
+        <!-- Total Indicator -->
+        <div class="text-xs sm:text-sm text-brand-warm-gray font-medium self-center shrink-0">
+            Menampilkan <span class="font-bold text-brand-espresso">{{ $purchases->total() }}</span> transaksi pembelian
         </div>
     </div>
 

@@ -44,47 +44,7 @@
         </div>
     </div>
 
-    <!-- Period Filter Control Bar (Screen Only) -->
-    <div class="bg-white border border-brand-border rounded-2xl p-4 sm:p-5 space-y-4 print:hidden">
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-            <!-- Period Selector Tabs -->
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-                <button type="button" wire:click="$set('period', 'this_month')"
-                    class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 {{ $period === 'this_month' ? 'bg-brand-primary text-white' : 'border border-brand-border text-brand-espresso hover:bg-brand-soft-cream/40' }}">
-                    Bulan Ini
-                </button>
-                <button type="button" wire:click="$set('period', 'last_month')"
-                    class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 {{ $period === 'last_month' ? 'bg-brand-primary text-white' : 'border border-brand-border text-brand-espresso hover:bg-brand-soft-cream/40' }}">
-                    Bulan Lalu
-                </button>
-                <button type="button" wire:click="$set('period', 'this_year')"
-                    class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 {{ $period === 'this_year' ? 'bg-brand-primary text-white' : 'border border-brand-border text-brand-espresso hover:bg-brand-soft-cream/40' }}">
-                    Tahun Ini
-                </button>
-                <button type="button" wire:click="$set('period', 'custom')"
-                    class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 {{ $period === 'custom' ? 'bg-brand-primary text-white' : 'border border-brand-border text-brand-espresso hover:bg-brand-soft-cream/40' }}">
-                    Kustom Tanggal
-                </button>
-            </div>
-
-            <!-- Custom Date Inputs -->
-            @if ($period === 'custom')
-                <div class="flex items-center gap-2">
-                    <input type="date" wire:model.live="startDate"
-                        class="px-3 py-1.5 rounded-lg border border-brand-border text-xs text-brand-espresso bg-white">
-                    <span class="text-xs text-brand-warm-gray">s/d</span>
-                    <input type="date" wire:model.live="endDate"
-                        class="px-3 py-1.5 rounded-lg border border-brand-border text-xs text-brand-espresso bg-white">
-                </div>
-            @else
-                <div class="text-xs font-medium text-brand-warm-gray">
-                    Rentang: <strong class="text-brand-espresso">{{ \Carbon\Carbon::parse($startDate)->isoFormat('D MMM Y') }}</strong> s/d <strong class="text-brand-espresso">{{ \Carbon\Carbon::parse($endDate)->isoFormat('D MMM Y') }}</strong>
-                </div>
-            @endif
-        </div>
-    </div>
-
-    <!-- Navigation Tabs (Underline Navigation, Screen Only) -->
+    <!-- Navigation Tabs (Underline Navigation, Screen Only - Identik dengan Produksi & Role) -->
     <div class="border-b border-brand-border flex gap-6 overflow-x-auto print:hidden">
         <button type="button" wire:click="$set('tab', 'overview')"
             class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 {{ $tab === 'overview' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso' }}">
@@ -98,6 +58,38 @@
             class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 {{ $tab === 'stock_waste' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso' }}">
             Valuasi Stok &amp; Bahan
         </button>
+    </div>
+
+    <!-- Filter Bar (Identik dengan format seragam aplikasi) -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 print:hidden">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
+            <!-- Period Dropdown Selector -->
+            <div class="shrink-0">
+                <select wire:model.live="period"
+                    class="w-full sm:w-auto px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
+                    <option value="this_month">Periode: Bulan Ini</option>
+                    <option value="last_month">Periode: Bulan Lalu</option>
+                    <option value="this_year">Periode: Tahun Ini</option>
+                    <option value="custom">Periode: Kustom Tanggal</option>
+                </select>
+            </div>
+
+            <!-- Custom Date Inputs when period === 'custom' -->
+            @if ($period === 'custom')
+                <div class="flex items-center gap-2">
+                    <input type="date" wire:model.live="startDate"
+                        class="px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
+                    <span class="text-xs text-brand-warm-gray font-medium">s/d</span>
+                    <input type="date" wire:model.live="endDate"
+                        class="px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
+                </div>
+            @endif
+        </div>
+
+        <!-- Active Date Range Label -->
+        <div class="text-xs sm:text-sm text-brand-warm-gray font-medium self-center shrink-0">
+            Rentang: <span class="font-bold text-brand-espresso">{{ \Carbon\Carbon::parse($startDate)->isoFormat('D MMMM Y') }}</span> s/d <span class="font-bold text-brand-espresso">{{ \Carbon\Carbon::parse($endDate)->isoFormat('D MMMM Y') }}</span>
+        </div>
     </div>
 
     <!-- TAB 1: RINGKASAN LABA RUGI & ARUS KAS -->
