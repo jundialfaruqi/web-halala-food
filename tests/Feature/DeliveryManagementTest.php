@@ -12,9 +12,10 @@ use Spatie\Permission\PermissionRegistrar;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\seed;
 
 beforeEach(function () {
-    $this->seed(DatabaseSeeder::class);
+    seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
 });
 

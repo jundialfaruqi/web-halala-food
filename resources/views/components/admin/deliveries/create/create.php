@@ -35,8 +35,9 @@ new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala 
         $this->delivery_date = now()->toDateString();
 
         // Assign courier automatically if current user has courier role
-        if (Auth::user()?->hasRole('kurir')) {
-            $this->courier_id = Auth::id();
+        $user = Auth::user();
+        if ($user instanceof User && $user->hasRole('kurir')) {
+            $this->courier_id = $user->id;
         }
 
         $firstProduct = Product::where('is_active', true)->where('stock_ready', '>', 0)->first()
@@ -72,8 +73,12 @@ new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala 
         }
     }
 
-    public function updatedItems($value, $key): void
+    public function updatedItems(mixed $value, ?string $key = null): void
     {
+        if (! $key) {
+            return;
+        }
+
         $parts = explode('.', $key);
         if (count($parts) >= 2) {
             $index = (int) $parts[0];

@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Store;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -16,7 +16,7 @@ new #[Layout('components.layouts.admin'), Title('Mitra Toko & Distribusi - Halal
      */
     public function deleteStore(int $id): array
     {
-        if (! Auth::user()?->can('toko-delete')) {
+        if (Gate::denies('toko-delete')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus data toko mitra.'];
         }
 
@@ -39,7 +39,7 @@ new #[Layout('components.layouts.admin'), Title('Mitra Toko & Distribusi - Halal
      */
     public function toggleStatus(int $id): array
     {
-        if (! Auth::user()?->can('toko-edit')) {
+        if (Gate::denies('toko-edit')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk mengubah status toko.'];
         }
 

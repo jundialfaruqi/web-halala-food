@@ -131,6 +131,22 @@
                 </div>
             @endcanany
 
+            {{-- Section: Keuangan & Piutang --}}
+            @can('faktur-view')
+                <div class="pt-4 border-t border-brand-border/60">
+                    <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
+                        Keuangan
+                    </p>
+                    <nav class="space-y-1">
+                        <a href="{{ route('admin.invoices') }}"
+                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.invoices*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                            <i class="ti ti-receipt-2 text-xl {{ request()->routeIs('admin.invoices*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                            <span>Faktur &amp; Piutang Toko</span>
+                        </a>
+                    </nav>
+                </div>
+            @endcan
+
             <!-- Section: Pintasan Cepat -->
             <div class="pt-4 border-t border-brand-border/60">
                 <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">

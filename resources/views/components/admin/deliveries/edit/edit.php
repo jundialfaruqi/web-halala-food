@@ -93,8 +93,12 @@ new #[Layout('components.layouts.admin')] class extends Component
         }
     }
 
-    public function updatedItems($value, $key): void
+    public function updatedItems(mixed $value, ?string $key = null): void
     {
+        if (! $key) {
+            return;
+        }
+
         $parts = explode('.', $key);
         if (count($parts) >= 2) {
             $index = (int) $parts[0];

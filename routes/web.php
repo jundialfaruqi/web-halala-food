@@ -89,4 +89,29 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 
         return redirect()->route('admin.deliveries');
     })->name('admin.deliveries.destroy')->middleware('permission:pengantaran-delete');
+
+    // Faktur Penagihan & Piutang Toko (Keuangan)
+    Route::livewire('/invoices', 'admin.invoices.index')->name('admin.invoices')->middleware('permission:faktur-view');
+    Route::livewire('/invoices/create', 'admin.invoices.create')->name('admin.invoices.create')->middleware('permission:faktur-create');
+    Route::livewire('/invoices/{invoice}', 'admin.invoices.show')->name('admin.invoices.show')->middleware('permission:faktur-view');
+    Route::livewire('/invoices/{invoice}/edit', 'admin.invoices.edit')->name('admin.invoices.edit')->middleware('permission:faktur-edit');
+    Route::delete('/invoices/{invoice}', function (\App\Models\Invoice $invoice) {
+        if ($invoice->status === 'lunas') {
+            session()->flash('toast', [
+                'message' => 'Faktur yang telah lunas tidak boleh dihapus demi integritas data keuangan.',
+                'type' => 'error',
+            ]);
+            return redirect()->route('admin.invoices');
+        }
+
+        $invoiceNumber = $invoice->invoice_number;
+        $invoice->delete();
+
+        session()->flash('toast', [
+            'message' => "Faktur '{$invoiceNumber}' berhasil dihapus.",
+            'type' => 'success',
+        ]);
+
+        return redirect()->route('admin.invoices');
+    })->name('admin.invoices.destroy')->middleware('permission:faktur-delete');
 });

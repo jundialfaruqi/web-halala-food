@@ -6,6 +6,7 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -17,7 +18,7 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
      */
     public function cancelDelivery(int $id): array
     {
-        if (! Auth::user()?->can('pengantaran-edit')) {
+        if (Gate::denies('pengantaran-edit')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk membatalkan surat jalan ini.'];
         }
 
@@ -51,7 +52,7 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
      */
     public function deleteDelivery(int $id): array
     {
-        if (! Auth::user()?->can('pengantaran-delete')) {
+        if (Gate::denies('pengantaran-delete')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus surat jalan.'];
         }
 
@@ -85,7 +86,7 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
      */
     public function markAsDispatched(int $id): array
     {
-        if (! Auth::user()?->can('pengantaran-edit')) {
+        if (Gate::denies('pengantaran-edit')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk mengubah status pengantaran.'];
         }
 
@@ -109,7 +110,7 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
     public function with(): array
     {
         $user = Auth::user();
-        $isCourier = $user?->hasRole('kurir') ?? false;
+        $isCourier = ($user instanceof User && $user->hasRole('kurir'));
 
         $deliveries = Delivery::with(['store', 'courier', 'items.product'])
             ->orderByDesc('delivery_date')

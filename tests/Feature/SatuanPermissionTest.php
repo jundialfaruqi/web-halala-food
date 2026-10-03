@@ -5,9 +5,10 @@ use App\Models\PermissionGroup;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Spatie\Permission\Models\Role;
+use function Pest\Laravel\seed;
 
 beforeEach(function () {
-    $this->seed(DatabaseSeeder::class);
+    seed(DatabaseSeeder::class);
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 });
 

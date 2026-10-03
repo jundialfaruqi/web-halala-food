@@ -9,9 +9,10 @@ use Spatie\Permission\Models\Role;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\seed;
 
 beforeEach(function () {
-    $this->seed(DatabaseSeeder::class);
+    seed(DatabaseSeeder::class);
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 });
 

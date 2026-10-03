@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\InvoicePayment;
 use App\Models\Permission;
 use App\Models\PermissionGroup;
 use App\Models\Product;
@@ -95,6 +98,15 @@ class DatabaseSeeder extends Seeder
                     'pengantaran-delete' => 'Membatalkan atau menghapus surat jalan.',
                 ],
             ],
+            'Faktur & Piutang Toko' => [
+                'description' => 'Kelola faktur tagihan konsinyasi mitra toko, jatuh tempo piutang, dan pencatatan pembayaran pelunasan.',
+                'permissions' => [
+                    'faktur-view' => 'Melihat daftar faktur tagihan dan kartu piutang toko mitra.',
+                    'faktur-create' => 'Membuat faktur tagihan konsinyasi baru.',
+                    'faktur-edit' => 'Mengubah data faktur tagihan atau mencatat pembayaran pelunasan.',
+                    'faktur-delete' => 'Membatalkan atau menghapus faktur tagihan.',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -148,7 +160,7 @@ class DatabaseSeeder extends Seeder
         // Dev / Super Admin gets all permissions
         $devRole->syncPermissions(Permission::all());
 
-        // Manager gets operational management + Bahan Baku, Resep, Produksi, Toko, & Pengantaran permissions
+        // Manager gets operational management + Bahan Baku, Resep, Produksi, Toko, Pengantaran & Faktur permissions
         $managerRole->syncPermissions([
             'dashboard-view',
             'user-manage',
@@ -171,14 +183,19 @@ class DatabaseSeeder extends Seeder
             'pengantaran-create',
             'pengantaran-edit',
             'pengantaran-delete',
+            'faktur-view',
+            'faktur-create',
+            'faktur-edit',
+            'faktur-delete',
         ]);
 
-        // Kurir gets dashboard access, toko view, and pengantaran view & status edit
+        // Kurir gets dashboard access, toko view, pengantaran, and faktur view
         $kurirRole->syncPermissions([
             'dashboard-view',
             'toko-view',
             'pengantaran-view',
             'pengantaran-edit',
+            'faktur-view',
         ]);
 
         // 4. Seed Standard Users for the 3 Roles
@@ -446,6 +463,55 @@ class DatabaseSeeder extends Seeder
             // Decrement ready stock for initial delivery demo
             $marieWijen->decrement('stock_ready', 15);
             $tingTingSusu->decrement('stock_ready', 10);
+        }
+
+        // 10. Seed Sample Invoice & Payment (Faktur Konsinyasi & Piutang)
+        if ($barokahStore && Invoice::count() === 0) {
+            $sampleDelivery = Delivery::first();
+            $invoice = Invoice::create([
+                'invoice_number' => 'INV-' . now()->format('Ymd') . '-0001',
+                'delivery_id' => $sampleDelivery?->id,
+                'store_id' => $barokahStore->id,
+                'created_by' => $managerUser?->id ?? $devUser?->id,
+                'invoice_date' => now()->toDateString(),
+                'due_date' => now()->addDays(14)->toDateString(),
+                'subtotal' => 280000.00,
+                'discount' => 0.00,
+                'total_amount' => 280000.00,
+                'paid_amount' => 100000.00,
+                'remaining_balance' => 180000.00,
+                'status' => 'sebagian',
+                'notes' => 'Faktur titip jual konsinyasi batch perdana. Pembayaran termin 1 diterima transfer Rp 100.000.',
+            ]);
+
+            InvoiceItem::create([
+                'invoice_id' => $invoice->id,
+                'product_id' => $marieWijen->id,
+                'quantity' => 15,
+                'unit_price' => $marieWijen->consignment_price,
+                'subtotal' => 15 * (float) $marieWijen->consignment_price,
+                'notes' => '15 bungkus kemasan pouch',
+            ]);
+
+            InvoiceItem::create([
+                'invoice_id' => $invoice->id,
+                'product_id' => $tingTingSusu->id,
+                'quantity' => 10,
+                'unit_price' => $tingTingSusu->consignment_price,
+                'subtotal' => 10 * (float) $tingTingSusu->consignment_price,
+                'notes' => '10 bungkus kemasan pouch',
+            ]);
+
+            InvoicePayment::create([
+                'invoice_id' => $invoice->id,
+                'payment_number' => 'PAY-' . now()->format('Ymd') . '-0001',
+                'user_id' => $managerUser?->id ?? $devUser?->id,
+                'payment_date' => now()->toDateString(),
+                'amount' => 100000.00,
+                'payment_method' => 'transfer_bank',
+                'reference_number' => 'BCA-TRX-882910',
+                'notes' => 'Pembayaran termin 1 via transfer bank BCA oleh Ibu Hj. Aminah.',
+            ]);
         }
     }
 }
