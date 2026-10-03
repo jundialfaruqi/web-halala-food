@@ -3,11 +3,11 @@
     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
     x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100"
     x-transition:leave-end="opacity-0" @click="sidebarOpen = false"
-    class="fixed inset-0 z-40 bg-brand-espresso/60 backdrop-blur-xs lg:hidden">
+    class="fixed inset-0 z-40 bg-brand-espresso/60 backdrop-blur-xs lg:hidden print:hidden">
 </div>
 
 <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-    class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-white border-r border-brand-border flex flex-col justify-between transition-transform duration-300 ease-in-out shrink-0 select-none shadow-lg lg:shadow-none">
+    class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-white border-r border-brand-border flex flex-col justify-between transition-transform duration-300 ease-in-out shrink-0 select-none shadow-lg lg:shadow-none print:hidden">
 
     <!-- Top Section: Logo & Brand -->
     <div class="flex flex-col flex-1 min-h-0">

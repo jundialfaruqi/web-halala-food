@@ -22,6 +22,7 @@ new #[Layout('components.layouts.admin')] class extends Component
     public ?string $handover_notes = '';
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public mixed $proof_photo = null;
+    public ?string $photo_data = null;
     public ?string $signature_data = '';
 
     public function mount(Delivery $delivery)
@@ -82,6 +83,16 @@ new #[Layout('components.layouts.admin')] class extends Component
             'recipient_phone' => ['nullable', 'string', 'max:30'],
             'handover_notes' => ['nullable', 'string', 'max:500'],
             'proof_photo' => ['nullable', 'image', 'max:5120'],
+            'photo_data' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $error = Delivery::validatePhotoBase64($value);
+                    if ($error) {
+                        $fail($error);
+                    }
+                },
+            ],
             'signature_data' => ['nullable', 'string'],
         ], [
             'recipient_name.required' => 'Nama staf/pemilik toko penerima wajib diisi sebagai bukti serah terima.',
@@ -90,7 +101,10 @@ new #[Layout('components.layouts.admin')] class extends Component
         ]);
 
         $proofPath = $this->delivery->proof_image;
-        if ($this->proof_photo) {
+        if (! empty($this->photo_data)) {
+            $this->delivery->updateProofPhotoFromBase64($this->photo_data);
+            $proofPath = $this->delivery->proof_image;
+        } elseif ($this->proof_photo) {
             $proofPath = $this->proof_photo->store('delivery-proofs', 'public');
         }
 

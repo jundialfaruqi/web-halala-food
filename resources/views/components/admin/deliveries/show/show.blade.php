@@ -1,4 +1,4 @@
-<div class="space-y-6 max-w-5xl">
+<div class="space-y-6 max-w-5xl print:max-w-none print:w-full print:space-y-4">
 
     <!-- Header Section with Breadcrumbs -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 print:hidden">
@@ -116,32 +116,195 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Foto Bukti Serah Terima -->
-                    <div>
+                    <!-- Foto Bukti Serah Terima (Sistem Kompresi Seperti Foto Toko) -->
+                    <div x-data="{
+                        photoPreview: @js($delivery->proof_image ? asset('storage/' . $delivery->proof_image) : null),
+                        originalSize: '',
+                        compressedSize: '',
+                        photoFormat: '',
+                        progress: 0,
+                        statusText: '',
+                        isConverting: false,
+                        errorMessage: '',
+
+                        async handleFile(e) {
+                            const file = e.target.files ? e.target.files[0] : null;
+                            if (!file) return;
+
+                            this.errorMessage = '';
+                            this.photoPreview = null;
+                            this.isConverting = true;
+                            this.progress = 0;
+                            this.statusText = 'Mempersiapkan gambar...';
+
+                            try {
+                                const res = await window.compressStorePhoto(file, (pct, status) => {
+                                    this.progress = pct;
+                                    this.statusText = status;
+                                });
+
+                                this.photoPreview = res.dataUrl;
+                                this.originalSize = res.originalSizeFormatted;
+                                this.compressedSize = res.sizeFormatted;
+                                this.photoFormat = res.format;
+                                $wire.set('photo_data', res.dataUrl);
+                            } catch (err) {
+                                this.errorMessage = err.message || 'Gagal memproses file foto.';
+                                $wire.set('photo_data', null);
+                            } finally {
+                                this.isConverting = false;
+                                e.target.value = '';
+                            }
+                        },
+
+                        removePhoto() {
+                            this.photoPreview = null;
+                            this.originalSize = '';
+                            this.compressedSize = '';
+                            this.photoFormat = '';
+                            this.errorMessage = '';
+                            $wire.set('photo_data', null);
+                        },
+
+                        openCamera() {
+                            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                            if (isMobile && this.$refs.proofCameraInput) {
+                                this.$refs.proofCameraInput.click();
+                            } else if (window.openDeviceCamera) {
+                                window.openDeviceCamera({
+                                    onProgress: (pct, status) => {
+                                        this.isConverting = true;
+                                        this.progress = pct;
+                                        this.statusText = status;
+                                    },
+                                    onCapture: (res) => {
+                                        this.photoPreview = res.dataUrl;
+                                        this.originalSize = res.originalSizeFormatted;
+                                        this.compressedSize = res.sizeFormatted;
+                                        this.photoFormat = res.format;
+                                        this.isConverting = false;
+                                        $wire.set('photo_data', res.dataUrl);
+                                    },
+                                    onError: (err) => {
+                                        this.isConverting = false;
+                                        if (this.$refs.proofCameraInput) {
+                                            this.$refs.proofCameraInput.click();
+                                        } else {
+                                            this.errorMessage = err.message || 'Kamera tidak dapat diakses.';
+                                        }
+                                    },
+                                    fallbackInput: this.$refs.proofCameraInput
+                                });
+                            } else if (this.$refs.proofCameraInput) {
+                                this.$refs.proofCameraInput.click();
+                            }
+                        }
+                    }">
                         <label class="block text-xs font-semibold text-brand-espresso mb-1">
-                            Unggah Foto Bukti Serah Terima
+                            Foto Bukti Serah Terima <span class="text-brand-warm-gray font-normal">(Kamera / File)</span>
                         </label>
-                        <input type="file" wire:model="proof_photo" accept="image/*"
-                            class="w-full text-xs text-brand-espresso file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border file:border-brand-border file:text-xs file:font-semibold file:bg-neutral-50 file:text-brand-espresso hover:file:bg-neutral-100 cursor-pointer">
-                        <p class="text-[11px] text-brand-warm-gray mt-1">Foto kemasan di rak toko atau kurir bersama penerima (Maks. 5MB).</p>
-                        @error('proof_photo')
-                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                        @enderror
-                        @if ($proof_photo)
-                            <div class="mt-1 text-xs text-brand-espresso font-medium">
-                                File dipilih: {{ $proof_photo->getClientOriginalName() }}
+                        <p class="text-[11px] text-brand-warm-gray mb-2">Foto kemasan di etalase/rak toko mitra atau bersama staf penerima toko.</p>
+
+                        <!-- Error Alert -->
+                        <template x-if="errorMessage">
+                            <div class="mb-2 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+                                <i class="ti ti-alert-triangle text-base shrink-0 mt-0.5"></i>
+                                <span x-text="errorMessage"></span>
                             </div>
-                        @endif
+                        </template>
+
+                        @error('photo_data')
+                            <div class="mb-2 p-2 rounded-lg bg-red-50 text-red-600 text-xs font-medium">{{ $message }}</div>
+                        @enderror
+
+                        <!-- Photo Container -->
+                        <div class="flex flex-col sm:flex-row items-center gap-4 p-3 rounded-xl border border-brand-border bg-neutral-50/60">
+                            <!-- Preview Box -->
+                            <div class="relative w-24 h-24 rounded-xl border border-brand-border bg-white flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                                <template x-if="photoPreview">
+                                    <img :src="photoPreview" alt="Pratinjau Bukti Serah Terima" class="w-full h-full object-contain p-1">
+                                </template>
+                                <template x-if="!photoPreview">
+                                    <div class="text-center p-2 text-brand-warm-gray">
+                                        <i class="ti ti-camera text-2xl block mb-0.5"></i>
+                                        <span class="text-[10px] block">Belum ada foto</span>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Actions & Controls -->
+                            <div class="flex-1 w-full space-y-2">
+                                <!-- Progress Bar -->
+                                <div x-show="isConverting" class="space-y-1">
+                                    <div class="flex items-center justify-between text-xs font-semibold text-brand-espresso">
+                                        <span x-text="statusText"></span>
+                                        <span x-text="progress + '%'"></span>
+                                    </div>
+                                    <div class="w-full bg-neutral-200 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-brand-primary h-1.5 rounded-full transition-all duration-150" :style="'width: ' + progress + '%'"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Success Conversion Details -->
+                                <template x-if="photoPreview && compressedSize">
+                                    <div class="space-y-1.5">
+                                        <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-espresso bg-white px-2.5 py-1 rounded-lg border border-brand-border">
+                                            <i class="ti ti-check text-emerald-600"></i>
+                                            <span>Format: <strong x-text="photoFormat"></strong></span>
+                                            <span>&bull;</span>
+                                            <span x-text="compressedSize"></span>
+                                            <span class="text-brand-warm-gray font-normal" x-text="'(dari ' + originalSize + ')'"></span>
+                                        </div>
+                                        <div>
+                                            <button type="button" @click="removePhoto()"
+                                                class="text-xs text-red-600 hover:text-red-700 font-semibold inline-flex items-center gap-1 cursor-pointer">
+                                                <i class="ti ti-trash"></i>
+                                                <span>Hapus Foto</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Hidden Inputs -->
+                                <input type="file" x-ref="proofCameraInput" @change="handleFile($event)"
+                                    accept="image/*" capture="environment" class="hidden">
+                                <input type="file" x-ref="proofFileInput" @change="handleFile($event)"
+                                    accept="image/jpeg,image/png,image/webp,image/jpg" class="hidden">
+
+                                <!-- Upload Buttons -->
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button type="button" @click="openCamera()" :disabled="isConverting"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-brand-border hover:bg-neutral-50 rounded-xl text-xs font-semibold text-brand-espresso transition cursor-pointer disabled:opacity-50">
+                                        <i class="ti ti-camera text-sm text-brand-primary"></i>
+                                        <span>Ambil dari Kamera</span>
+                                    </button>
+                                    <button type="button" @click="$refs.proofFileInput.click()" :disabled="isConverting"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-brand-border hover:bg-neutral-50 rounded-xl text-xs font-semibold text-brand-espresso transition cursor-pointer disabled:opacity-50">
+                                        <i class="ti ti-photo text-sm text-brand-espresso"></i>
+                                        <span>Pilih dari File</span>
+                                    </button>
+                                </div>
+
+                                <p class="text-[10px] text-brand-warm-gray">
+                                    Format: <strong>JPG, PNG, WEBP</strong> (Maks 10MB). Otomatis dikompresi di HP &le; 50KB.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Catatan Serah Terima -->
-                    <div>
-                        <label for="handover_notes" class="block text-xs font-semibold text-brand-espresso mb-1">
-                            Catatan Serah Terima (Opsional)
-                        </label>
-                        <input type="text" id="handover_notes" wire:model="handover_notes"
-                            placeholder="Contoh: Diterima lengkap 25 pouch di etalase depan"
-                            class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary">
+                    <div class="flex flex-col justify-between">
+                        <div>
+                            <label for="handover_notes" class="block text-xs font-semibold text-brand-espresso mb-1">
+                                Catatan Serah Terima (Opsional)
+                            </label>
+                            <textarea id="handover_notes" wire:model="handover_notes" rows="4"
+                                placeholder="Contoh: Diterima lengkap 25 pouch di etalase depan, barang dalam kondisi baik..."
+                                class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary resize-none"></textarea>
+                            @error('handover_notes')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 
@@ -467,5 +630,8 @@
             </div>
         @endif
     @endcan
+
+    <!-- Client-side Photo Compression Script -->
+    <x-admin.photo-compressor-script />
 
 </div>

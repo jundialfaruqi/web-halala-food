@@ -1,5 +1,5 @@
 <!-- Admin Header Component -->
-<header class="sticky top-0 z-30 h-20 bg-white border-b border-brand-border px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+<header class="sticky top-0 z-30 h-20 bg-white border-b border-brand-border px-4 sm:px-6 lg:px-8 flex items-center justify-between print:hidden">
 
     <!-- Left: Mobile Menu Toggle & Title/Breadcrumb -->
     <div class="flex items-center gap-3 sm:gap-4">

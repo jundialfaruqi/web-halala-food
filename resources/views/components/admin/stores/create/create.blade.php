@@ -163,6 +163,40 @@
                             this.photoFormat = '';
                             this.errorMessage = '';
                             $wire.set('photo_data', null);
+                        },
+
+                        openCamera() {
+                            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                            if (isMobile && this.$refs.createCameraInput) {
+                                this.$refs.createCameraInput.click();
+                            } else if (window.openDeviceCamera) {
+                                window.openDeviceCamera({
+                                    onProgress: (pct, status) => {
+                                        this.isConverting = true;
+                                        this.progress = pct;
+                                        this.statusText = status;
+                                    },
+                                    onCapture: (res) => {
+                                        this.photoPreview = res.dataUrl;
+                                        this.originalSize = res.originalSizeFormatted;
+                                        this.compressedSize = res.sizeFormatted;
+                                        this.photoFormat = res.format;
+                                        this.isConverting = false;
+                                        $wire.set('photo_data', res.dataUrl);
+                                    },
+                                    onError: (err) => {
+                                        this.isConverting = false;
+                                        if (this.$refs.createCameraInput) {
+                                            this.$refs.createCameraInput.click();
+                                        } else {
+                                            this.errorMessage = err.message || 'Kamera tidak dapat diakses.';
+                                        }
+                                    },
+                                    fallbackInput: this.$refs.createCameraInput
+                                });
+                            } else if (this.$refs.createCameraInput) {
+                                this.$refs.createCameraInput.click();
+                            }
                         }
                     }">
                     <label class="block text-sm font-semibold text-brand-espresso mb-1">
@@ -228,13 +262,13 @@
 
                             <!-- Hidden Inputs -->
                             <input type="file" x-ref="createCameraInput" @change="handleFile($event)"
-                                accept="image/jpeg,image/png,image/webp,image/jpg" capture="environment" class="hidden">
+                                accept="image/*" capture="environment" class="hidden">
                             <input type="file" x-ref="createFileInput" @change="handleFile($event)"
                                 accept="image/jpeg,image/png,image/webp,image/jpg" class="hidden">
 
                             <!-- Upload Buttons -->
                             <div class="flex flex-wrap items-center gap-2">
-                                <button type="button" @click="$refs.createCameraInput.click()" :disabled="isConverting"
+                                <button type="button" @click="openCamera()" :disabled="isConverting"
                                     class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-brand-border hover:bg-neutral-50 rounded-xl text-xs sm:text-sm font-semibold text-brand-espresso transition cursor-pointer disabled:opacity-50">
                                     <i class="ti ti-camera text-base text-brand-primary"></i>
                                     <span>Ambil dari Kamera</span>

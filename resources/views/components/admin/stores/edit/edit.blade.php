@@ -165,6 +165,41 @@
                             this.errorMessage = '';
                             this.isMarkedForDeletion = true;
                             $wire.set('photo_data', 'DELETE');
+                        },
+
+                        openCamera() {
+                            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                            if (isMobile && this.$refs.editCameraInput) {
+                                this.$refs.editCameraInput.click();
+                            } else if (window.openDeviceCamera) {
+                                window.openDeviceCamera({
+                                    onProgress: (pct, status) => {
+                                        this.isConverting = true;
+                                        this.progress = pct;
+                                        this.statusText = status;
+                                    },
+                                    onCapture: (res) => {
+                                        this.photoPreview = res.dataUrl;
+                                        this.originalSize = res.originalSizeFormatted;
+                                        this.compressedSize = res.sizeFormatted;
+                                        this.photoFormat = res.format;
+                                        this.isMarkedForDeletion = false;
+                                        this.isConverting = false;
+                                        $wire.set('photo_data', res.dataUrl);
+                                    },
+                                    onError: (err) => {
+                                        this.isConverting = false;
+                                        if (this.$refs.editCameraInput) {
+                                            this.$refs.editCameraInput.click();
+                                        } else {
+                                            this.errorMessage = err.message || 'Kamera tidak dapat diakses.';
+                                        }
+                                    },
+                                    fallbackInput: this.$refs.editCameraInput
+                                });
+                            } else if (this.$refs.editCameraInput) {
+                                this.$refs.editCameraInput.click();
+                            }
                         }
                     }">
                     <label class="block text-sm font-semibold text-brand-espresso mb-1">
@@ -235,13 +270,13 @@
 
                             <!-- Hidden Inputs -->
                             <input type="file" x-ref="editCameraInput" @change="handleFile($event)"
-                                accept="image/jpeg,image/png,image/webp,image/jpg" capture="environment" class="hidden">
+                                accept="image/*" capture="environment" class="hidden">
                             <input type="file" x-ref="editFileInput" @change="handleFile($event)"
                                 accept="image/jpeg,image/png,image/webp,image/jpg" class="hidden">
 
                             <!-- Upload Buttons -->
                             <div class="flex flex-wrap items-center gap-2">
-                                <button type="button" @click="$refs.editCameraInput.click()" :disabled="isConverting"
+                                <button type="button" @click="openCamera()" :disabled="isConverting"
                                     class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-brand-border hover:bg-neutral-50 rounded-xl text-xs sm:text-sm font-semibold text-brand-espresso transition cursor-pointer disabled:opacity-50">
                                     <i class="ti ti-camera text-base text-brand-primary"></i>
                                     <span x-text="photoPreview ? 'Ganti via Kamera' : 'Ambil dari Kamera'"></span>

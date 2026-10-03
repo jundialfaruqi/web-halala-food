@@ -63,4 +63,45 @@ html {
     outline-offset: 1px !important;
 }
 
+/* ==========================================================================
+   Print Optimization Styles
+   ========================================================================== */
+@media print {
+    /* Hide layout chrome and non-printable elements */
+    header,
+    footer,
+    aside,
+    nav[aria-label="Breadcrumb"],
+    .print\:hidden {
+        display: none !important;
+    }
+
+    /* Reset background, layout flow, and padding for print */
+    html, body {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #1a1a1a !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: auto !important;
+        width: 100% !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Print Paper Size & Margins */
+    @page {
+        size: A4 portrait;
+        margin: 12mm 15mm;
+    }
+}
+
+
 

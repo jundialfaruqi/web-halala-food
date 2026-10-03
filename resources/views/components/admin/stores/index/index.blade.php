@@ -161,6 +161,39 @@
         }
     },
 
+    openPhotoCamera() {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isMobile && this.$refs.cameraInput) {
+            this.$refs.cameraInput.click();
+        } else if (window.openDeviceCamera) {
+            window.openDeviceCamera({
+                onProgress: (pct, status) => {
+                    this.isConvertingPhoto = true;
+                    this.photoProgress = pct;
+                    this.photoStatusText = status;
+                },
+                onCapture: (result) => {
+                    this.photoDataUrl = result.dataUrl;
+                    this.photoOriginalSize = result.originalSizeFormatted;
+                    this.photoCompressedSize = result.sizeFormatted;
+                    this.photoFormat = result.format;
+                    this.isConvertingPhoto = false;
+                },
+                onError: (err) => {
+                    this.isConvertingPhoto = false;
+                    if (this.$refs.cameraInput) {
+                        this.$refs.cameraInput.click();
+                    } else {
+                        this.photoError = err.message || 'Kamera tidak dapat diakses.';
+                    }
+                },
+                fallbackInput: this.$refs.cameraInput
+            });
+        } else if (this.$refs.cameraInput) {
+            this.$refs.cameraInput.click();
+        }
+    },
+
     async saveStorePhoto() {
         if (!this.photoStore || !this.photoDataUrl) return;
 
@@ -569,7 +602,7 @@
 
                 <!-- Hidden Input 1: Kamera (capture="environment") -->
                 <input type="file" x-ref="cameraInput" @change="processPhotoFile($event)"
-                    accept="image/jpeg,image/png,image/webp,image/jpg" capture="environment" class="hidden">
+                    accept="image/*" capture="environment" class="hidden">
 
                 <!-- Hidden Input 2: File Galeri -->
                 <input type="file" x-ref="fileInput" @change="processPhotoFile($event)"
@@ -577,7 +610,7 @@
 
                 <!-- Dua Tombol Pilihan Input: Kamera & File -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button type="button" @click="$refs.cameraInput.click()" :disabled="isConvertingPhoto"
+                    <button type="button" @click="openPhotoCamera()" :disabled="isConvertingPhoto"
                         class="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-brand-border hover:bg-neutral-50 rounded-xl text-sm font-semibold text-brand-espresso transition cursor-pointer disabled:opacity-50">
                         <i class="ti ti-camera text-lg text-brand-primary"></i>
                         <span>Ambil dari Kamera</span>

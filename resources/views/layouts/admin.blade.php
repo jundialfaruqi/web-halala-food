@@ -18,24 +18,30 @@
     <body class="h-full bg-white text-brand-text-primary antialiased selection:bg-brand-soft-cream selection:text-brand-primary font-sans"
         x-data="{ sidebarOpen: false }">
 
-        <div class="min-h-screen flex flex-row bg-white">
+        <div class="min-h-screen flex flex-row bg-white print:block print:min-h-0">
 
             <!-- 1. Sidebar -->
-            <x-admin.sidebar />
+            <div class="print:hidden">
+                <x-admin.sidebar />
+            </div>
 
             <!-- Main Panel Container -->
-            <div class="flex-1 flex flex-col min-w-0 min-h-screen bg-white">
+            <div class="flex-1 flex flex-col min-w-0 min-h-screen bg-white print:block print:min-h-0">
 
                 <!-- 2. Header -->
-                <x-admin.header />
+                <div class="print:hidden">
+                    <x-admin.header />
+                </div>
 
                 <!-- 3. Main Content -->
-                <main class="flex-1 bg-white p-4 sm:p-6 lg:p-8">
+                <main class="flex-1 bg-white p-4 sm:p-6 lg:p-8 print:p-0 print:m-0">
                     {{ $slot }}
                 </main>
 
                 <!-- 4. Footer -->
-                <x-admin.footer />
+                <div class="print:hidden">
+                    <x-admin.footer />
+                </div>
 
             </div>
 

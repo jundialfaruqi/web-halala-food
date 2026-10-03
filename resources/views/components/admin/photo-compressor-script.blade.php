@@ -155,4 +155,200 @@
             });
         };
     }
+
+    if (!window.openDeviceCamera) {
+        window.openDeviceCamera = function (opts = {}) {
+            const onProgress = opts.onProgress || function() {};
+            const onCapture = opts.onCapture || function() {};
+            const onError = opts.onError || function(e) { console.error(e); };
+            const fallbackInput = opts.fallbackInput;
+
+            const modal = document.getElementById('halala-camera-modal');
+            const video = document.getElementById('halala-camera-video');
+            const loading = document.getElementById('halala-camera-loading');
+            const switchBtn = document.getElementById('halala-camera-switch-btn');
+            const snapBtn = document.getElementById('halala-camera-snap-btn');
+            const closeBtn = document.getElementById('halala-camera-close-btn');
+
+            if (!modal || !video) {
+                if (fallbackInput) fallbackInput.click();
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                if (fallbackInput) {
+                    fallbackInput.click();
+                    return;
+                }
+                return onError(new Error('Browser ini tidak mendukung akses kamera langsung (WebRTC).'));
+            }
+
+            let currentStream = null;
+            let currentFacingMode = 'environment';
+            let isMirrored = false;
+
+            const stopStream = () => {
+                if (currentStream) {
+                    currentStream.getTracks().forEach(t => t.stop());
+                    currentStream = null;
+                }
+            };
+
+            const closeModal = () => {
+                stopStream();
+                video.style.transform = 'none';
+                modal.style.display = 'none';
+                document.body.classList.remove('overflow-hidden');
+            };
+
+            closeBtn.onclick = closeModal;
+
+            const startCamera = async (facingMode) => {
+                stopStream();
+                loading.style.display = 'flex';
+                try {
+                    const constraints = {
+                        video: {
+                            facingMode: facingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        },
+                        audio: false
+                    };
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    currentStream = stream;
+                    video.srcObject = stream;
+                    await video.play();
+
+                    const track = stream.getVideoTracks()[0];
+                    const settings = (track && track.getSettings) ? track.getSettings() : {};
+                    isMirrored = (settings.facingMode === 'user') || (facingMode === 'user');
+                    video.style.transform = isMirrored ? 'scaleX(-1)' : 'none';
+
+                    loading.style.display = 'none';
+                } catch (err) {
+                    // Fallback to any available video device (e.g. desktop webcam)
+                    try {
+                        const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                        currentStream = fallbackStream;
+                        video.srcObject = fallbackStream;
+                        await video.play();
+
+                        const track = fallbackStream.getVideoTracks()[0];
+                        const settings = (track && track.getSettings) ? track.getSettings() : {};
+                        isMirrored = (settings.facingMode === 'user') || (!settings.facingMode);
+                        video.style.transform = isMirrored ? 'scaleX(-1)' : 'none';
+
+                        loading.style.display = 'none';
+                    } catch (e2) {
+                        closeModal();
+                        if (fallbackInput) {
+                            fallbackInput.click();
+                            return;
+                        }
+                        onError(new Error('Tidak dapat mengakses kamera: ' + (err.message || 'Izin kamera ditolak.')));
+                    }
+                }
+            };
+
+            // Show modal and start stream
+            document.body.classList.add('overflow-hidden');
+            modal.style.display = 'flex';
+            startCamera(currentFacingMode);
+
+            // Switch camera button
+            switchBtn.onclick = () => {
+                currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                startCamera(currentFacingMode);
+            };
+
+            // Check if multiple cameras exist to show switch button
+            if (navigator.mediaDevices.enumerateDevices) {
+                navigator.mediaDevices.enumerateDevices().then(devices => {
+                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    if (videoDevices.length > 1) {
+                        switchBtn.style.display = 'inline-flex';
+                    } else {
+                        switchBtn.style.display = 'none';
+                    }
+                }).catch(() => {});
+            }
+
+            // Snap Button
+            snapBtn.onclick = async () => {
+                if (!video.videoWidth || !video.videoHeight) return;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+
+                // Mirror photo if front-facing camera
+                if (isMirrored) {
+                    ctx.translate(canvas.width, 0);
+                    ctx.scale(-1, 1);
+                }
+
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                closeModal();
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        return onError(new Error('Gagal mengambil tangkapan frame dari kamera.'));
+                    }
+                    const file = new File([blob], 'camera_capture.jpg', { type: 'image/jpeg' });
+                    try {
+                        const res = await window.compressStorePhoto(file, onProgress);
+                        onCapture(res);
+                    } catch (err) {
+                        onError(err);
+                    }
+                }, 'image/jpeg', 0.92);
+            };
+        };
+    }
 </script>
+
+<!-- Global Halala WebRTC Camera Modal -->
+<div id="halala-camera-modal" class="fixed inset-0 z-100 bg-brand-espresso/80 backdrop-blur-xs flex items-center justify-center p-4" style="display: none;">
+    <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col border border-brand-border">
+        <!-- Header -->
+        <div class="p-4 border-b border-brand-border flex items-center justify-between bg-white">
+            <h3 class="text-sm font-bold text-brand-espresso flex items-center gap-2">
+                <i class="ti ti-camera text-brand-primary text-lg"></i>
+                <span>Kamera Perangkat Langsung</span>
+            </h3>
+            <button type="button" id="halala-camera-close-btn"
+                class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-brand-espresso hover:bg-neutral-100 transition cursor-pointer"
+                title="Tutup Kamera">
+                <i class="ti ti-x text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Video Viewport -->
+        <div class="relative bg-neutral-900 flex items-center justify-center aspect-4/3 overflow-hidden">
+            <video id="halala-camera-video" playsinline autoplay muted class="w-full h-full object-cover"></video>
+            <div id="halala-camera-loading" class="absolute inset-0 flex flex-col items-center justify-center text-white bg-black/60 gap-2" style="display: none;">
+                <i class="ti ti-loader-2 animate-spin text-3xl text-brand-primary"></i>
+                <span class="text-xs font-medium">Menghubungkan ke kamera perangkat...</span>
+            </div>
+        </div>
+
+        <!-- Controls Footer -->
+        <div class="p-4 bg-neutral-50 flex items-center justify-between gap-3 border-t border-brand-border">
+            <button type="button" id="halala-camera-switch-btn"
+                class="px-3.5 py-2 bg-white border border-brand-border rounded-xl text-xs font-semibold text-brand-espresso hover:bg-neutral-100 transition cursor-pointer"
+                style="display: none;">
+                <i class="ti ti-switch-horizontal text-sm mr-1"></i>
+                <span>Ganti Kamera</span>
+            </button>
+            <div class="flex-1"></div>
+            <button type="button" id="halala-camera-snap-btn"
+                class="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-bold rounded-xl shadow-xs transition cursor-pointer">
+                <i class="ti ti-aperture text-base"></i>
+                <span>Jepret Foto</span>
+            </button>
+        </div>
+    </div>
+</div>

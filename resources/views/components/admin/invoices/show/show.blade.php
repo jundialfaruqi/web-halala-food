@@ -1,4 +1,4 @@
-<div class="space-y-6 max-w-5xl" x-data="{
+<div class="space-y-6 max-w-5xl print:max-w-none print:w-full print:space-y-4" x-data="{
     // Toast State
     toastMessage: '',
     toastType: 'success',

@@ -93,4 +93,79 @@ class Delivery extends Model
 
         return $prefix . $nextSequence;
     }
+
+    /**
+     * Validate base64 photo data URL format, mime, and size.
+     */
+    public static function validatePhotoBase64(?string $photoData): ?string
+    {
+        if (empty($photoData)) {
+            return null;
+        }
+
+        if (! preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,/i', $photoData, $matches)) {
+            return 'Format file foto tidak didukung. Hanya file JPG, JPEG, PNG, atau WEBP yang diperbolehkan.';
+        }
+
+        $base64 = substr($photoData, strpos($photoData, ',') + 1);
+        $decoded = base64_decode($base64, true);
+
+        if ($decoded === false) {
+            return 'Format data gambar tidak valid atau rusak.';
+        }
+
+        // Validasi maksimal upload 10MB di backend
+        $maxBytes = 10 * 1024 * 1024; // 10MB
+        if (strlen($decoded) > $maxBytes) {
+            return 'Ukuran file foto melebihi batas maksimal 10MB.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Store and update proof photo from base64 DataURL (WebP or JPEG).
+     */
+    public function updateProofPhotoFromBase64(?string $photoData): bool
+    {
+        if (empty($photoData)) {
+            return false;
+        }
+
+        $validationError = self::validatePhotoBase64($photoData);
+        if ($validationError !== null) {
+            return false;
+        }
+
+        if (preg_match('/^data:image\/(\w+);base64,/i', $photoData, $matches)) {
+            $ext = strtolower($matches[1]);
+            if ($ext === 'jpeg') {
+                $ext = 'jpg';
+            }
+
+            $base64 = substr($photoData, strpos($photoData, ',') + 1);
+            $decoded = base64_decode($base64, true);
+
+            if ($decoded !== false) {
+                if ($this->proof_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->proof_image)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($this->proof_image);
+                }
+
+                $date = now()->format('Y-m-d');
+                $deliverySlug = \Illuminate\Support\Str::slug($this->delivery_number ?: 'sj');
+                $randomCode = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $filename = "{$date}_{$deliverySlug}_{$randomCode}.{$ext}";
+                $path = 'delivery-proofs/' . $filename;
+
+                \Illuminate\Support\Facades\Storage::disk('public')->put($path, $decoded);
+
+                $this->proof_image = $path;
+                $this->save();
+
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

@@ -315,3 +315,40 @@ test('courier can complete delivery with proof photo and digital signature', fun
         ->assertSee('Foto Bukti Serah Terima')
         ->assertSee('Tanda Tangan Digital Penerima');
 });
+
+test('courier can complete delivery handover with client-compressed photo_data base64', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    $courier = User::where('email', 'kurir@halala-food.id')->first();
+    $delivery = Delivery::where('status', 'diproses')->first();
+
+    actingAs($courier);
+
+    // 1. Dispatch
+    Livewire::test('admin.deliveries.show', ['delivery' => $delivery])
+        ->call('startDelivery')
+        ->assertHasNoErrors();
+
+    $delivery->refresh();
+    expect($delivery->status)->toBe('dikirim');
+
+    // 2. Base64 WebP sample photo (compressed by client-side browser engine)
+    $fakeBase64Photo = 'data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==';
+
+    Livewire::test('admin.deliveries.show', ['delivery' => $delivery])
+        ->set('recipient_name', 'Bpk. Hendra')
+        ->set('recipient_role', 'Kepala Toko')
+        ->set('photo_data', $fakeBase64Photo)
+        ->set('handover_notes', 'Diterima oleh kepala toko langsung')
+        ->call('completeDelivery')
+        ->assertHasNoErrors();
+
+    $delivery->refresh();
+    expect($delivery->status)->toBe('selesai')
+        ->and($delivery->recipient_name)->toBe('Bpk. Hendra')
+        ->and($delivery->proof_image)->not->toBeNull()
+        ->and($delivery->proof_image)->toContain('delivery-proofs/');
+
+    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($delivery->proof_image);
+});
+
