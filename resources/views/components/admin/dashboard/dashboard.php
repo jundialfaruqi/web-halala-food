@@ -1,6 +1,13 @@
 <?php
 
+use App\Models\Account;
+use App\Models\Delivery;
+use App\Models\Invoice;
+use App\Models\Product;
+use App\Models\RawMaterial;
+use App\Models\Store;
 use App\Models\User;
+use Carbon\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -9,7 +16,7 @@ use Livewire\WithPagination;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-new #[Layout('components.layouts.admin'), Title('Dashboard Admin - Halala Food')] class extends Component
+new #[Layout('components.layouts.admin'), Title('Dashboard - Halala Food')] class extends Component
 {
     use WithPagination;
 
@@ -37,6 +44,41 @@ new #[Layout('components.layouts.admin'), Title('Dashboard Admin - Halala Food')
 
     public function with(): array
     {
+        // 1. Core Financial & Operational Metrics
+        $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
+        $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
+
+        $monthlyInvoiced = (float) Invoice::whereBetween('invoice_date', [$startOfMonth, $endOfMonth])
+            ->sum('total_amount');
+
+        $totalReceivables = (float) Invoice::whereNotIn('status', ['lunas', 'dibatalkan'])
+            ->sum('remaining_balance');
+
+        $totalCashBalance = (float) Account::sum('balance');
+
+        $activeStoresCount = Store::where('is_active', true)->count();
+        $pendingDeliveriesCount = Delivery::whereIn('status', ['diproses', 'dikirim'])->count();
+        $readyProductsStock = (int) Product::sum('stock_ready');
+
+        // Low stock raw materials (<= min_stock)
+        $lowStockMaterials = RawMaterial::whereColumn('stock', '<=', 'min_stock')
+            ->take(5)
+            ->get();
+
+        // Recent deliveries
+        $recentDeliveries = Delivery::with(['store', 'courier'])
+            ->latest('id')
+            ->take(5)
+            ->get();
+
+        // Recent unpaid / partial invoices
+        $pendingInvoices = Invoice::with('store')
+            ->whereNotIn('status', ['lunas', 'dibatalkan'])
+            ->latest('id')
+            ->take(5)
+            ->get();
+
+        // User management query (for team section & test compatibility)
         $usersQuery = User::query()
             ->with('roles')
             ->when($this->search, function ($query) {
@@ -58,6 +100,16 @@ new #[Layout('components.layouts.admin'), Title('Dashboard Admin - Halala Food')
         $totalPermissions = class_exists(Permission::class) ? Permission::count() : 0;
 
         return [
+            'monthlyInvoiced' => $monthlyInvoiced,
+            'totalReceivables' => $totalReceivables,
+            'totalCashBalance' => $totalCashBalance,
+            'activeStoresCount' => $activeStoresCount,
+            'pendingDeliveriesCount' => $pendingDeliveriesCount,
+            'readyProductsStock' => $readyProductsStock,
+            'lowStockMaterials' => $lowStockMaterials,
+            'recentDeliveries' => $recentDeliveries,
+            'pendingInvoices' => $pendingInvoices,
+
             'users' => $usersQuery->paginate(5),
             'totalUsers' => $totalUsers,
             'totalRoles' => $totalRoles,

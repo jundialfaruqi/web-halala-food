@@ -11,240 +11,303 @@
             Dashboard Utama
         </h1>
         <p class="text-sm sm:text-base text-brand-warm-gray">
-            Ringkasan metrik performa operasional, inventaris, dan pengguna sistem Halala Food.
+            Ringkasan performa usaha, pengantaran mitra, piutang, dan stok Halala Food.
         </p>
     </div>
 
-    <!-- 1. Metric Statistics Cards (Clean, Large Numbers, No Color Box) -->
+    <!-- 1. Ringkasan Metrik Usaha (Tanpa Icon BG, Tanpa Badge, Warna Minimalis) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 
-        <!-- Stat 1: Total Pengguna -->
+        <!-- Metrik 1: Total Omset Bulan Ini -->
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
-                <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Total Pengguna</span>
-                <i class="ti ti-users text-2xl text-brand-warm-gray"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Omset Bulan Ini</span>
+                <i class="ti ti-receipt text-2xl text-brand-warm-gray"></i>
             </div>
-            <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
-                {{ $totalUsers }}
+            <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
+                Rp {{ number_format($monthlyInvoiced, 0, ',', '.') }}
             </div>
-            <p class="text-xs sm:text-sm text-brand-warm-gray">Akun terdaftar dalam sistem</p>
+            <p class="text-xs text-brand-warm-gray">Total tagihan faktur penjualan konsinyasi</p>
         </div>
 
-        <!-- Stat 2: Role Sistem -->
+        <!-- Metrik 2: Piutang Toko Berjalan -->
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
-                <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Total Peran (Role)</span>
-                <i class="ti ti-shield-check text-2xl text-brand-warm-gray"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Piutang Berjalan</span>
+                <i class="ti ti-building-store text-2xl text-brand-warm-gray"></i>
             </div>
-            <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
-                {{ $totalRoles }}
+            <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
+                Rp {{ number_format($totalReceivables, 0, ',', '.') }}
             </div>
-            <p class="text-xs sm:text-sm text-brand-warm-gray">Peran otorisasi terkonfigurasi</p>
+            <p class="text-xs text-brand-warm-gray">Tagihan toko mitra belum lunas</p>
         </div>
 
-        <!-- Stat 3: Hak Akses -->
-        <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
-            <div class="flex items-center justify-between">
-                <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Hak Akses (Permission)</span>
-                <i class="ti ti-key text-2xl text-brand-warm-gray"></i>
+        <!-- Metrik 3: Saldo Kas Usaha / Stok Siap Antar -->
+        @can('buku-kas-view')
+            <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Saldo Kas Usaha</span>
+                    <i class="ti ti-wallet text-2xl text-brand-warm-gray"></i>
+                </div>
+                <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
+                    Rp {{ number_format($totalCashBalance, 0, ',', '.') }}
+                </div>
+                <p class="text-xs text-brand-warm-gray">Total saldo aktif rekening & buku kas</p>
             </div>
-            <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
-                {{ $totalPermissions }}
+        @else
+            <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Stok Siap Antar</span>
+                    <i class="ti ti-package text-2xl text-brand-warm-gray"></i>
+                </div>
+                <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
+                    {{ number_format($readyProductsStock, 0, ',', '.') }}
+                </div>
+                <p class="text-xs text-brand-warm-gray">Kemasan produk jadi siap didistribusikan</p>
             </div>
-            <p class="text-xs sm:text-sm text-brand-warm-gray">Izin fitur dan hak akses aktif</p>
-        </div>
+        @endcan
 
-        <!-- Stat 4: Varian Produk -->
+        <!-- Metrik 4: Pengantaran Berjalan & Mitra Toko -->
         <div class="bg-white rounded-2xl border border-brand-border p-6 shadow-xs space-y-3">
             <div class="flex items-center justify-between">
-                <span class="text-sm sm:text-base font-semibold text-brand-warm-gray">Varian Produk</span>
-                <i class="ti ti-cookie text-2xl text-brand-warm-gray"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-brand-warm-gray">Pengantaran Berjalan</span>
+                <i class="ti ti-truck-delivery text-2xl text-brand-warm-gray"></i>
             </div>
-            <div class="text-3xl sm:text-4xl font-bold text-brand-espresso">
-                2
+            <div class="text-2xl sm:text-3xl font-mono font-extrabold text-brand-espresso">
+                {{ $pendingDeliveriesCount }} Surat Jalan
             </div>
-            <p class="text-xs sm:text-sm text-brand-warm-gray">Marie Wijen & Ting-Ting Susu</p>
+            <p class="text-xs text-brand-warm-gray">{{ $activeStoresCount }} mitra toko aktif terdaftar</p>
         </div>
 
     </div>
 
-    <!-- 3. Main Data Content Grid -->
+    <!-- 2. Aktivitas Pengantaran & Distribusi Terkini -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
 
-        <!-- Left: Users Table (8 cols) -->
-        <div class="lg:col-span-8 bg-white rounded-2xl border border-brand-border shadow-xs p-6 sm:p-8 space-y-6">
-
-            <!-- Table Header & Controls -->
-            <div
-                class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-brand-border/60">
+        <!-- Kolom Kiri: Surat Jalan Terkini (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl border border-brand-border shadow-xs p-6 space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-brand-border">
                 <div>
-                    <h3 class="text-xl font-bold text-brand-espresso">
-                        Daftar Pengguna
-                    </h3>
-                    <p class="text-sm text-brand-warm-gray">
-                        Kelola data nama, email, dan peran pengguna sistem.
-                    </p>
+                    <h3 class="text-lg font-bold text-brand-espresso">Pengantaran Surat Jalan Terkini</h3>
+                    <p class="text-xs text-brand-warm-gray mt-0.5">Status distribusi produk ke mitra toko.</p>
                 </div>
-
-                <!-- Filters -->
-                <div class="flex flex-wrap items-center gap-3">
-                    <!-- Search Input -->
-                    <div class="relative min-w-55">
-                        <i
-                            class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg"></i>
-                        <input type="text" wire:model.live.debounce.300ms="search"
-                            placeholder="Cari nama atau email..."
-                            class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-brand-border bg-white text-sm text-brand-espresso placeholder:text-brand-warm-gray/70 focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition">
-                    </div>
-
-                    <!-- Role Filter -->
-                    <select wire:model.live="selectedRole"
-                        class="select select-lg select-bordered rounded-xl border-brand-border bg-white text-brand-espresso font-medium focus:outline-none focus:border-brand-primary transition cursor-pointer">
-                        <option value="">Semua Peran</option>
-                        @foreach ($roles as $r)
-                            <option value="{{ $r->name }}">{{ $r->name }}</option>
-                        @endforeach
-                    </select>
-
-                    @if ($search || $selectedRole)
-                        <button type="button" wire:click="resetFilters"
-                            class="px-3 py-2.5 text-brand-warm-gray hover:text-brand-primary hover:bg-brand-soft-cream/60 rounded-xl transition cursor-pointer text-sm font-medium flex items-center gap-1.5"
-                            title="Reset Filter">
-                            <i class="ti ti-refresh text-base"></i>
-                            <span>Reset</span>
-                        </button>
-                    @endif
-                </div>
+                @can('pengantaran-view')
+                    <a href="{{ route('admin.deliveries') }}" wire:navigate class="text-xs font-bold text-brand-primary hover:underline">
+                        Lihat Semua →
+                    </a>
+                @endcan
             </div>
 
-            <!-- Table Content -->
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse text-sm">
                     <thead>
-                        <tr class="border-b border-brand-border text-sm font-bold text-brand-espresso">
-                            <th class="pb-3 px-3">Nama & Email</th>
-                            <th class="pb-3 px-3">Peran (Role)</th>
-                            <th class="pb-3 px-3">Tanggal Dibuat</th>
+                        <tr class="border-b border-brand-border text-xs font-bold uppercase tracking-wider text-brand-warm-gray">
+                            <th class="pb-2.5 px-2">No. Surat Jalan</th>
+                            <th class="pb-2.5 px-2">Mitra Toko</th>
+                            <th class="pb-2.5 px-2">Kurir</th>
+                            <th class="pb-2.5 px-2 text-right">Total Item</th>
+                            <th class="pb-2.5 px-2 text-right">Status</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-brand-border/60 text-sm text-brand-text-primary">
-                        @forelse($users as $user)
-                            <tr class="hover:bg-brand-soft-cream-light/40 transition">
-                                <!-- User Info -->
-                                <td class="py-4 px-3">
-                                    <div class="flex items-center gap-3.5">
-                                        <div
-                                            class="size-10 rounded-full bg-brand-primary text-white font-bold flex items-center justify-center text-sm shrink-0">
-                                            {{ $user->initials() }}
-                                        </div>
-                                        <div class="flex flex-col min-w-0">
-                                            <span
-                                                class="font-bold text-base text-brand-espresso truncate">{{ $user->name }}</span>
-                                            <span
-                                                class="text-sm text-brand-warm-gray truncate">{{ $user->email }}</span>
-                                        </div>
-                                    </div>
+                    <tbody class="divide-y divide-brand-border/60">
+                        @forelse($recentDeliveries as $del)
+                            <tr class="hover:bg-neutral-50/50 transition">
+                                <td class="py-3 px-2 font-mono font-bold text-brand-espresso">
+                                    {{ $del->delivery_number }}
                                 </td>
-
-                                <!-- Roles (Clean, single consistent styling) -->
-                                <td class="py-4 px-3">
-                                    <div class="flex flex-wrap gap-1.5">
-                                        @forelse($user->roles as $role)
-                                            <span class="text-sm font-semibold text-brand-espresso capitalize">
-                                                {{ $role->name }}
-                                            </span>
-                                        @empty
-                                            <span class="text-sm text-brand-warm-gray italic">Tanpa Peran</span>
-                                        @endforelse
-                                    </div>
+                                <td class="py-3 px-2 font-medium text-brand-espresso">
+                                    {{ $del->store?->name ?? '-' }}
                                 </td>
-
-                                <!-- Joined Date -->
-                                <td class="py-4 px-3 text-sm text-brand-warm-gray whitespace-nowrap">
-                                    {{ $user->created_at ? $user->created_at->translatedFormat('d F Y') : '-' }}
+                                <td class="py-3 px-2 text-brand-warm-gray">
+                                    {{ $del->courier?->name ?? '-' }}
+                                </td>
+                                <td class="py-3 px-2 text-right font-mono font-semibold text-brand-espresso">
+                                    {{ $del->total_items }}
+                                </td>
+                                <td class="py-3 px-2 text-right">
+                                    <span class="text-xs font-semibold text-brand-espresso capitalize">
+                                        {{ str_replace('_', ' ', $del->status) }}
+                                    </span>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="py-12 text-center text-base text-brand-warm-gray">
-                                    <div class="flex flex-col items-center justify-center gap-2">
-                                        <i class="ti ti-user-x text-4xl text-brand-warm-gray/40"></i>
-                                        <span>Tidak ada data pengguna yang sesuai.</span>
-                                    </div>
+                                <td colspan="5" class="py-8 text-center text-sm text-brand-warm-gray">
+                                    Belum ada data surat jalan pengantaran.
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-
-            <!-- Pagination Links -->
-            @if ($users->hasPages())
-                <div class="pt-4 border-t border-brand-border">
-                    {{ $users->links() }}
-                </div>
-            @endif
-
         </div>
 
-        <!-- Right: Role Distribution & System Information (4 cols) -->
-        <div class="lg:col-span-4 space-y-6">
+        <!-- Kolom Kanan: Tagihan Piutang & Inventaris (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
 
-            <!-- Card: Distribusi Peran -->
-            <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 space-y-5">
-                <div class="border-b border-brand-border/60 pb-3">
-                    <h3 class="font-bold text-lg text-brand-espresso">
-                        Jumlah Pengguna per Peran
-                    </h3>
-                    <p class="text-sm text-brand-warm-gray">Total {{ $roles->count() }} peran terdaftar</p>
+            <!-- Card: Tagihan Piutang Berjalan -->
+            <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-brand-border">
+                    <div>
+                        <h3 class="text-lg font-bold text-brand-espresso">Tagihan Toko Berjalan</h3>
+                        <p class="text-xs text-brand-warm-gray mt-0.5">Faktur konsinyasi belum lunas.</p>
+                    </div>
+                    @can('faktur-view')
+                        <a href="{{ route('admin.invoices') }}" wire:navigate class="text-xs font-bold text-brand-primary hover:underline">
+                            Semua Faktur →
+                        </a>
+                    @endcan
                 </div>
 
-                <div class="space-y-4">
-                    @foreach ($roles as $role)
-                        @php
-                            $pct = $totalUsers > 0 ? round(($role->users_count / $totalUsers) * 100) : 0;
-                        @endphp
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between text-sm sm:text-base">
-                                <span class="font-semibold text-brand-espresso">{{ $role->name }}</span>
-                                <span class="font-bold text-brand-espresso">{{ $role->users_count }} orang</span>
+                <div class="space-y-3">
+                    @forelse($pendingInvoices as $inv)
+                        <div class="flex items-center justify-between py-2 border-b border-brand-border/40 last:border-b-0 text-sm">
+                            <div class="min-w-0 pr-3">
+                                <p class="font-bold text-brand-espresso truncate">{{ $inv->store?->name ?? 'Toko' }}</p>
+                                <p class="font-mono text-xs text-brand-warm-gray">{{ $inv->invoice_number }}</p>
                             </div>
-                            <div class="w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden">
-                                <div class="h-full bg-brand-primary rounded-full transition-all duration-300"
-                                    style="width: {{ $pct }}%;"></div>
+                            <div class="text-right shrink-0">
+                                <p class="font-mono font-bold text-brand-espresso">
+                                    Rp {{ number_format($inv->remaining_balance, 0, ',', '.') }}
+                                </p>
+                                <p class="text-xs text-brand-warm-gray capitalize">
+                                    {{ str_replace('_', ' ', $inv->status) }}
+                                </p>
                             </div>
                         </div>
-                    @endforeach
+                    @empty
+                        <p class="py-4 text-center text-sm text-brand-warm-gray">
+                            Semua tagihan toko dalam status lunas.
+                        </p>
+                    @endforelse
                 </div>
             </div>
 
-            <!-- Card: Informasi Sistem -->
-            <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 space-y-4">
-                <div class="border-b border-brand-border/60 pb-3">
-                    <h3 class="font-bold text-lg text-brand-espresso">
-                        Informasi Sistem
-                    </h3>
+            <!-- Card: Status Inventaris Bahan Baku -->
+            <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 space-y-3">
+                <div class="flex items-center justify-between pb-3 border-b border-brand-border">
+                    <h3 class="text-lg font-bold text-brand-espresso">Peringatan Bahan Baku</h3>
+                    @can('bahan-baku-view')
+                        <a href="{{ route('admin.raw-materials') }}" wire:navigate class="text-xs font-bold text-brand-primary hover:underline">
+                            Bahan Baku Dapur →
+                        </a>
+                    @endcan
                 </div>
 
-                <div class="space-y-3.5 text-sm sm:text-base">
-                    <div class="flex items-center justify-between py-1 border-b border-brand-border/40">
-                        <span class="text-brand-warm-gray">Otorisasi</span>
-                        <span class="font-bold text-brand-espresso">Spatie Permission</span>
+                @if($lowStockMaterials->isNotEmpty())
+                    <div class="space-y-2">
+                        @foreach($lowStockMaterials as $mat)
+                            <div class="flex items-center justify-between py-1.5 border-b border-brand-border/40 last:border-b-0 text-sm">
+                                <span class="font-medium text-brand-espresso">{{ $mat->name }}</span>
+                                <span class="font-mono text-xs font-bold text-brand-espresso">
+                                    {{ number_format($mat->stock, 0, ',', '.') }} / min {{ number_format($mat->min_stock, 0, ',', '.') }} {{ $mat->display_unit }}
+                                </span>
+                            </div>
+                        @endforeach
                     </div>
-
-                    <div class="flex items-center justify-between py-1 border-b border-brand-border/40">
-                        <span class="text-brand-warm-gray">Database</span>
-                        <span class="font-bold text-brand-espresso">MySQL</span>
-                    </div>
-
-                    <div class="flex items-center justify-between py-1">
-                        <span class="text-brand-warm-gray">Keamanan Sandi</span>
-                        <span class="font-bold text-brand-espresso">Terenkripsi (Bcrypt)</span>
-                    </div>
-                </div>
+                @else
+                    <p class="py-2 text-sm text-brand-warm-gray">
+                        Semua persediaan bahan baku dapur dalam kondisi aman di atas batas minimum.
+                    </p>
+                @endif
             </div>
 
         </div>
+
+    </div>
+
+    <!-- 3. Manajemen Tim & Pengguna Sistem -->
+    <div class="bg-white rounded-2xl border border-brand-border shadow-xs p-6 sm:p-8 space-y-6">
+
+        <!-- Table Header & Controls -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-brand-border">
+            <div>
+                <h3 class="text-xl font-bold text-brand-espresso">
+                    Daftar Pengguna
+                </h3>
+                <p class="text-sm text-brand-warm-gray mt-0.5">
+                    Total Pengguna: {{ $totalUsers }} orang terdaftar ({{ $totalRoles }} peran konfigurasi).
+                </p>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Search Input -->
+                <div class="relative min-w-55">
+                    <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-base"></i>
+                    <input type="text" wire:model.live.debounce.300ms="search"
+                        placeholder="Cari nama atau email..."
+                        class="w-full pl-9 pr-4 py-2 rounded-xl border border-brand-border bg-white text-sm text-brand-espresso placeholder:text-brand-warm-gray/70 focus:outline-none focus:border-brand-primary transition">
+                </div>
+
+                <!-- Role Filter -->
+                <select wire:model.live="selectedRole"
+                    class="px-3 py-2 rounded-xl border border-brand-border bg-white text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary transition cursor-pointer">
+                    <option value="">Semua Peran</option>
+                    @foreach ($roles as $r)
+                        <option value="{{ $r->name }}">{{ $r->name }}</option>
+                    @endforeach
+                </select>
+
+                @if ($search || $selectedRole)
+                    <button type="button" wire:click="resetFilters"
+                        class="px-3 py-2 text-brand-warm-gray hover:text-brand-primary transition cursor-pointer text-sm font-medium flex items-center gap-1.5"
+                        title="Reset Filter">
+                        <i class="ti ti-refresh text-base"></i>
+                        <span>Reset</span>
+                    </button>
+                @endif
+            </div>
+        </div>
+
+        <!-- Table Content (Tanpa Icon BG, Tanpa Badge, Tipografi Bersih) -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="border-b border-brand-border text-xs font-bold uppercase tracking-wider text-brand-warm-gray">
+                        <th class="pb-3 px-3">Nama Pengguna</th>
+                        <th class="pb-3 px-3">Email Akun</th>
+                        <th class="pb-3 px-3">Peran (Role)</th>
+                        <th class="pb-3 px-3 text-right">Tanggal Dibuat</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-brand-border/60">
+                    @forelse($users as $user)
+                        <tr class="hover:bg-neutral-50/50 transition">
+                            <td class="py-3 px-3 font-bold text-brand-espresso">
+                                {{ $user->name }}
+                            </td>
+                            <td class="py-3 px-3 font-mono text-brand-warm-gray">
+                                {{ $user->email }}
+                            </td>
+                            <td class="py-3 px-3 text-brand-espresso capitalize">
+                                @forelse($user->roles as $role)
+                                    <span>{{ $role->name }}</span>{{ ! $loop->last ? ', ' : '' }}
+                                @empty
+                                    <span class="text-brand-warm-gray italic">Tanpa Peran</span>
+                                @endforelse
+                            </td>
+                            <td class="py-3 px-3 text-right text-brand-warm-gray whitespace-nowrap">
+                                {{ $user->created_at ? $user->created_at->translatedFormat('d/m/Y') : '-' }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="py-8 text-center text-sm text-brand-warm-gray">
+                                Tidak ada data pengguna yang sesuai.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Links -->
+        @if ($users->hasPages())
+            <div class="pt-4 border-t border-brand-border">
+                {{ $users->links() }}
+            </div>
+        @endif
 
     </div>
 
