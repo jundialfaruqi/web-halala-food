@@ -64,6 +64,10 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
     {
         $this->items[] = [
             'raw_material_id' => '',
+            'input_mode' => 'package',
+            'package_count' => '',
+            'content_per_package' => '',
+            'price_per_package' => '',
             'quantity' => '',
             'cost_per_unit' => '',
             'subtotal' => 0.0,
@@ -79,6 +83,78 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
         }
     }
 
+    public function toggleInputMode(int $index, string $mode): void
+    {
+        if (isset($this->items[$index])) {
+            $this->items[$index]['input_mode'] = $mode;
+            if ($mode === 'package') {
+                $this->recalculatePackageRow($index);
+            } else {
+                $this->recalculateDirectRow($index);
+            }
+        }
+    }
+
+    protected function recalculatePackageRow(int $index, ?string $changedField = null): void
+    {
+        if (! isset($this->items[$index])) {
+            return;
+        }
+
+        $pkgCount = (float) ($this->items[$index]['package_count'] ?? 0);
+        $content = (float) ($this->items[$index]['content_per_package'] ?? 0);
+        $pricePerPkg = (float) ($this->items[$index]['price_per_package'] ?? 0);
+        $subtotal = (float) ($this->items[$index]['subtotal'] ?? 0);
+
+        // 1. Hitung total stok fisik (quantity dalam base unit)
+        if ($pkgCount > 0 && $content > 0) {
+            $totalQty = round($pkgCount * $content, 4);
+            $this->items[$index]['quantity'] = $totalQty;
+        } elseif ($pkgCount > 0 && empty($content)) {
+            // Jika belum ada isi kemasan, set kuantitas sementara sama dengan jumlah kemasan
+            if (empty($this->items[$index]['quantity'])) {
+                $this->items[$index]['quantity'] = $pkgCount;
+            }
+        }
+
+        $totalQty = (float) ($this->items[$index]['quantity'] ?? 0);
+
+        // 2. Kalkulasi harga dua arah (bi-directional)
+        if ($changedField === 'subtotal') {
+            // Pengguna mengetik Total Belanja di struk (misal: 400.000)
+            if ($pkgCount > 0) {
+                $this->items[$index]['price_per_package'] = round($subtotal / $pkgCount, 2);
+            }
+            if ($totalQty > 0) {
+                $this->items[$index]['cost_per_unit'] = round($subtotal / $totalQty, 4);
+            }
+        } else {
+            // Pengguna mengetik Harga per Kemasan (misal: 40.000) atau mengubah jumlah kemasan / isi
+            if ($pricePerPkg > 0 && $pkgCount > 0) {
+                $subtotal = round($pkgCount * $pricePerPkg, 2);
+                $this->items[$index]['subtotal'] = $subtotal;
+            } elseif ($subtotal > 0 && $pkgCount > 0 && empty($this->items[$index]['price_per_package'])) {
+                $this->items[$index]['price_per_package'] = round($subtotal / $pkgCount, 2);
+            }
+
+            $currentSubtotal = (float) ($this->items[$index]['subtotal'] ?? 0);
+            if ($totalQty > 0 && $currentSubtotal > 0) {
+                $this->items[$index]['cost_per_unit'] = round($currentSubtotal / $totalQty, 4);
+            }
+        }
+    }
+
+    protected function recalculateDirectRow(int $index): void
+    {
+        if (! isset($this->items[$index])) {
+            return;
+        }
+
+        $qty = (float) ($this->items[$index]['quantity'] ?? 0);
+        $cost = (float) ($this->items[$index]['cost_per_unit'] ?? 0);
+        $this->items[$index]['subtotal'] = round($qty * $cost, 2);
+    }
+
     public function updatedItems(mixed $value, ?string $key = null): void
     {
         if (! $key) {
@@ -90,16 +166,20 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
             $index = (int) $parts[0];
             $field = $parts[1];
 
+            $mode = $this->items[$index]['input_mode'] ?? 'package';
+
             if ($field === 'raw_material_id' && ! empty($this->items[$index]['raw_material_id'])) {
                 $material = RawMaterial::find($this->items[$index]['raw_material_id']);
-                if ($material && empty($this->items[$index]['cost_per_unit'])) {
+                if ($material && empty($this->items[$index]['cost_per_unit']) && empty($this->items[$index]['price_per_package'])) {
                     $this->items[$index]['cost_per_unit'] = (float) $material->cost_per_unit;
                 }
             }
 
-            $qty = (float) ($this->items[$index]['quantity'] ?? 0);
-            $cost = (float) ($this->items[$index]['cost_per_unit'] ?? 0);
-            $this->items[$index]['subtotal'] = round($qty * $cost, 2);
+            if ($mode === 'package') {
+                $this->recalculatePackageRow($index, $field);
+            } else {
+                $this->recalculateDirectRow($index);
+            }
         }
     }
 
@@ -107,9 +187,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
     {
         $total = 0.0;
         foreach ($this->items as $item) {
-            $qty = (float) ($item['quantity'] ?? 0);
-            $cost = (float) ($item['cost_per_unit'] ?? 0);
-            $total += ($qty * $cost);
+            $total += (float) ($item['subtotal'] ?? 0);
         }
 
         return round($total, 2);
@@ -172,11 +250,18 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
 
                 $qty = (float) $item['quantity'];
                 $cost = (float) $item['cost_per_unit'];
-                $subtotal = round($qty * $cost, 2);
+                $subtotal = (float) ($item['subtotal'] ?? round($qty * $cost, 2));
 
                 $unitStr = $rawMat->unitModel?->short_name ?? $rawMat->display_unit ?? '';
                 $formattedQty = number_format($qty, (floor($qty) == $qty ? 0 : 2), ',', '.');
                 $itemDetails[] = "{$rawMat->name} ({$formattedQty} {$unitStr})";
+
+                $notes = ! empty($item['notes']) ? trim($item['notes']) : null;
+                if (! $notes && ($item['input_mode'] ?? '') === 'package' && ! empty($item['package_count'])) {
+                    $pkgCount = $item['package_count'];
+                    $content = $item['content_per_package'] ?? '';
+                    $notes = $content ? "{$pkgCount} kemasan (@ {$content} {$unitStr})" : "{$pkgCount} kemasan";
+                }
 
                 RawMaterialPurchaseItem::create([
                     'purchase_id' => $purchase->id,
@@ -184,7 +269,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                     'quantity' => $qty,
                     'cost_per_unit' => $cost,
                     'subtotal' => $subtotal,
-                    'notes' => ! empty($item['notes']) ? trim($item['notes']) : null,
+                    'notes' => $notes,
                 ]);
 
                 $stockBefore = (float) $rawMat->stock;

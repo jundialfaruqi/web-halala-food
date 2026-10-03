@@ -151,83 +151,222 @@
 
             <div class="space-y-4">
                 @foreach ($items as $index => $row)
-                    <div class="space-y-3">
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
-                            <!-- Bahan Baku Selection -->
-                            <div class="md:col-span-4">
-                                <label class="block text-xs font-semibold text-brand-warm-gray mb-1">
-                                    Bahan Baku <span class="text-red-500">*</span>
-                                </label>
-                                <select wire:model.live="items.{{ $index }}.raw_material_id"
-                                    class="w-full px-3 py-2 rounded-lg border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary">
-                                    <option value="">Pilih Bahan...</option>
-                                    @foreach ($rawMaterials as $mat)
-                                        <option value="{{ $mat->id }}">
-                                            {{ $mat->name }} (Satuan: {{ $mat->display_unit }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error("items.{$index}.raw_material_id")
-                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                @enderror
+                    @php
+                        $selectedMat = !empty($row['raw_material_id']) ? $rawMaterials->firstWhere('id', $row['raw_material_id']) : null;
+                        $unitShort = $selectedMat?->display_unit ?? 'satuan';
+                        $inputMode = $row['input_mode'] ?? (isset($row['quantity']) && !isset($row['package_count']) ? 'direct' : 'package');
+                    @endphp
+                    <div class="p-4 rounded-2xl border border-brand-border bg-white shadow-xs space-y-4">
+                        <!-- Baris Header: Label Baris & Mode Switcher -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-brand-border/60">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold uppercase tracking-wider text-brand-espresso">Bahan #{{ $index + 1 }}</span>
+                                @if ($selectedMat)
+                                    <span class="text-xs text-brand-warm-gray">• Satuan Dapur: <strong class="text-brand-espresso">{{ $unitShort }}</strong></span>
+                                @endif
                             </div>
 
-                            <!-- Kuantitas -->
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-semibold text-brand-warm-gray mb-1">
-                                    Jumlah (Qty) <span class="text-red-500">*</span>
-                                </label>
-                                <input type="number" step="any"
-                                    wire:model.live.debounce.300ms="items.{{ $index }}.quantity" placeholder="0"
-                                    class="w-full px-3 py-2 rounded-lg border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary">
-                                @error("items.{$index}.quantity")
-                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Harga Satuan -->
-                            <div class="md:col-span-3">
-                                <label class="block text-xs font-semibold text-brand-warm-gray mb-1">
-                                    Harga Satuan (Rp) <span class="text-red-500">*</span>
-                                </label>
-                                <input type="number" step="any"
-                                    wire:model.live.debounce.300ms="items.{{ $index }}.cost_per_unit"
-                                    placeholder="0"
-                                    class="w-full px-3 py-2 rounded-lg border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary">
-                                @error("items.{$index}.cost_per_unit")
-                                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Subtotal -->
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-semibold text-brand-warm-gray mb-1">
-                                    Subtotal (Rp)
-                                </label>
-                                <div
-                                    class="px-3 py-2 rounded-lg bg-neutral-100 text-sm font-bold text-brand-espresso text-right">
-                                    Rp {{ number_format($row['subtotal'] ?? 0, 0, ',', '.') }}
+                            <div class="flex items-center gap-2 self-end sm:self-auto">
+                                <!-- Mode Switcher -->
+                                <div class="inline-flex items-center p-0.5 bg-neutral-100 rounded-lg text-xs font-semibold border border-neutral-200/60">
+                                    <button type="button" wire:click="toggleInputMode({{ $index }}, 'package')"
+                                        class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1 {{ $inputMode === 'package' ? 'bg-white shadow-xs text-brand-primary font-bold' : 'text-brand-warm-gray hover:text-brand-espresso' }}">
+                                        <i class="ti ti-package text-xs"></i>
+                                        <span>Mode Kemasan Beli</span>
+                                    </button>
+                                    <button type="button" wire:click="toggleInputMode({{ $index }}, 'direct')"
+                                        class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1 {{ $inputMode === 'direct' ? 'bg-white shadow-xs text-brand-primary font-bold' : 'text-brand-warm-gray hover:text-brand-espresso' }}">
+                                        <i class="ti ti-scale text-xs"></i>
+                                        <span>Mode Satuan Langsung</span>
+                                    </button>
                                 </div>
-                            </div>
 
-                            <!-- Tombol Hapus Baris -->
-                            <div class="md:col-span-1 pt-6 text-center">
+                                <!-- Tombol Hapus Baris -->
                                 @if (count($items) > 1)
                                     <button type="button" wire:click="removeItem({{ $index }})"
-                                        class="text-brand-warm-gray hover:text-red-600 transition cursor-pointer p-1"
-                                        title="Hapus baris ini">
-                                        <i class="ti ti-trash text-lg"></i>
+                                        class="p-1 text-brand-warm-gray hover:text-red-600 transition cursor-pointer rounded-lg hover:bg-red-50"
+                                        title="Hapus baris bahan ini">
+                                        <i class="ti ti-trash text-base"></i>
                                     </button>
                                 @endif
                             </div>
                         </div>
 
-                        <!-- Keterangan Baris Item -->
-                        <div>
-                            <input type="text" wire:model="items.{{ $index }}.notes"
-                                placeholder="Keterangan opsional untuk bahan ini (misal: karung 25kg, kemasan jerigen)..."
-                                class="w-full px-3 py-1.5 rounded-lg border border-brand-border/60 text-xs text-brand-espresso placeholder-brand-warm-gray/60 bg-white focus:outline-hidden focus:border-brand-primary">
-                        </div>
+                        @if ($inputMode === 'package')
+                            <!-- MODE KEMASAN BELI (Auto-Calculation Dua Arah) -->
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-3 items-start">
+                                    <!-- 1. Bahan Baku -->
+                                    <div class="md:col-span-4 sm:col-span-2">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Pilih Bahan Baku <span class="text-red-500">*</span>
+                                        </label>
+                                        <select wire:model.live="items.{{ $index }}.raw_material_id"
+                                            class="w-full px-3 py-2 rounded-xl border {{ $errors->has("items.{$index}.raw_material_id") ? 'border-red-500' : 'border-brand-border' }} text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary">
+                                            <option value="">-- Pilih Bahan Baku Dapur --</option>
+                                            @foreach ($rawMaterials as $mat)
+                                                <option value="{{ $mat->id }}">
+                                                    {{ $mat->name }} (Satuan: {{ $mat->display_unit }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error("items.{$index}.raw_material_id")
+                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- 2. Jumlah Kemasan Beli -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Jumlah Beli <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="number" step="any" min="0"
+                                            wire:model.live.debounce.300ms="items.{{ $index }}.package_count"
+                                            placeholder="Misal: 10"
+                                            class="w-full px-3 py-2 rounded-xl border {{ $errors->has("items.{$index}.quantity") ? 'border-red-500' : 'border-brand-border' }} text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary font-mono">
+                                        <span class="text-[10px] text-brand-warm-gray mt-0.5 block">Buah / Galon / Dus</span>
+                                    </div>
+
+                                    <!-- 3. Isi Bersih per Kemasan -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Isi per Kemasan <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="number" step="any" min="0"
+                                            wire:model.live.debounce.300ms="items.{{ $index }}.content_per_package"
+                                            placeholder="Misal: 500"
+                                            class="w-full px-3 py-2 rounded-xl border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary font-mono">
+                                        <span class="text-[10px] text-brand-warm-gray mt-0.5 block">Dalam {{ $unitShort }}</span>
+                                    </div>
+
+                                    <!-- 4. Harga Beli per Kemasan (Auto-Sync) -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Harga / Kemasan (Rp)
+                                        </label>
+                                        <input type="number" step="any" min="0"
+                                            wire:model.live.debounce.300ms="items.{{ $index }}.price_per_package"
+                                            placeholder="Misal: 40000"
+                                            class="w-full px-3 py-2 rounded-xl border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary font-mono">
+                                        <span class="text-[10px] text-brand-warm-gray mt-0.5 block">Jika tertera di nota</span>
+                                    </div>
+
+                                    <!-- 5. Total Belanja Baris Ini (Auto-Sync) -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Total Belanja (Rp) <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="number" step="any" min="0"
+                                            wire:model.live.debounce.300ms="items.{{ $index }}.subtotal"
+                                            placeholder="Misal: 400000"
+                                            class="w-full px-3 py-2 rounded-xl border border-brand-border text-sm font-bold text-brand-espresso bg-neutral-50 focus:bg-white focus:outline-hidden focus:border-brand-primary font-mono">
+                                        <span class="text-[10px] text-brand-warm-gray mt-0.5 block">Jika di nota hanya total</span>
+                                    </div>
+                                </div>
+
+                                <!-- Hasil Konversi Cerdas (Live Calculation Result) -->
+                                @if (!empty($row['quantity']) && !empty($row['subtotal']))
+                                    <div class="p-3 bg-neutral-50 rounded-xl border border-brand-border/70 flex flex-wrap items-center justify-between gap-3 text-xs">
+                                        <div class="flex items-center gap-2">
+                                            <i class="ti ti-check text-emerald-600 text-sm"></i>
+                                            <span class="text-brand-espresso">
+                                                Stok Dapur Masuk: <strong class="font-bold text-brand-espresso">{{ number_format($row['quantity'], floor($row['quantity']) == $row['quantity'] ? 0 : 2, ',', '.') }} {{ $unitShort }}</strong>
+                                                @if (!empty($row['package_count']) && !empty($row['content_per_package']))
+                                                    <span class="text-brand-warm-gray">({{ $row['package_count'] }} kemasan &times; {{ $row['content_per_package'] }} {{ $unitShort }})</span>
+                                                @endif
+                                            </span>
+                                        </div>
+
+                                        <div class="flex flex-wrap items-center gap-4">
+                                            <span class="text-brand-espresso">
+                                                HPP Dapur: <strong class="font-bold font-mono text-brand-primary">Rp {{ number_format($row['cost_per_unit'], 2, ',', '.') }}</strong> / {{ $unitShort }}
+                                            </span>
+                                            @if (!empty($row['price_per_package']))
+                                                <span class="text-brand-espresso">
+                                                    Harga Satuan Kemasan: <strong class="font-bold font-mono text-brand-espresso">Rp {{ number_format($row['price_per_package'], 0, ',', '.') }}</strong>
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+
+                                <!-- Keterangan Opsional -->
+                                <div>
+                                    <input type="text" wire:model="items.{{ $index }}.notes"
+                                        placeholder="Catatan tambahan (opsional, misal: Galon isi ulang, Tepung Segitiga Biru pouch)..."
+                                        class="w-full px-3 py-1.5 rounded-lg border border-brand-border/60 text-xs text-brand-espresso placeholder-brand-warm-gray/60 bg-white focus:outline-hidden focus:border-brand-primary">
+                                </div>
+                            </div>
+
+                        @else
+                            <!-- MODE SATUAN LANGSUNG -->
+                            <div class="space-y-3">
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                                    <!-- Bahan Baku Selection -->
+                                    <div class="md:col-span-5">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Bahan Baku <span class="text-red-500">*</span>
+                                        </label>
+                                        <select wire:model.live="items.{{ $index }}.raw_material_id"
+                                            class="w-full px-3 py-2 rounded-xl border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary">
+                                            <option value="">Pilih Bahan...</option>
+                                            @foreach ($rawMaterials as $mat)
+                                                <option value="{{ $mat->id }}">
+                                                    {{ $mat->name }} (Satuan: {{ $mat->display_unit }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error("items.{$index}.raw_material_id")
+                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Kuantitas Langsung -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Jumlah ({{ $unitShort }}) <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="number" step="any"
+                                            wire:model.live.debounce.300ms="items.{{ $index }}.quantity" placeholder="0"
+                                            class="w-full px-3 py-2 rounded-xl border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary font-mono">
+                                        @error("items.{$index}.quantity")
+                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Harga Satuan -->
+                                    <div class="md:col-span-3">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Harga / {{ $unitShort }} (Rp) <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="number" step="any"
+                                            wire:model.live.debounce.300ms="items.{{ $index }}.cost_per_unit"
+                                            placeholder="0"
+                                            class="w-full px-3 py-2 rounded-xl border border-brand-border text-sm text-brand-espresso bg-white focus:outline-hidden focus:border-brand-primary font-mono">
+                                        @error("items.{$index}.cost_per_unit")
+                                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Subtotal -->
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                                            Subtotal (Rp)
+                                        </label>
+                                        <div class="px-3 py-2 rounded-xl bg-neutral-100 text-sm font-bold text-brand-espresso text-right font-mono">
+                                            Rp {{ number_format($row['subtotal'] ?? 0, 0, ',', '.') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Keterangan Baris Item -->
+                                <div>
+                                    <input type="text" wire:model="items.{{ $index }}.notes"
+                                        placeholder="Keterangan opsional untuk bahan ini..."
+                                        class="w-full px-3 py-1.5 rounded-lg border border-brand-border/60 text-xs text-brand-espresso placeholder-brand-warm-gray/60 bg-white focus:outline-hidden focus:border-brand-primary">
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
