@@ -61,6 +61,15 @@ class DatabaseSeeder extends Seeder
                     'satuan-delete' => 'Menghapus data master satuan.',
                 ],
             ],
+            'Master Produk Jadi' => [
+                'description' => 'Kelola katalog produk jadi, harga setor konsinyasi, harga eceran toko, dan stok gudang.',
+                'permissions' => [
+                    'produk-view' => 'Melihat katalog produk jadi dan daftar harga.',
+                    'produk-create' => 'Menambahkan produk jadi baru.',
+                    'produk-edit' => 'Mengubah data produk jadi, harga setor, dan status.',
+                    'produk-delete' => 'Menghapus data produk jadi.',
+                ],
+            ],
             'Bahan Baku & Resep' => [
                 'description' => 'Kelola inventaris bahan baku, batas minimum stok, dan formula resep produk (BOM).',
                 'permissions' => [
@@ -196,6 +205,10 @@ class DatabaseSeeder extends Seeder
             'faktur-delete',
             'pengaturan-view',
             'pengaturan-edit',
+            'produk-view',
+            'produk-create',
+            'produk-edit',
+            'produk-delete',
         ]);
 
         // Kurir gets dashboard access, toko view, pengantaran, and faktur view

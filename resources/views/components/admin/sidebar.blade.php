@@ -89,21 +89,31 @@
                 </div>
             @endcanany
 
-            {{-- Section: Operasional Produksi --}}
-            @can('produksi-view')
+            {{-- Section: Operasional Produksi & Produk --}}
+            @canany(['produk-view', 'produksi-view'])
                 <div class="pt-4 border-t border-brand-border/60">
                     <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                         Operasional
                     </p>
                     <nav class="space-y-1">
-                        <a href="{{ route('admin.production') }}"
-                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.production*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
-                            <i class="ti ti-flame text-xl {{ request()->routeIs('admin.production*') ? 'text-white' : 'text-brand-primary' }}"></i>
-                            <span>Produksi (Batch Masak)</span>
-                        </a>
+                        @can('produk-view')
+                            <a href="{{ route('admin.products') }}"
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.products*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-cookie text-xl {{ request()->routeIs('admin.products*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Produk Jadi</span>
+                            </a>
+                        @endcan
+
+                        @can('produksi-view')
+                            <a href="{{ route('admin.production') }}"
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.production*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-flame text-xl {{ request()->routeIs('admin.production*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Produksi (Batch Masak)</span>
+                            </a>
+                        @endcan
                     </nav>
                 </div>
-            @endcan
+            @endcanany
 
             {{-- Section: Distribusi --}}
             @canany(['toko-view', 'pengantaran-view'])

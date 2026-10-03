@@ -37,6 +37,35 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return redirect()->route('admin.units');
     })->name('admin.units.destroy')->middleware('permission:satuan-delete');
 
+    // Master Produk Jadi & Harga Konsinyasi
+    Route::livewire('/products', 'admin.products.index')->name('admin.products')->middleware('permission:produk-view');
+    Route::livewire('/products/create', 'admin.products.create')->name('admin.products.create')->middleware('permission:produk-create');
+    Route::livewire('/products/{product}/edit', 'admin.products.edit')->name('admin.products.edit')->middleware('permission:produk-edit');
+    Route::delete('/products/{product}', function (\App\Models\Product $product) {
+        $hasRecipes = $product->recipes()->exists();
+        $hasBatches = $product->productionBatches()->exists();
+        $hasDeliveries = \App\Models\DeliveryItem::where('product_id', $product->id)->exists();
+        $hasInvoices = \App\Models\InvoiceItem::where('product_id', $product->id)->exists();
+
+        if ($hasRecipes || $hasBatches || $hasDeliveries || $hasInvoices) {
+            session()->flash('toast', [
+                'message' => "Produk '{$product->name}' tidak dapat dihapus karena sudah memiliki riwayat produksi, resep, atau transaksi. Silakan nonaktifkan status produk sebagai gantinya.",
+                'type' => 'error',
+            ]);
+            return redirect()->route('admin.products');
+        }
+
+        $name = $product->name;
+        $product->delete();
+
+        session()->flash('toast', [
+            'message' => "Produk '{$name}' berhasil dihapus.",
+            'type' => 'success',
+        ]);
+
+        return redirect()->route('admin.products');
+    })->name('admin.products.destroy')->middleware('permission:produk-delete');
+
     // Master Bahan Baku & Resep Produk (BOM)
     Route::livewire('/raw-materials', 'admin.raw-materials.index')->name('admin.raw-materials')->middleware('permission:bahan-baku-view');
 
