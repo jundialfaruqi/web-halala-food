@@ -102,6 +102,10 @@ class AccountingService
      */
     public static function recordCashTransaction(CashTransaction $transaction): ?JournalEntry
     {
+        if ($transaction->reference_type === 'purchase') {
+            return null; // Handled directly by recordPurchase() to avoid duplicate journals
+        }
+
         $amount = (float) $transaction->amount;
         if ($amount <= 0) {
             return null;

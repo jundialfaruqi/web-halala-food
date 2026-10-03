@@ -3,6 +3,7 @@
 use App\Models\RawMaterial;
 use App\Models\RawMaterialPurchase;
 use App\Models\StockMutation;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
@@ -78,10 +79,19 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
                     'stock_after' => $stockAfter,
                     'cost_per_unit' => $item->cost_per_unit,
                     'notes' => "Pembatalan pembelian {$purchase->purchase_number}",
-                    'user_id' => auth()->id(),
+                    'user_id' => Auth::id(),
                 ]);
 
                 $rawMat->decrement('stock', $item->quantity);
+            }
+
+            // Revert and delete associated cash transaction if exists
+            $cashTx = \App\Models\CashTransaction::where('reference_type', 'purchase')
+                ->where('reference_id', $purchase->id)
+                ->first();
+            if ($cashTx) {
+                $cashTx->account?->increment('balance', $cashTx->amount);
+                $cashTx->delete();
             }
 
             // Remove associated original stock mutations

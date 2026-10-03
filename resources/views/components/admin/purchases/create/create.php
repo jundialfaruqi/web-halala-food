@@ -1,9 +1,12 @@
 <?php
 
+use App\Models\Account;
+use App\Models\CashTransaction;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialPurchase;
 use App\Models\RawMaterialPurchaseItem;
 use App\Models\StockMutation;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
@@ -20,6 +23,8 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
 
     public string $payment_method = 'tunai';
 
+    public ?int $account_id = null;
+
     public string $notes = '';
 
     /**
@@ -35,7 +40,24 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
 
         $this->purchase_number = RawMaterialPurchase::generatePurchaseNumber();
         $this->purchase_date = now()->toDateString();
+        $this->setDefaultAccount();
         $this->addItem();
+    }
+
+    public function updatedPaymentMethod(): void
+    {
+        $this->setDefaultAccount();
+    }
+
+    protected function setDefaultAccount(): void
+    {
+        if ($this->payment_method === 'tunai') {
+            $this->account_id = Account::where('name', 'like', '%kas%')->orWhere('name', 'like', '%tunai%')->first()?->id ?? Account::first()?->id;
+        } elseif ($this->payment_method === 'transfer_bank') {
+            $this->account_id = Account::where('name', 'like', '%bank%')->orWhere('name', 'like', '%bca%')->orWhere('name', 'like', '%bri%')->orWhere('name', 'like', '%mandiri%')->first()?->id ?? Account::first()?->id;
+        } else {
+            $this->account_id = null;
+        }
     }
 
     public function addItem(): void
@@ -99,27 +121,34 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
             abort(403, 'Anda tidak memiliki hak akses untuk mencatat pembelian bahan baku.');
         }
 
-        $this->validate([
+        $rules = [
             'purchase_number' => ['required', 'string', 'max:50', 'unique:raw_material_purchases,purchase_number'],
             'supplier_name' => ['required', 'string', 'max:255'],
             'purchase_date' => ['required', 'date'],
             'payment_method' => ['required', 'string', 'in:tunai,transfer_bank,tempo'],
+            'account_id' => [$this->payment_method !== 'tempo' ? 'required' : 'nullable', 'nullable', 'exists:accounts,id'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.raw_material_id' => ['required', 'exists:raw_materials,id'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
             'items.*.cost_per_unit' => ['required', 'numeric', 'min:0'],
             'items.*.notes' => ['nullable', 'string', 'max:255'],
-        ], [
+        ];
+
+        $messages = [
             'purchase_number.required' => 'Nomor transaksi pembelian wajib diisi.',
             'purchase_number.unique' => 'Nomor transaksi pembelian sudah pernah digunakan.',
             'supplier_name.required' => 'Nama supplier / toko penyedia wajib diisi.',
             'purchase_date.required' => 'Tanggal pembelian wajib dipilih.',
+            'account_id.required' => 'Pilih akun kas atau rekening pembayaran.',
+            'account_id.exists' => 'Akun kas atau rekening yang dipilih tidak valid.',
             'items.min' => 'Minimal masukkan 1 baris bahan baku.',
             'items.*.raw_material_id.required' => 'Pilih bahan baku untuk tiap baris.',
             'items.*.quantity.gt' => 'Jumlah kuantitas harus lebih dari 0.',
             'items.*.cost_per_unit.min' => 'Harga satuan tidak boleh negatif.',
-        ]);
+        ];
+
+        $this->validate($rules, $messages);
 
         DB::transaction(function () {
             $total = $this->totalAmount;
@@ -131,7 +160,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                 'total_amount' => $total,
                 'payment_method' => $this->payment_method,
                 'notes' => trim($this->notes) !== '' ? trim($this->notes) : null,
-                'created_by' => auth()->id(),
+                'created_by' => Auth::id(),
             ]);
 
             foreach ($this->items as $item) {
@@ -167,7 +196,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                     'stock_after' => $stockAfter,
                     'cost_per_unit' => $cost,
                     'notes' => 'Pembelian dari ' . $purchase->supplier_name,
-                    'user_id' => auth()->id(),
+                    'user_id' => Auth::id(),
                 ]);
 
                 // Update stock and update cost_per_unit to latest purchase price
@@ -176,6 +205,25 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                     $rawMat->cost_per_unit = $cost;
                 }
                 $rawMat->save();
+            }
+
+            // Catat pengeluaran di Buku Kas jika pembayaran tunai atau transfer bank
+            if ($this->payment_method !== 'tempo' && $total > 0) {
+                $account = Account::find($this->account_id) ?? Account::first();
+                if ($account) {
+                    $account->decrement('balance', $total);
+
+                    CashTransaction::create([
+                        'transaction_date' => $this->purchase_date,
+                        'account_id' => $account->id,
+                        'type' => 'expense',
+                        'category' => 'Belanja Bahan Baku',
+                        'amount' => $total,
+                        'reference_type' => 'purchase',
+                        'reference_id' => $purchase->id,
+                        'description' => "Pembelian Bahan Baku ({$purchase->purchase_number}) - Supplier: {$purchase->supplier_name}",
+                    ]);
+                }
             }
 
             // Catat ke Jurnal Akuntansi otomatis
@@ -191,6 +239,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
     {
         return [
             'rawMaterials' => RawMaterial::with('unitModel')->orderBy('name')->get(),
+            'accounts' => Account::orderBy('name')->get(),
         ];
     }
 };

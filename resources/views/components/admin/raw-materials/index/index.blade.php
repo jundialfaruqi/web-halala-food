@@ -43,8 +43,11 @@
     showCalculator: false,
     calcPackageCount: 1,
     calcContentPerPackage: 1000,
-    calcPricePerPackage: 0,
+    calcPricePerPackage: '',
+    calcTotalPrice: '',
     calcSelectedUnitId: '',
+    calcResult: null,
+    calcError: '',
 
     // Delete Material Modal State
     showDeleteModal: false,
@@ -82,6 +85,59 @@
         });
     },
 
+    // Sync price fields in calculator
+    updateCalcFromPricePerPackage() {
+        this.calcResult = null;
+        this.calcError = '';
+        const count = parseFloat(this.calcPackageCount) || 0;
+        const pricePerPkg = parseFloat(this.calcPricePerPackage) || 0;
+        if (count > 0 && pricePerPkg > 0) {
+            this.calcTotalPrice = Math.round(count * pricePerPkg * 100) / 100;
+        } else if (!this.calcPricePerPackage) {
+            this.calcTotalPrice = '';
+        }
+    },
+
+    updateCalcFromTotalPrice() {
+        this.calcResult = null;
+        this.calcError = '';
+        const count = parseFloat(this.calcPackageCount) || 0;
+        const total = parseFloat(this.calcTotalPrice) || 0;
+        if (count > 0 && total > 0) {
+            this.calcPricePerPackage = Math.round((total / count) * 100) / 100;
+        } else if (!this.calcTotalPrice) {
+            this.calcPricePerPackage = '';
+        }
+    },
+
+    updateCalcFromPackageCount() {
+        this.calcResult = null;
+        this.calcError = '';
+        const count = parseFloat(this.calcPackageCount) || 0;
+        const pricePerPkg = parseFloat(this.calcPricePerPackage) || 0;
+        if (count > 0 && pricePerPkg > 0) {
+            this.calcTotalPrice = Math.round(count * pricePerPkg * 100) / 100;
+        }
+    },
+
+    // Toggle Smart Calculator
+    toggleCalculator() {
+        this.showCalculator = !this.showCalculator;
+        if (this.showCalculator) {
+            if (this.materialForm.unit_id) {
+                this.calcSelectedUnitId = this.materialForm.unit_id;
+            }
+            if (this.materialForm.cost_per_unit > 0 && !this.calcPricePerPackage) {
+                const content = parseFloat(this.calcContentPerPackage) || 1;
+                this.calcPricePerPackage = Math.round(this.materialForm.cost_per_unit * content);
+                const count = parseFloat(this.calcPackageCount) || 1;
+                this.calcTotalPrice = Math.round(this.calcPricePerPackage * count);
+            }
+            this.calcResult = null;
+            this.calcError = '';
+        }
+    },
+
     // Open Material Modal (Create)
     openCreateMaterialModal() {
         const defaultUnit = this.units.length > 0 ? this.units[0].id : '';
@@ -97,7 +153,13 @@
         this.materialErrors = {};
         this.materialFormError = '';
         this.showCalculator = false;
+        this.calcPackageCount = 1;
+        this.calcContentPerPackage = 1000;
+        this.calcPricePerPackage = '';
+        this.calcTotalPrice = '';
         this.calcSelectedUnitId = defaultUnit;
+        this.calcResult = null;
+        this.calcError = '';
         this.showMaterialModal = true;
     },
 
@@ -115,35 +177,82 @@
         this.materialErrors = {};
         this.materialFormError = '';
         this.showCalculator = false;
+        this.calcPackageCount = 1;
+        this.calcContentPerPackage = 1000;
+        this.calcPricePerPackage = '';
+        this.calcTotalPrice = '';
         this.calcSelectedUnitId = this.materialForm.unit_id;
+        this.calcResult = null;
+        this.calcError = '';
         this.showMaterialModal = true;
     },
 
-    // Apply Calculator result to Material Form
-    applyCalculator() {
+    // Hitung Konversi Pembelian Grosir/Kemasan
+    calculateConversion() {
+        this.calcError = '';
         const count = parseFloat(this.calcPackageCount) || 0;
         const content = parseFloat(this.calcContentPerPackage) || 0;
-        const price = parseFloat(this.calcPricePerPackage) || 0;
+        let price = parseFloat(this.calcPricePerPackage) || 0;
+        const totalPrice = parseFloat(this.calcTotalPrice) || 0;
+
+        // Jika user hanya mengisi total belanja, hitung harga per kemasan
+        if (price <= 0 && totalPrice > 0 && count > 0) {
+            price = Math.round((totalPrice / count) * 100) / 100;
+            this.calcPricePerPackage = price;
+        }
+
+        if (count <= 0) {
+            this.calcError = 'Jumlah kemasan harus lebih dari 0.';
+            return false;
+        }
 
         if (content <= 0) {
-            alert('Isi per kemasan harus lebih dari 0.');
-            return;
+            this.calcError = 'Isi per kemasan harus lebih dari 0.';
+            return false;
         }
 
-        if (this.calcSelectedUnitId) {
-            this.materialForm.unit_id = this.calcSelectedUnitId;
+        if (!this.calcSelectedUnitId) {
+            this.calcError = 'Pilih satuan dasar terlebih dahulu.';
+            return false;
         }
 
-        if (count > 0 && content > 0) {
-            this.materialForm.stock = Math.round((count * content) * 100) / 100;
+        if (price <= 0) {
+            this.calcError = 'Harga beli per kemasan atau total belanja wajib diisi (lebih dari 0) agar harga pokok per satuan dapat dihitung.';
+            return false;
         }
 
-        if (price > 0 && content > 0) {
-            this.materialForm.cost_per_unit = Math.round((price / content) * 100) / 100;
+        const selectedUnit = this.units.find(u => u.id == this.calcSelectedUnitId);
+        const totalStock = Math.round((count * content) * 100) / 100;
+        const costPerUnit = content > 0 ? Math.round((price / content) * 100) / 100 : 0;
+        const totalCost = totalPrice > 0 ? totalPrice : Math.round((count * price) * 100) / 100;
+
+        this.calcResult = {
+            total_stock: totalStock,
+            cost_per_unit: costPerUnit,
+            total_cost: totalCost,
+            unit_id: this.calcSelectedUnitId,
+            unit_name: selectedUnit ? selectedUnit.name : '',
+            unit_short: selectedUnit ? selectedUnit.short_name : ''
+        };
+        return true;
+    },
+
+    // Terapkan (Gunakan) Hasil Kalkulator ke Material Form
+    applyCalculator() {
+        if (!this.calcResult) {
+            const success = this.calculateConversion();
+            if (!success) return;
         }
 
-        this.showCalculator = false;
-        this.notify('Hasil konversi kemasan berhasil diterapkan ke form!', 'info');
+        if (this.calcResult) {
+            if (this.calcResult.unit_id) {
+                this.materialForm.unit_id = this.calcResult.unit_id;
+            }
+            this.materialForm.stock = this.calcResult.total_stock;
+            this.materialForm.cost_per_unit = this.calcResult.cost_per_unit;
+            this.showCalculator = false;
+            this.notify('Hasil perhitungan konversi berhasil diterapkan ke form!', 'info');
+        }
     },
 
     // Submit Material Form
@@ -659,7 +768,7 @@
                                 Harga Beli per Satuan (Rp) <span class="text-red-500">*</span>
                             </label>
                             <!-- Smart Calculator Toggle -->
-                            <button type="button" @click="showCalculator = !showCalculator"
+                            <button type="button" @click="toggleCalculator()"
                                 class="text-xs font-bold text-brand-primary hover:underline cursor-pointer flex items-center gap-1">
                                 <i class="ti ti-calculator text-sm"></i>
                                 <span
@@ -686,21 +795,31 @@
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                             <div>
-                                <label class="block font-semibold text-brand-espresso mb-1">Beli Berapa
-                                    Kemasan?</label>
+                                <label class="block font-semibold text-brand-espresso mb-1">
+                                    Beli Berapa Kemasan? <span class="text-red-500">*</span>
+                                </label>
                                 <input type="number" min="1" x-model="calcPackageCount"
-                                    placeholder="Misal: 14"
+                                    @input="updateCalcFromPackageCount()"
+                                    @keydown.enter.prevent="calculateConversion()"
+                                    placeholder="Misal: 20"
                                     class="w-full px-3 py-2 bg-white border border-brand-border rounded-lg text-sm">
                             </div>
                             <div>
-                                <label class="block font-semibold text-brand-espresso mb-1">Isi per Kemasan</label>
+                                <label class="block font-semibold text-brand-espresso mb-1">
+                                    Isi per Kemasan <span class="text-red-500">*</span>
+                                </label>
                                 <input type="number" min="1" x-model="calcContentPerPackage"
+                                    @input="calcResult = null; calcError = ''"
+                                    @keydown.enter.prevent="calculateConversion()"
                                     placeholder="Misal: 1000"
                                     class="w-full px-3 py-2 bg-white border border-brand-border rounded-lg text-sm">
                             </div>
                             <div>
-                                <label class="block font-semibold text-brand-espresso mb-1">Satuan Dasar</label>
+                                <label class="block font-semibold text-brand-espresso mb-1">
+                                    Satuan Dasar <span class="text-red-500">*</span>
+                                </label>
                                 <select x-model="calcSelectedUnitId"
+                                    @change="calcResult = null; calcError = ''"
                                     class="select w-full bg-white border border-brand-border rounded-lg text-xs capitalize">
                                     <template x-for="u in units" :key="u.id">
                                         <option :value="u.id" x-text="u.name + ' (' + u.short_name + ')'">
@@ -709,17 +828,88 @@
                                 </select>
                             </div>
                         </div>
-                        <div>
-                            <label class="block font-semibold text-brand-espresso mb-1 text-xs">Total Harga Beli per
-                                Kemasan (Rp)</label>
-                            <input type="number" min="0" x-model="calcPricePerPackage"
-                                placeholder="Misal: 45000"
-                                class="w-full px-3 py-2 bg-white border border-brand-border rounded-lg text-sm font-bold">
+
+                        <!-- Input Harga Beli (Bisa isi Harga per Kemasan atau Total Belanja Nota) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <label class="block font-semibold text-brand-espresso mb-1">
+                                    Harga Beli per Kemasan (Rp) <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-brand-warm-gray">Rp</span>
+                                    <input type="number" min="0" x-model="calcPricePerPackage"
+                                        @input="updateCalcFromPricePerPackage()"
+                                        @keydown.enter.prevent="calculateConversion()"
+                                        placeholder="Misal: 25000"
+                                        class="w-full pl-9 pr-3 py-2 bg-white border border-brand-border rounded-lg text-sm font-bold text-brand-espresso">
+                                </div>
+                                <p class="text-[11px] text-brand-warm-gray mt-1">Harga 1 kemasan / sak / dus</p>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-brand-espresso mb-1">
+                                    Atau Total Belanja Semua Kemasan (Rp)
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-brand-warm-gray">Rp</span>
+                                    <input type="number" min="0" x-model="calcTotalPrice"
+                                        @input="updateCalcFromTotalPrice()"
+                                        @keydown.enter.prevent="calculateConversion()"
+                                        placeholder="Misal: 500000"
+                                        class="w-full pl-9 pr-3 py-2 bg-white border border-brand-border rounded-lg text-sm font-bold text-brand-espresso">
+                                </div>
+                                <p class="text-[11px] text-brand-warm-gray mt-1">Total nota (terisi otomatis)</p>
+                            </div>
                         </div>
-                        <button type="button" @click="applyCalculator()"
-                            class="w-full py-2 bg-brand-primary text-white rounded-lg text-xs font-bold hover:bg-brand-primary-hover transition cursor-pointer">
-                            Terapkan Hasil ke Form Stok & Harga Satuan
-                        </button>
+
+                        <!-- Pesan Kesalahan jika validasi gagal -->
+                        <div x-show="calcError" x-cloak class="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 font-medium" x-text="calcError"></div>
+
+                        <!-- Hasil Perhitungan (Tampil setelah klik Hitung) -->
+                        <div x-show="calcResult" x-cloak class="p-3 bg-white rounded-xl border border-brand-border/80 space-y-2">
+                            <div class="flex items-center justify-between text-xs border-b border-neutral-100 pb-2">
+                                <span class="font-bold text-brand-espresso">Hasil Perhitungan Konversi</span>
+                                <span class="text-emerald-600 font-semibold flex items-center gap-1 text-[11px]">
+                                    <i class="ti ti-check text-xs"></i> Siap Diterapkan
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                <div class="bg-neutral-50 p-2.5 rounded-lg border border-neutral-100">
+                                    <span class="text-brand-warm-gray text-[11px] block mb-0.5">Total Stok Didapat</span>
+                                    <span class="font-bold text-brand-espresso text-sm font-mono"
+                                        x-text="calcResult ? (calcResult.total_stock.toLocaleString('id-ID') + ' ' + calcResult.unit_short) : ''"></span>
+                                    <span class="text-[10px] text-brand-warm-gray block"
+                                        x-text="calcResult ? ('(' + calcPackageCount + ' kemasan × ' + calcContentPerPackage + ' ' + calcResult.unit_short + ')') : ''"></span>
+                                </div>
+                                <div class="bg-neutral-50 p-2.5 rounded-lg border border-neutral-100">
+                                    <span class="text-brand-warm-gray text-[11px] block mb-0.5">Harga Pokok per Satuan</span>
+                                    <span class="font-bold text-brand-primary text-sm font-mono"
+                                        x-text="calcResult ? ('Rp ' + calcResult.cost_per_unit.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) : ''"></span>
+                                    <span class="text-[10px] text-brand-warm-gray block"
+                                        x-text="calcResult ? ('per ' + calcResult.unit_short) : ''"></span>
+                                </div>
+                                <div class="bg-neutral-50 p-2.5 rounded-lg border border-neutral-100">
+                                    <span class="text-brand-warm-gray text-[11px] block mb-0.5">Total Belanja</span>
+                                    <span class="font-bold text-brand-espresso text-sm font-mono"
+                                        x-text="calcResult ? ('Rp ' + calcResult.total_cost.toLocaleString('id-ID')) : ''"></span>
+                                    <span class="text-[10px] text-brand-warm-gray block"
+                                        x-text="calcResult ? ('(' + calcPackageCount + ' × Rp ' + (parseFloat(calcPricePerPackage) || 0).toLocaleString('id-ID') + ')') : ''"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tombol Aksi: Hitung & Gunakan -->
+                        <div class="flex items-center gap-2 pt-1">
+                            <button type="button" @click="calculateConversion()"
+                                class="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-brand-espresso text-white rounded-lg text-xs font-bold hover:bg-neutral-800 transition cursor-pointer">
+                                <i class="ti ti-calculator text-sm"></i>
+                                <span>Hitung</span>
+                            </button>
+                            <button type="button" @click="applyCalculator()" :disabled="!calcResult"
+                                class="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-brand-primary text-white rounded-lg text-xs font-bold hover:bg-brand-primary-hover transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                                <i class="ti ti-check text-sm"></i>
+                                <span>Gunakan</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Modal Actions -->

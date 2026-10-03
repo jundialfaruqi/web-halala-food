@@ -88,6 +88,16 @@ test('manager can record new raw material purchase and stock increments automati
     expect($mutation)->not->toBeNull()
         ->and($mutation->type)->toBe('in')
         ->and((float) $mutation->quantity)->toBe(2500.0);
+
+    // Verify CashTransaction created in Buku Kas
+    $cashTx = \App\Models\CashTransaction::where('reference_type', 'purchase')
+        ->where('reference_id', $purchase->id)
+        ->first();
+
+    expect($cashTx)->not->toBeNull()
+        ->and($cashTx->type)->toBe('expense')
+        ->and($cashTx->category)->toBe('Belanja Bahan Baku')
+        ->and((float) $cashTx->amount)->toBe(175.0);
 });
 
 test('manager can cancel purchase and rollback stock', function () {

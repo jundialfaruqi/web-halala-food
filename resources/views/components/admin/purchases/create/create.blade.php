@@ -65,7 +65,7 @@
                     <label for="payment_method" class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
                         Metode Pembayaran <span class="text-red-500">*</span>
                     </label>
-                    <select id="payment_method" wire:model="payment_method"
+                    <select id="payment_method" wire:model.live="payment_method"
                         class="w-full px-4 py-3 rounded-xl border border-brand-border text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary bg-white">
                         <option value="tunai">Tunai / Kas Kecil</option>
                         <option value="transfer_bank">Transfer Bank</option>
@@ -75,6 +75,33 @@
                         <p class="text-xs text-red-600 font-medium mt-1.5">{{ $message }}</p>
                     @enderror
                 </div>
+
+                <!-- Sumber Kas / Rekening Pembayaran -->
+                @if ($payment_method !== 'tempo')
+                    <div>
+                        <label for="account_id" class="block text-xs font-bold text-brand-espresso uppercase tracking-wider mb-2">
+                            Sumber Kas / Rekening <span class="text-red-500">*</span>
+                        </label>
+                        <select id="account_id" wire:model="account_id"
+                            class="w-full px-4 py-3 rounded-xl border border-brand-border text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary bg-white">
+                            <option value="">-- Pilih Kas / Rekening --</option>
+                            @foreach ($accounts as $acc)
+                                <option value="{{ $acc->id }}">
+                                    {{ $acc->name }} (Saldo: Rp {{ number_format($acc->balance, 0, ',', '.') }})
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('account_id')
+                            <p class="text-xs text-red-600 font-medium mt-1.5">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @else
+                    <div class="flex items-center">
+                        <div class="p-3 bg-neutral-50 rounded-xl border border-neutral-200 text-xs text-brand-warm-gray w-full">
+                            <i class="ti ti-info-circle mr-1"></i> Pembayaran tempo dicatat sebagai <strong>Hutang Usaha</strong>. Tidak memotong saldo kas saat ini.
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <!-- Catatan -->
