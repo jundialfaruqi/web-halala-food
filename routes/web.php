@@ -66,6 +66,10 @@ Route::prefix('admin')->middleware('auth')->group(function () {
         return redirect()->route('admin.products');
     })->name('admin.products.destroy')->middleware('permission:produk-delete');
 
+    // Pengadaan & Pembelian Bahan Baku
+    Route::livewire('/purchases', 'admin.purchases.index')->name('admin.purchases')->middleware('permission:pembelian-view');
+    Route::livewire('/purchases/create', 'admin.purchases.create')->name('admin.purchases.create')->middleware('permission:pembelian-create');
+
     // Master Bahan Baku & Resep Produk (BOM)
     Route::livewire('/raw-materials', 'admin.raw-materials.index')->name('admin.raw-materials')->middleware('permission:bahan-baku-view');
 
@@ -124,6 +128,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/invoices/create', 'admin.invoices.create')->name('admin.invoices.create')->middleware('permission:faktur-create');
     Route::livewire('/invoices/{invoice}', 'admin.invoices.show')->name('admin.invoices.show')->middleware('permission:faktur-view');
     Route::livewire('/invoices/{invoice}/edit', 'admin.invoices.edit')->name('admin.invoices.edit')->middleware('permission:faktur-edit');
+    Route::livewire('/reports', 'admin.reports.index')->name('admin.reports')->middleware('permission:laporan-view');
     Route::delete('/invoices/{invoice}', function (\App\Models\Invoice $invoice) {
         if ($invoice->status === 'lunas') {
             session()->flash('toast', [

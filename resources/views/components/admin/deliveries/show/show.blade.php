@@ -63,12 +63,12 @@
 
     <!-- Handover Action Box (Active when on_delivery / dikirim) -->
     @if ($delivery->status === 'dikirim')
-        <div class="bg-blue-50/50 border border-blue-200/80 rounded-2xl p-6 shadow-xs space-y-4 print:hidden">
+        <div class="bg-white border border-brand-border rounded-2xl p-6 shadow-xs space-y-4 print:hidden">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h2 class="text-base font-bold text-brand-espresso">Konfirmasi Serah Terima di Toko</h2>
                     <p class="text-xs text-brand-warm-gray mt-0.5">
-                        Barang sedang dalam perjalanan. Saat kurir tiba di lokasi dan barang diterima staf toko, isi data serah terima di bawah ini.
+                        Barang sedang dalam perjalanan. Saat kurir tiba di lokasi dan barang diterima staf toko, lengkapi bukti serah terima dan tanda tangan di bawah ini.
                     </p>
                 </div>
                 <div class="text-xs font-mono text-brand-warm-gray">
@@ -76,44 +76,158 @@
                 </div>
             </div>
 
-            <form wire:submit="completeDelivery" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                <div>
-                    <label for="recipient_name" class="block text-xs font-semibold text-brand-espresso mb-1">
-                        Nama Penerima di Toko <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" id="recipient_name" wire:model="recipient_name"
-                        placeholder="Contoh: Ibu Hj. Aminah / Kasir"
-                        class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
-                    @error('recipient_name')
-                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
+            <form wire:submit="completeDelivery" class="space-y-4 pt-2">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="recipient_name" class="block text-xs font-semibold text-brand-espresso mb-1">
+                            Nama Penerima di Toko <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="recipient_name" wire:model="recipient_name"
+                            placeholder="Contoh: Ibu Hj. Aminah"
+                            class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary">
+                        @error('recipient_name')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="recipient_role" class="block text-xs font-semibold text-brand-espresso mb-1">
+                            Jabatan / Peran di Toko
+                        </label>
+                        <input type="text" id="recipient_role" wire:model="recipient_role"
+                            placeholder="Contoh: Pemilik Toko / Kasir / Karyawan"
+                            class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary">
+                        @error('recipient_role')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="recipient_phone" class="block text-xs font-semibold text-brand-espresso mb-1">
+                            No. HP Penerima (Opsional)
+                        </label>
+                        <input type="text" id="recipient_phone" wire:model="recipient_phone"
+                            placeholder="Contoh: 081234567890"
+                            class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary font-mono">
+                        @error('recipient_phone')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
-                <div>
-                    <label for="recipient_phone" class="block text-xs font-semibold text-brand-espresso mb-1">
-                        No. HP Penerima (Opsional)
-                    </label>
-                    <input type="text" id="recipient_phone" wire:model="recipient_phone"
-                        placeholder="Contoh: 081234567890"
-                        class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary font-mono">
-                    @error('recipient_phone')
-                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
-                    @enderror
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Foto Bukti Serah Terima -->
+                    <div>
+                        <label class="block text-xs font-semibold text-brand-espresso mb-1">
+                            Unggah Foto Bukti Serah Terima
+                        </label>
+                        <input type="file" wire:model="proof_photo" accept="image/*"
+                            class="w-full text-xs text-brand-espresso file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border file:border-brand-border file:text-xs file:font-semibold file:bg-neutral-50 file:text-brand-espresso hover:file:bg-neutral-100 cursor-pointer">
+                        <p class="text-[11px] text-brand-warm-gray mt-1">Foto kemasan di rak toko atau kurir bersama penerima (Maks. 5MB).</p>
+                        @error('proof_photo')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                        @if ($proof_photo)
+                            <div class="mt-1 text-xs text-brand-espresso font-medium">
+                                File dipilih: {{ $proof_photo->getClientOriginalName() }}
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Catatan Serah Terima -->
+                    <div>
+                        <label for="handover_notes" class="block text-xs font-semibold text-brand-espresso mb-1">
+                            Catatan Serah Terima (Opsional)
+                        </label>
+                        <input type="text" id="handover_notes" wire:model="handover_notes"
+                            placeholder="Contoh: Diterima lengkap 25 pouch di etalase depan"
+                            class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary">
+                    </div>
                 </div>
 
-                <div>
-                    <label for="handover_notes" class="block text-xs font-semibold text-brand-espresso mb-1">
-                        Catatan Serah Terima (Opsional)
-                    </label>
-                    <input type="text" id="handover_notes" wire:model="handover_notes"
-                        placeholder="Contoh: Diterima lengkap 25 pouch di rak kaca depan"
-                        class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
+                <!-- Digital Signature Pad (Alpine.js HTML5 Canvas) -->
+                <div class="pt-2" x-data="{
+                    isDrawing: false,
+                    hasSignature: false,
+                    ctx: null,
+                    canvas: null,
+
+                    init() {
+                        this.canvas = this.$refs.sigCanvas;
+                        if (!this.canvas) return;
+                        this.ctx = this.canvas.getContext('2d');
+                        this.ctx.lineWidth = 2.5;
+                        this.ctx.lineCap = 'round';
+                        this.ctx.lineJoin = 'round';
+                        this.ctx.strokeStyle = '#2B1E16';
+                    },
+
+                    getPos(e) {
+                        const rect = this.canvas.getBoundingClientRect();
+                        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                        return {
+                            x: (clientX - rect.left) * (this.canvas.width / rect.width),
+                            y: (clientY - rect.top) * (this.canvas.height / rect.height)
+                        };
+                    },
+
+                    startDrawing(e) {
+                        this.isDrawing = true;
+                        const pos = this.getPos(e);
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(pos.x, pos.y);
+                    },
+
+                    draw(e) {
+                        if (!this.isDrawing) return;
+                        e.preventDefault();
+                        const pos = this.getPos(e);
+                        this.ctx.lineTo(pos.x, pos.y);
+                        this.ctx.stroke();
+                        this.hasSignature = true;
+                    },
+
+                    stopDrawing() {
+                        if (!this.isDrawing) return;
+                        this.isDrawing = false;
+                        if (this.hasSignature) {
+                            $wire.set('signature_data', this.canvas.toDataURL('image/png'));
+                        }
+                    },
+
+                    clearCanvas() {
+                        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                        this.hasSignature = false;
+                        $wire.set('signature_data', '');
+                    }
+                }">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-semibold text-brand-espresso">
+                            Tanda Tangan Digital Penerima Toko (Coret di Layar HP / Mouse)
+                        </label>
+                        <button type="button" @click="clearCanvas()"
+                            class="text-xs font-semibold text-brand-warm-gray hover:text-brand-espresso cursor-pointer">
+                            Hapus Tanda Tangan
+                        </button>
+                    </div>
+                    <div class="border border-brand-border rounded-xl bg-neutral-50/50 p-2 overflow-hidden flex justify-center">
+                        <canvas x-ref="sigCanvas" width="400" height="150"
+                            class="touch-none bg-white rounded-lg border border-brand-border/60 cursor-crosshair w-full max-w-md h-36"
+                            @mousedown="startDrawing($event)"
+                            @mousemove="draw($event)"
+                            @mouseup="stopDrawing()"
+                            @mouseleave="stopDrawing()"
+                            @touchstart="startDrawing($event)"
+                            @touchmove="draw($event)"
+                            @touchend="stopDrawing()"></canvas>
+                    </div>
                 </div>
 
-                <div class="md:col-span-3 flex items-center justify-end pt-2">
+                <div class="flex items-center justify-end pt-2">
                     <button type="submit" wire:loading.attr="disabled"
-                        class="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-bold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50">
-                        <i class="ti ti-circle-check text-base"></i>
+                        class="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white text-sm font-bold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50">
+                        <i class="ti ti-check text-base"></i>
                         <span wire:loading.remove>Konfirmasi Barang Tiba &amp; Selesaikan</span>
                         <span wire:loading>Memproses...</span>
                     </button>
@@ -208,9 +322,32 @@
                         <div>Waktu Selesai Serah Terima: <strong class="text-brand-espresso font-mono">{{ $delivery->delivered_at->translatedFormat('d M Y H:i') }}</strong></div>
                     @endif
                     @if ($delivery->recipient_name)
-                        <div>Penerima di Toko: <strong class="text-brand-espresso">{{ $delivery->recipient_name }}</strong> {{ $delivery->recipient_phone ? "({$delivery->recipient_phone})" : '' }}</div>
+                        <div>Penerima di Toko: <strong class="text-brand-espresso">{{ $delivery->recipient_name }}</strong> {{ $delivery->recipient_role ? "({$delivery->recipient_role})" : '' }} {{ $delivery->recipient_phone ? " - {$delivery->recipient_phone}" : '' }}</div>
                     @endif
                 </div>
+
+                @if ($delivery->proof_image || $delivery->signature_data)
+                    <div class="pt-3 border-t border-brand-border/60 grid grid-cols-1 sm:grid-cols-2 gap-4 print:hidden">
+                        @if ($delivery->proof_image)
+                            <div>
+                                <span class="text-xs font-semibold text-brand-espresso block mb-1">Foto Bukti Serah Terima:</span>
+                                <a href="{{ asset('storage/' . $delivery->proof_image) }}" target="_blank">
+                                    <img src="{{ asset('storage/' . $delivery->proof_image) }}" alt="Bukti Serah Terima"
+                                        class="h-28 w-auto object-cover rounded-xl border border-brand-border hover:opacity-90 transition">
+                                </a>
+                            </div>
+                        @endif
+
+                        @if ($delivery->signature_data)
+                            <div>
+                                <span class="text-xs font-semibold text-brand-espresso block mb-1">Tanda Tangan Digital Penerima:</span>
+                                <div class="p-2 bg-white rounded-xl border border-brand-border inline-block">
+                                    <img src="{{ $delivery->signature_data }}" alt="Tanda Tangan Penerima" class="h-20 w-auto object-contain">
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 @if ($delivery->notes)
                     <div class="pt-2">
@@ -305,8 +442,11 @@
 
             <div>
                 <p class="font-semibold text-brand-espresso">Penerima Toko Mitra</p>
-                <div class="h-20 flex items-end justify-center">
-                    <p class="border-b border-brand-espresso/50 w-36 pb-1 font-medium">
+                <div class="h-20 flex flex-col items-center justify-end">
+                    @if ($delivery->signature_data)
+                        <img src="{{ $delivery->signature_data }}" alt="Tanda Tangan" class="max-h-12 w-auto object-contain mb-1">
+                    @endif
+                    <p class="border-b border-brand-espresso/50 w-36 pb-1 font-medium text-center">
                         {{ $delivery->recipient_name ?: '( Staf / Pemilik Toko )' }}
                     </p>
                 </div>

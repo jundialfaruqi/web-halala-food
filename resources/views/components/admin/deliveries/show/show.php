@@ -7,15 +7,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('components.layouts.admin')] class extends Component
 {
+    use WithFileUploads;
+
     public Delivery $delivery;
 
     // Handover Confirmation Form Fields
     public string $recipient_name = '';
+    public ?string $recipient_role = '';
     public ?string $recipient_phone = '';
     public ?string $handover_notes = '';
+    public $proof_photo = null;
+    public ?string $signature_data = '';
 
     public function mount(Delivery $delivery)
     {
@@ -26,7 +32,9 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->delivery = $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
 
         $this->recipient_name = $delivery->recipient_name ?? $delivery->store?->owner_name ?? '';
+        $this->recipient_role = $delivery->recipient_role ?? '';
         $this->recipient_phone = $delivery->recipient_phone ?? $delivery->store?->phone ?? '';
+        $this->signature_data = $delivery->signature_data ?? '';
     }
 
     public function title(): string
@@ -69,11 +77,21 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         $this->validate([
             'recipient_name' => ['required', 'string', 'max:100'],
+            'recipient_role' => ['nullable', 'string', 'max:100'],
             'recipient_phone' => ['nullable', 'string', 'max:30'],
             'handover_notes' => ['nullable', 'string', 'max:500'],
+            'proof_photo' => ['nullable', 'image', 'max:5120'],
+            'signature_data' => ['nullable', 'string'],
         ], [
             'recipient_name.required' => 'Nama staf/pemilik toko penerima wajib diisi sebagai bukti serah terima.',
+            'proof_photo.image' => 'File bukti serah terima harus berupa format foto/gambar.',
+            'proof_photo.max' => 'Ukuran foto bukti tidak boleh melebihi 5MB.',
         ]);
+
+        $proofPath = $this->delivery->proof_image;
+        if ($this->proof_photo) {
+            $proofPath = $this->proof_photo->store('delivery-proofs', 'public');
+        }
 
         $existingNotes = $this->delivery->notes ? rtrim($this->delivery->notes) : '';
         $updatedNotes = $existingNotes;
@@ -85,7 +103,10 @@ new #[Layout('components.layouts.admin')] class extends Component
             'status' => 'selesai',
             'delivered_at' => now(),
             'recipient_name' => $this->recipient_name,
-            'recipient_phone' => $this->recipient_phone,
+            'recipient_role' => $this->recipient_role ?: null,
+            'recipient_phone' => $this->recipient_phone ?: null,
+            'proof_image' => $proofPath,
+            'signature_data' => $this->signature_data ?: $this->delivery->signature_data,
             'notes' => $updatedNotes,
         ]);
 

@@ -71,6 +71,12 @@
 
         <!-- Action Buttons -->
         <div class="flex items-center gap-2.5 shrink-0">
+            <a href="{{ $this->whatsappUrl }}" target="_blank"
+                class="inline-flex items-center gap-1.5 px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-50 transition cursor-pointer">
+                <i class="ti ti-brand-whatsapp text-base"></i>
+                <span>Kirim WhatsApp</span>
+            </a>
+
             <button type="button" onclick="window.print()"
                 class="inline-flex items-center gap-1.5 px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-50 transition cursor-pointer">
                 <i class="ti ti-printer text-base"></i>

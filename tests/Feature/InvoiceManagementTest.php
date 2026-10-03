@@ -198,3 +198,20 @@ test('unpaid invoice can be cancelled', function () {
     $invoice->refresh();
     expect($invoice->status)->toBe('dibatalkan');
 });
+
+test('invoice show page renders whatsapp billing url with store phone and details', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    $invoice = Invoice::first();
+
+    actingAs($manager);
+
+    $test = Livewire::test('admin.invoices.show', ['invoice' => $invoice]);
+    $url = $test->get('whatsappUrl');
+
+    expect($url)->toContain('https://api.whatsapp.com/send?')
+        ->and($url)->toContain('text=');
+
+    get(route('admin.invoices.show', $invoice))
+        ->assertOk()
+        ->assertSee('Kirim WhatsApp');
+});

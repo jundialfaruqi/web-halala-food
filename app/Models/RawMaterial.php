@@ -49,6 +49,11 @@ class RawMaterial extends Model
         return $this->hasMany(ProductionBatchMaterial::class);
     }
 
+    public function purchaseItems(): HasMany
+    {
+        return $this->hasMany(RawMaterialPurchaseItem::class);
+    }
+
     /**
      * Get the active display unit short name.
      */

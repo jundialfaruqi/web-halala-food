@@ -14,6 +14,8 @@ use App\Models\ProductionBatch;
 use App\Models\ProductionBatchMaterial;
 use App\Models\ProductRecipe;
 use App\Models\RawMaterial;
+use App\Models\RawMaterialPurchase;
+use App\Models\RawMaterialPurchaseItem;
 use App\Models\StockMutation;
 use App\Models\Store;
 use App\Models\Unit;
@@ -123,6 +125,20 @@ class DatabaseSeeder extends Seeder
                     'pengaturan-edit' => 'Mengubah profil usaha, kontak, dan rekening pembayaran.',
                 ],
             ],
+            'Pengadaan Bahan Baku' => [
+                'description' => 'Kelola transaksi pembelian bahan baku dapur, nota supplier, dan pencatatan kas keluar.',
+                'permissions' => [
+                    'pembelian-view' => 'Melihat riwayat transaksi pembelian bahan baku.',
+                    'pembelian-create' => 'Mencatat transaksi pembelian bahan baku baru.',
+                    'pembelian-delete' => 'Membatalkan atau menghapus riwayat pembelian bahan baku.',
+                ],
+            ],
+            'Laporan & Analisis' => [
+                'description' => 'Akses laporan komprehensif laba rugi, omset penjualan, piutang mitra toko, dan analisa retur barang.',
+                'permissions' => [
+                    'laporan-view' => 'Melihat dan mencetak ringkasan laporan keuangan, laba rugi, dan rekapitulasi toko.',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -209,6 +225,10 @@ class DatabaseSeeder extends Seeder
             'produk-create',
             'produk-edit',
             'produk-delete',
+            'pembelian-view',
+            'pembelian-create',
+            'pembelian-delete',
+            'laporan-view',
         ]);
 
         // Kurir gets dashboard access, toko view, pengantaran, and faktur view
@@ -534,6 +554,71 @@ class DatabaseSeeder extends Seeder
                 'reference_number' => 'BCA-TRX-882910',
                 'notes' => 'Pembayaran termin 1 via transfer bank BCA oleh Ibu Hj. Aminah.',
             ]);
+        }
+
+        // 11. Seed Sample Raw Material Purchase (Pengadaan Bahan Baku)
+        $wijen = RawMaterial::where('name', 'Wijen Putih Sangrai')->first();
+        $gula = RawMaterial::where('name', 'Gula Pasir Kristal')->first();
+        if (RawMaterialPurchase::count() === 0 && $wijen && $gula) {
+            $purchase = RawMaterialPurchase::create([
+                'purchase_number' => 'BELI-' . now()->format('Ymd') . '-0001',
+                'supplier_name' => 'Toko Bahan Kue Berkah Jaya',
+                'purchase_date' => now()->subDays(2)->toDateString(),
+                'total_amount' => 550000.00,
+                'payment_method' => 'transfer_bank',
+                'notes' => 'Pengadaan stok bahan awal bulan: Wijen Super Grade A & Gula Pasir Kristal.',
+                'created_by' => $managerUser?->id ?? $devUser?->id,
+            ]);
+
+            RawMaterialPurchaseItem::create([
+                'purchase_id' => $purchase->id,
+                'raw_material_id' => $wijen->id,
+                'quantity' => 5000, // 5000 gram
+                'cost_per_unit' => 0.05,
+                'subtotal' => 250000.00,
+                'notes' => '5 kg karung segel',
+            ]);
+
+            RawMaterialPurchaseItem::create([
+                'purchase_id' => $purchase->id,
+                'raw_material_id' => $gula->id,
+                'quantity' => 20000, // 20000 gram
+                'cost_per_unit' => 0.015,
+                'subtotal' => 300000.00,
+                'notes' => 'Karung 20 kg',
+            ]);
+
+            StockMutation::create([
+                'raw_material_id' => $wijen->id,
+                'reference_type' => 'purchase',
+                'reference_id' => $purchase->id,
+                'reference_number' => $purchase->purchase_number,
+                'type' => 'in',
+                'quantity' => 5000,
+                'stock_before' => $wijen->stock,
+                'stock_after' => $wijen->stock + 5000,
+                'cost_per_unit' => 0.05,
+                'notes' => 'Pembelian dari ' . $purchase->supplier_name,
+                'user_id' => $managerUser?->id ?? $devUser?->id,
+            ]);
+
+            $wijen->increment('stock', 5000);
+
+            StockMutation::create([
+                'raw_material_id' => $gula->id,
+                'reference_type' => 'purchase',
+                'reference_id' => $purchase->id,
+                'reference_number' => $purchase->purchase_number,
+                'type' => 'in',
+                'quantity' => 20000,
+                'stock_before' => $gula->stock,
+                'stock_after' => $gula->stock + 20000,
+                'cost_per_unit' => 0.015,
+                'notes' => 'Pembelian dari ' . $purchase->supplier_name,
+                'user_id' => $managerUser?->id ?? $devUser?->id,
+            ]);
+
+            $gula->increment('stock', 20000);
         }
 
         // Initialize default business settings if not already present

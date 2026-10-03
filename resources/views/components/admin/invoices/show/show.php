@@ -168,6 +168,64 @@ new #[Layout('components.layouts.admin')] class extends Component
         ]);
     }
 
+    public function getWhatsappUrlProperty(): string
+    {
+        $setting = \App\Models\BusinessSetting::getSettings();
+        $store = $this->invoice->store;
+        $companyName = $setting->company_name ?: 'Halala Food';
+
+        $phone = preg_replace('/[^0-9]/', '', $store->phone ?? '');
+        if (str_starts_with($phone, '0')) {
+            $phone = '62' . substr($phone, 1);
+        }
+
+        $lines = [];
+        $recipientGreeting = $store->owner_name ? "{$store->name} (Bpk/Ibu {$store->owner_name})" : $store->name;
+        $lines[] = "Halo *{$recipientGreeting}*,";
+        $lines[] = "";
+        $lines[] = "Berikut kami sampaikan rincian tagihan faktur konsinyasi dari *{$companyName}*:";
+        $lines[] = "• No. Faktur: *{$this->invoice->invoice_number}*";
+        $lines[] = "• Tanggal: " . ($this->invoice->invoice_date?->translatedFormat('d F Y') ?? '-');
+        $lines[] = "• Jatuh Tempo: " . ($this->invoice->due_date?->translatedFormat('d F Y') ?? '-');
+        $lines[] = "";
+        $lines[] = "*Rincian Produk:*";
+        foreach ($this->invoice->items as $item) {
+            $prodName = $item->product?->name ?? 'Produk';
+            $unitName = $item->product?->unitModel?->name ?? $item->product?->unit ?? 'pcs';
+            $lines[] = "- {$prodName} ({$item->quantity} {$unitName}) = Rp " . number_format($item->subtotal, 0, ',', '.');
+        }
+        $lines[] = "";
+        $lines[] = "Total Tagihan: *Rp " . number_format($this->invoice->total_amount, 0, ',', '.') . "*";
+        if ((float) $this->invoice->paid_amount > 0) {
+            $lines[] = "Sudah Dibayar: Rp " . number_format($this->invoice->paid_amount, 0, ',', '.');
+        }
+        $lines[] = "*Sisa Tagihan: Rp " . number_format($this->invoice->remaining_balance, 0, ',', '.') . "*";
+
+        if (! empty($setting->bank_accounts) && is_array($setting->bank_accounts)) {
+            $lines[] = "";
+            $lines[] = "*Rekening Pembayaran Resmi:*";
+            foreach ($setting->bank_accounts as $bank) {
+                if (! empty($bank['bank_name']) && ! empty($bank['account_number'])) {
+                    $accName = $bank['account_name'] ?? $bank['account_holder'] ?? 'Halala Food CV';
+                    $lines[] = "- {$bank['bank_name']}: {$bank['account_number']} a.n {$accName}";
+                }
+            }
+        }
+
+        $lines[] = "";
+        $lines[] = "Terima kasih atas kerja samanya.";
+
+        $message = implode("\n", $lines);
+
+        $baseUrl = 'https://api.whatsapp.com/send?';
+        $params = ['text' => $message];
+        if (! empty($phone)) {
+            $params['phone'] = $phone;
+        }
+
+        return $baseUrl . http_build_query($params);
+    }
+
     public function with(): array
     {
         return [

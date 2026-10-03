@@ -215,3 +215,48 @@ test('deleting a delivery restores stock and completed delivery cannot be delete
     // Should still exist
     expect(Delivery::find($completedDelivery->id))->not->toBeNull();
 });
+
+test('courier can complete delivery with proof photo and digital signature', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    $kurir = User::where('email', 'kurir@halala-food.id')->first();
+    $delivery = Delivery::where('status', 'diproses')->first();
+
+    actingAs($kurir);
+
+    // 1. Dispatch delivery
+    Livewire::test('admin.deliveries.show', ['delivery' => $delivery])
+        ->call('startDelivery');
+
+    $delivery->refresh();
+    expect($delivery->status)->toBe('dikirim');
+
+    // 2. Complete handover with photo and signature
+    $file = \Illuminate\Http\UploadedFile::fake()->image('bukti_drop.jpg');
+    $fakeSignature = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+    Livewire::test('admin.deliveries.show', ['delivery' => $delivery])
+        ->set('recipient_name', 'Ibu Hj. Aminah')
+        ->set('recipient_role', 'Pemilik Toko')
+        ->set('recipient_phone', '081234567890')
+        ->set('proof_photo', $file)
+        ->set('signature_data', $fakeSignature)
+        ->set('handover_notes', 'Semua barang diterima dalam kondisi baik')
+        ->call('completeDelivery')
+        ->assertHasNoErrors();
+
+    $delivery->refresh();
+    expect($delivery->status)->toBe('selesai')
+        ->and($delivery->recipient_name)->toBe('Ibu Hj. Aminah')
+        ->and($delivery->recipient_role)->toBe('Pemilik Toko')
+        ->and($delivery->proof_image)->not->toBeNull()
+        ->and($delivery->signature_data)->toBe($fakeSignature);
+
+    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($delivery->proof_image);
+
+    // Verify rendered in view
+    get(route('admin.deliveries.show', $delivery))
+        ->assertOk()
+        ->assertSee('Foto Bukti Serah Terima')
+        ->assertSee('Tanda Tangan Digital Penerima');
+});

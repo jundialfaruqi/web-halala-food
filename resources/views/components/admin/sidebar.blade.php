@@ -90,7 +90,7 @@
             @endcanany
 
             {{-- Section: Operasional Produksi & Produk --}}
-            @canany(['produk-view', 'produksi-view'])
+            @canany(['produk-view', 'produksi-view', 'pembelian-view'])
                 <div class="pt-4 border-t border-brand-border/60">
                     <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                         Operasional
@@ -109,6 +109,14 @@
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.production*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-flame text-xl {{ request()->routeIs('admin.production*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Produksi (Batch Masak)</span>
+                            </a>
+                        @endcan
+
+                        @can('pembelian-view')
+                            <a href="{{ route('admin.purchases') }}"
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.purchases*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-shopping-cart text-xl {{ request()->routeIs('admin.purchases*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Pembelian Bahan</span>
                             </a>
                         @endcan
                     </nav>
@@ -142,20 +150,30 @@
             @endcanany
 
             {{-- Section: Keuangan & Piutang --}}
-            @can('faktur-view')
+            @canany(['faktur-view', 'laporan-view'])
                 <div class="pt-4 border-t border-brand-border/60">
                     <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                         Keuangan
                     </p>
                     <nav class="space-y-1">
-                        <a href="{{ route('admin.invoices') }}"
-                            class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.invoices*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
-                            <i class="ti ti-receipt-2 text-xl {{ request()->routeIs('admin.invoices*') ? 'text-white' : 'text-brand-primary' }}"></i>
-                            <span>Faktur &amp; Piutang Toko</span>
-                        </a>
+                        @can('faktur-view')
+                            <a href="{{ route('admin.invoices') }}"
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.invoices*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-receipt-2 text-xl {{ request()->routeIs('admin.invoices*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Faktur &amp; Piutang Toko</span>
+                            </a>
+                        @endcan
+
+                        @can('laporan-view')
+                            <a href="{{ route('admin.reports') }}"
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.reports*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-report-analytics text-xl {{ request()->routeIs('admin.reports*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Laporan Bisnis</span>
+                            </a>
+                        @endcan
                     </nav>
                 </div>
-            @endcan
+            @endcanany
 
             {{-- Section: Pengaturan Sistem & Usaha --}}
             @can('pengaturan-view')
