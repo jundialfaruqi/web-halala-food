@@ -7,6 +7,7 @@ use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -307,7 +308,7 @@ test('courier can complete delivery with proof photo and digital signature', fun
         ->and($delivery->proof_image)->not->toBeNull()
         ->and($delivery->signature_data)->toBe($fakeSignature);
 
-    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($delivery->proof_image);
+    expect(Storage::disk('public')->exists($delivery->proof_image))->toBeTrue();
 
     // Verify rendered in view
     get(route('admin.deliveries.show', $delivery))
@@ -317,7 +318,7 @@ test('courier can complete delivery with proof photo and digital signature', fun
 });
 
 test('courier can complete delivery handover with client-compressed photo_data base64', function () {
-    \Illuminate\Support\Facades\Storage::fake('public');
+    Storage::fake('public');
 
     $courier = User::where('email', 'kurir@halala-food.id')->first();
     $delivery = Delivery::where('status', 'diproses')->first();
@@ -349,6 +350,6 @@ test('courier can complete delivery handover with client-compressed photo_data b
         ->and($delivery->proof_image)->not->toBeNull()
         ->and($delivery->proof_image)->toContain('delivery-proofs/');
 
-    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($delivery->proof_image);
+    expect(Storage::disk('public')->exists($delivery->proof_image))->toBeTrue();
 });
 
