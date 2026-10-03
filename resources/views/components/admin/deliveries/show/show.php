@@ -20,7 +20,8 @@ new #[Layout('components.layouts.admin')] class extends Component
     public ?string $recipient_role = '';
     public ?string $recipient_phone = '';
     public ?string $handover_notes = '';
-    public $proof_photo = null;
+    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+    public mixed $proof_photo = null;
     public ?string $signature_data = '';
 
     public function mount(Delivery $delivery)
