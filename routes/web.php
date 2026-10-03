@@ -126,6 +126,10 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     // Buku Kas & Keuangan
     Route::livewire('/cash-book', 'admin.cash-book.index')->name('admin.cash-book')->middleware('permission:buku-kas-view');
 
+    // Aset Tetap Usaha
+    Route::livewire('/fixed-assets', 'admin.fixed-assets.index')->name('admin.fixed-assets')->middleware('permission:aset-view');
+
+
     // Faktur Penagihan & Piutang Toko (Keuangan)
     Route::livewire('/invoices', 'admin.invoices.index')->name('admin.invoices')->middleware('permission:faktur-view');
     Route::livewire('/invoices/create', 'admin.invoices.create')->name('admin.invoices.create')->middleware('permission:faktur-create');

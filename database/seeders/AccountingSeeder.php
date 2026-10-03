@@ -31,14 +31,6 @@ class AccountingSeeder extends Seeder
                 'description' => 'Rekening bank operasional usaha (misal: BCA, Mandiri, BRI)',
             ],
             [
-                'code' => '1-1100',
-                'name' => 'Kas Pribadi / Keluarga',
-                'type' => 'asset',
-                'normal_balance' => 'debit',
-                'is_system' => true,
-                'description' => 'Uang kas belanja dapur & rumah tangga pribadi',
-            ],
-            [
                 'code' => '1-1200',
                 'name' => 'Piutang Toko Konsinyasi',
                 'type' => 'asset',

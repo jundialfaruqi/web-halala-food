@@ -154,6 +154,15 @@ class DatabaseSeeder extends Seeder
                     'laporan-view' => 'Melihat dan mencetak ringkasan laporan keuangan, laba rugi, dan rekapitulasi toko.',
                 ],
             ],
+            'Aset Tetap Usaha' => [
+                'description' => 'Kelola inventaris aset tetap usaha: mesin produksi, peralatan dapur, kendaraan, dan inventaris lainnya.',
+                'permissions' => [
+                    'aset-view'   => 'Melihat daftar inventaris aset tetap usaha.',
+                    'aset-create' => 'Mencatat aset tetap baru dan menjurnal ke buku besar.',
+                    'aset-edit'   => 'Mengubah data dan kondisi aset tetap.',
+                    'aset-delete' => 'Menghapus catatan aset tetap dari inventaris.',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -249,6 +258,10 @@ class DatabaseSeeder extends Seeder
             'jurnal-view',
             'laporan-keuangan-view',
             'laporan-view',
+            'aset-view',
+            'aset-create',
+            'aset-edit',
+            'aset-delete',
         ]);
 
         // Kurir gets dashboard access, toko view, pengantaran, and faktur view
@@ -661,13 +674,6 @@ class DatabaseSeeder extends Seeder
                 'type' => 'business',
                 'balance' => 15000000.00,
                 'description' => 'Rekening bank utama untuk pembayaran supplier & transfer toko',
-            ]);
-
-            \App\Models\Account::create([
-                'name' => 'Kas Belanja Pribadi',
-                'type' => 'personal',
-                'balance' => 1000000.00,
-                'description' => 'Dana rumah tangga & belanja dapur keluarga',
             ]);
         }
 

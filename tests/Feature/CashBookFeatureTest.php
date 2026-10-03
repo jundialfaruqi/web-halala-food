@@ -46,7 +46,7 @@ test('manager can view cash book page and summary cards', function () {
         ->assertOk()
         ->assertSee('Buku Kas & Keuangan')
         ->assertSee('Total Saldo Kas Usaha')
-        ->assertSee('Total Kas Belanja Pribadi');
+        ->assertSee('Total Prive');
 });
 
 test('manager can add new account and record transaction with auto-journaling', function () {

@@ -192,7 +192,7 @@
             @endcanany
 
             {{-- Section: Keuangan & Akuntansi --}}
-            @canany(['buku-kas-view', 'faktur-view', 'jurnal-view', 'laporan-keuangan-view', 'laporan-view'])
+            @canany(['buku-kas-view', 'aset-view', 'faktur-view', 'jurnal-view', 'laporan-keuangan-view', 'laporan-view'])
                 <div class="pt-4 border-t border-brand-border/60">
                     <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                         Keuangan
@@ -204,6 +204,15 @@
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.cash-book*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-wallet text-xl {{ request()->routeIs('admin.cash-book*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Buku Kas</span>
+                            </a>
+                        @endcan
+
+                        @can('aset-view')
+                            <a href="{{ route('admin.fixed-assets') }}" wire:navigate
+                                @if(request()->routeIs('admin.fixed-assets*')) data-sidebar-active="true" @endif
+                                class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.fixed-assets*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
+                                <i class="ti ti-building-factory-2 text-xl {{ request()->routeIs('admin.fixed-assets*') ? 'text-white' : 'text-brand-primary' }}"></i>
+                                <span>Aset Tetap Usaha</span>
                             </a>
                         @endcan
 

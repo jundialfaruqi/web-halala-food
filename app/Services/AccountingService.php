@@ -163,11 +163,8 @@ class AccountingService
             $items[] = ['account_code' => $cashCode, 'debit' => $amount, 'credit' => 0, 'memo' => 'Kas Masuk: '.($account?->name ?? 'Kas')];
             $items[] = ['account_code' => $incomeCode, 'debit' => 0, 'credit' => $amount, 'memo' => $transaction->category];
         } elseif ($transaction->type === 'prive') {
-            $items[] = ['account_code' => '3-2000', 'debit' => $amount, 'credit' => 0, 'memo' => 'Penarikan Prive Pemilik'];
-            $items[] = ['account_code' => $cashCode, 'debit' => 0, 'credit' => $amount, 'memo' => 'Pengambilan dari '.($account?->name ?? 'Kas Usaha')];
-        } elseif ($transaction->type === 'personal_expense') {
-            $items[] = ['account_code' => '3-2000', 'debit' => $amount, 'credit' => 0, 'memo' => 'Belanja Dapur / Rumah Tangga Pribadi'];
-            $items[] = ['account_code' => '1-1100', 'debit' => 0, 'credit' => $amount, 'memo' => 'Kas Pribadi Keluar'];
+            $items[] = ['account_code' => '3-2000', 'debit' => $amount, 'credit' => 0, 'memo' => 'Prive'];
+            $items[] = ['account_code' => $cashCode, 'debit' => 0, 'credit' => $amount, 'memo' => 'Penarikan dari '.($account?->name ?? 'Kas Usaha')];
         }
 
         return self::postEntry(
@@ -397,6 +394,81 @@ class AccountingService
                 'is_system' => false,
                 'description' => "Persediaan fisik {$material->name} ({$material->display_unit}) untuk dapur produksi",
             ]
+        );
+    }
+
+    /**
+     * Record journal entry for a new fixed asset purchase
+     * Debit: 1-2000 Aset Tetap Usaha
+     * Credit: Cash/Bank account used to pay
+     */
+    public static function recordFixedAssetPurchase(\App\Models\FixedAsset $asset, ?int $cashAccountId = null): ?JournalEntry
+    {
+        self::ensureChartOfAccountsExist();
+
+        // Ensure fixed asset COA exists
+        ChartOfAccount::firstOrCreate(
+            ['code' => '1-2000'],
+            [
+                'name'           => 'Aset Tetap Usaha',
+                'type'           => 'asset',
+                'normal_balance' => 'debit',
+                'is_system'      => true,
+                'description'    => 'Nilai buku aset tetap: mesin, peralatan, kendaraan, inventaris usaha',
+            ]
+        );
+
+        $items = [
+            [
+                'account_code' => '1-2000',
+                'debit'        => $asset->purchase_price,
+                'credit'       => 0,
+                'memo'         => "Pembelian Aset: {$asset->name}",
+            ],
+        ];
+
+        // Credit side: cash account if provided, otherwise use equity (modal)
+        if ($cashAccountId) {
+            $cashAccount = \App\Models\Account::find($cashAccountId);
+            if ($cashAccount) {
+                // Decrement cash balance
+                $cashAccount->decrement('balance', $asset->purchase_price);
+
+                // Map cash account to COA — use the closest code
+                $cashCoa = ChartOfAccount::where('name', 'like', '%Kas%')
+                    ->where('normal_balance', 'debit')
+                    ->first();
+
+                $items[] = [
+                    'account_code' => $cashCoa?->code ?? '1-1001',
+                    'debit'        => 0,
+                    'credit'       => $asset->purchase_price,
+                    'memo'         => "Pembayaran aset: {$asset->name} via {$cashAccount->name}",
+                ];
+            } else {
+                // Fallback: credit modal
+                $items[] = [
+                    'account_code' => '3-1000',
+                    'debit'        => 0,
+                    'credit'       => $asset->purchase_price,
+                    'memo'         => "Pembelian Aset: {$asset->name} (kontribusi modal)",
+                ];
+            }
+        } else {
+            $items[] = [
+                'account_code' => '3-1000',
+                'debit'        => 0,
+                'credit'       => $asset->purchase_price,
+                'memo'         => "Pembelian Aset: {$asset->name} (kontribusi modal)",
+            ];
+        }
+
+        return self::postEntry(
+            date: $asset->purchase_date->format('Y-m-d'),
+            notes: "Pencatatan aset tetap: {$asset->name} ({$asset->category})",
+            items: $items,
+            referenceType: 'fixed_asset',
+            referenceId: $asset->id,
         );
     }
 

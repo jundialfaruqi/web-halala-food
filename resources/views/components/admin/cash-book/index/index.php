@@ -43,7 +43,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
     public ?int $account_id = null;
 
-    public string $type = 'expense'; // 'income', 'expense', 'prive', 'personal_expense'
+    public string $type = 'expense'; // 'income', 'expense', 'prive'
 
     public string $category = '';
 
@@ -158,7 +158,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
         }
 
         $this->transaction_date = Carbon::now()->format('Y-m-d');
-        $this->type = in_array($type, ['income', 'expense', 'prive', 'personal_expense']) ? $type : 'expense';
+        $this->type = in_array($type, ['income', 'expense', 'prive']) ? $type : 'expense';
         $this->category = $this->getDefaultCategory($this->type);
         $this->amount = 0;
         $this->description = '';
@@ -171,8 +171,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
         return match ($type) {
             'income' => 'Setoran Modal',
             'expense' => 'Belanja Bahan Baku',
-            'prive' => 'Pengambilan Uang Usaha untuk Keluarga (Prive)',
-            'personal_expense' => 'Kebutuhan Dapur & Belanja Rumah',
+            'prive' => 'Prive',
             default => 'Operasional Lainnya',
         };
     }
@@ -187,7 +186,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
         $this->validate([
             'transaction_date' => 'required|date',
             'account_id' => 'required|exists:accounts,id',
-            'type' => 'required|in:income,expense,prive,personal_expense',
+            'type' => 'required|in:income,expense,prive',
             'category' => 'required|string|max:100',
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string|max:500',
@@ -214,7 +213,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
         $this->validate([
             'transaction_date' => 'required|date',
             'account_id' => 'required|exists:accounts,id',
-            'type' => 'required|in:income,expense,prive,personal_expense',
+            'type' => 'required|in:income,expense,prive',
             'category' => 'required|string|max:100',
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string|max:500',
@@ -242,14 +241,6 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
             // Auto-journal in general ledger
             AccountingService::recordCashTransaction($tx);
-
-            // If Prive: auto add balance to Personal account if available
-            if ($this->type === 'prive') {
-                $personalAccount = Account::where('type', 'personal')->first();
-                if ($personalAccount && $personalAccount->id !== $account->id) {
-                    $personalAccount->increment('balance', $this->amount);
-                }
-            }
         });
 
         $this->showConfirmTransactionModal = false;
@@ -291,14 +282,6 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
                 $tx->account->increment('balance', $tx->amount);
             }
 
-            // If Prive, reverse personal account increment
-            if ($tx->type === 'prive') {
-                $personalAccount = Account::where('type', 'personal')->first();
-                if ($personalAccount && $personalAccount->id !== $tx->account_id) {
-                    $personalAccount->decrement('balance', $tx->amount);
-                }
-            }
-
             // Delete associated general journal entry
             JournalEntry::where('reference_type', 'cash_transaction')
                 ->where('reference_id', $tx->id)
@@ -313,7 +296,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
     public function with(): array
     {
-        $accounts = Account::orderBy('type')->orderBy('name')->get();
+        $accounts = Account::orderBy('name')->get();
 
         $startDate = '';
         $endDate = '';
@@ -345,23 +328,21 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
         // Filtered summary metrics
         $filteredIncome = (clone $query)->where('type', 'income')->sum('amount');
-        $filteredExpense = (clone $query)->whereIn('type', ['expense', 'personal_expense'])->sum('amount');
+        $filteredExpense = (clone $query)->where('type', 'expense')->sum('amount');
         $filteredPrive = (clone $query)->where('type', 'prive')->sum('amount');
 
         $transactions = $query->orderBy('transaction_date', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(15);
 
-        $totalBusinessBalance = $accounts->where('type', 'business')->sum('balance');
-        $totalPersonalBalance = $accounts->where('type', 'personal')->sum('balance');
+        $totalCashBalance = (float) $accounts->sum('balance');
 
         $hasActiveFilters = $this->search !== '' || $this->typeFilter !== 'all' || $this->accountFilter !== '' || $this->dateRange !== '';
 
         return [
             'accounts' => $accounts,
             'transactions' => $transactions,
-            'totalBusinessBalance' => $totalBusinessBalance,
-            'totalPersonalBalance' => $totalPersonalBalance,
+            'totalCashBalance' => $totalCashBalance,
             'filteredIncome' => $filteredIncome,
             'filteredExpense' => $filteredExpense,
             'filteredPrive' => $filteredPrive,

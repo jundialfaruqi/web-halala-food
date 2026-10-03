@@ -14,7 +14,7 @@
             Buku Kas &amp; Keuangan
         </h1>
         <p class="text-sm sm:text-base text-brand-warm-gray mt-1">
-            Pencatatan arus kas operasional, saldo rekening usaha, dan pemisahan dana belanja dapur pribadi keluarga.
+            Pencatatan arus kas operasional, saldo rekening kas &amp; bank usaha, serta penarikan prive pemilik.
         </p>
     </div>
 
@@ -41,7 +41,7 @@
             </button>
             <button type="button" wire:click="openTransactionModal('prive')"
                 class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-brand-espresso bg-white border border-brand-border hover:bg-neutral-50 transition cursor-pointer">
-                <span>⇄ Tarik Prive Keluarga</span>
+                <span>Prive</span>
             </button>
         </div>
     @endcan
@@ -56,25 +56,25 @@
         </div>
     @endif
 
-    <!-- Cards Saldo Kas Usaha vs Saldo Pribadi -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Cards Ringkasan Kas Usaha & Prive -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Saldo Kas Usaha -->
-        <div class="p-5 rounded-xl border border-brand-border bg-white space-y-4">
-            <div class="flex items-center justify-between pb-3 border-b border-brand-border/60">
+        <div class="p-5 rounded-xl border border-brand-border bg-white space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-brand-border/60">
                 <div>
                     <h2 class="text-base font-bold text-brand-espresso">Total Saldo Kas Usaha</h2>
-                    <p class="text-xs text-brand-warm-gray">Modal dagang, penerimaan tagihan &amp; biaya operasional</p>
+                    <p class="text-xs text-brand-warm-gray">Kas kecil &amp; rekening operasional</p>
                 </div>
-                <span class="text-xs font-semibold text-brand-warm-gray uppercase tracking-wider">Kas Usaha</span>
+                <span class="text-xs font-semibold text-brand-warm-gray uppercase tracking-wider">Kas &amp; Bank</span>
             </div>
 
             <p class="text-3xl font-mono font-extrabold text-brand-espresso">
-                Rp {{ number_format($totalBusinessBalance, 0, ',', '.') }}
+                Rp {{ number_format($totalCashBalance, 0, ',', '.') }}
             </p>
 
             <div class="space-y-1.5 pt-2 border-t border-brand-border/40 text-sm">
-                @foreach($accounts->where('type', 'business') as $acc)
-                    <div class="flex justify-between items-center py-1">
+                @foreach($accounts as $acc)
+                    <div class="flex justify-between items-center py-0.5">
                         <span class="text-brand-warm-gray font-medium">{{ $acc->name }}</span>
                         <span class="font-mono font-bold text-brand-espresso">Rp {{ number_format($acc->balance, 0, ',', '.') }}</span>
                     </div>
@@ -82,27 +82,38 @@
             </div>
         </div>
 
-        <!-- Saldo Kas Pribadi / Keluarga -->
-        <div class="p-5 rounded-xl border border-brand-border bg-white space-y-4">
-            <div class="flex items-center justify-between pb-3 border-b border-brand-border/60">
-                <div>
-                    <h2 class="text-base font-bold text-brand-espresso">Total Kas Belanja Pribadi</h2>
-                    <p class="text-xs text-brand-warm-gray">Kebutuhan dapur, rumah tangga &amp; keperluan non-usaha</p>
-                </div>
-                <span class="text-xs font-semibold text-brand-warm-gray uppercase tracking-wider">Kas Pribadi</span>
+        <!-- Pemasukan & Pengeluaran Operasional -->
+        <div class="p-5 rounded-xl border border-brand-border bg-white flex flex-col justify-between space-y-4">
+            <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Pemasukan (Periode Ini)</span>
+                <p class="text-2xl font-mono font-extrabold text-brand-espresso mt-1">
+                    Rp {{ number_format($filteredIncome, 0, ',', '.') }}
+                </p>
+                <p class="text-xs text-brand-warm-gray mt-1">Penerimaan penjualan, piutang &amp; setoran modal</p>
             </div>
+            <div class="pt-3 border-t border-brand-border/40">
+                <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Biaya Usaha (Periode Ini)</span>
+                <p class="text-2xl font-mono font-extrabold text-brand-espresso mt-1">
+                    Rp {{ number_format($filteredExpense, 0, ',', '.') }}
+                </p>
+                <p class="text-xs text-brand-warm-gray mt-1">Belanja bahan baku, utilitas &amp; operasional dapur</p>
+            </div>
+        </div>
 
-            <p class="text-3xl font-mono font-extrabold text-brand-espresso">
-                Rp {{ number_format($totalPersonalBalance, 0, ',', '.') }}
-            </p>
-
-            <div class="space-y-1.5 pt-2 border-t border-brand-border/40 text-sm">
-                @foreach($accounts->where('type', 'personal') as $acc)
-                    <div class="flex justify-between items-center py-1">
-                        <span class="text-brand-warm-gray font-medium">{{ $acc->name }}</span>
-                        <span class="font-mono font-bold text-brand-espresso">Rp {{ number_format($acc->balance, 0, ',', '.') }}</span>
-                    </div>
-                @endforeach
+        <!-- Penarikan Prive -->
+        <div class="p-5 rounded-xl border border-brand-border bg-white flex flex-col justify-between space-y-4">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Prive (Periode Ini)</span>
+                    <span class="text-xs font-mono font-bold text-brand-warm-gray">Akun 3-2000</span>
+                </div>
+                <p class="text-2xl font-mono font-extrabold text-brand-espresso mt-1">
+                    Rp {{ number_format($filteredPrive, 0, ',', '.') }}
+                </p>
+                <p class="text-xs text-brand-warm-gray mt-1">Penarikan dana kas usaha oleh pemilik</p>
+            </div>
+            <div class="pt-3 border-t border-brand-border/40 text-xs text-brand-warm-gray space-y-1">
+                <p><strong class="text-brand-espresso font-semibold">Prive:</strong> Pengambilan uang kas usaha yang dicatat mengurangi ekuitas modal pemilik di Neraca.</p>
             </div>
         </div>
     </div>
@@ -125,8 +136,7 @@
                     <option value="all">Semua Jenis Transaksi</option>
                     <option value="income">Pemasukan Usaha (+)</option>
                     <option value="expense">Pengeluaran Usaha (-)</option>
-                    <option value="prive">Tarik Prive Keluarga (⇄)</option>
-                    <option value="personal_expense">Pengeluaran Pribadi (-)</option>
+                    <option value="prive">Prive</option>
                 </select>
             </div>
 
@@ -136,7 +146,7 @@
                     class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
                     <option value="">Semua Akun &amp; Rekening</option>
                     @foreach($accounts as $acc)
-                        <option value="{{ $acc->id }}">{{ $acc->name }} ({{ $acc->type === 'business' ? 'Usaha' : 'Pribadi' }})</option>
+                        <option value="{{ $acc->id }}">{{ $acc->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -174,7 +184,7 @@
                     </div>
                     <div>
                         <span class="text-brand-warm-gray">Prive:</span>
-                        <span class="font-mono font-bold text-brand-espresso ml-1">⇄ Rp {{ number_format($filteredPrive, 0, ',', '.') }}</span>
+                        <span class="font-mono font-bold text-brand-espresso ml-1">Rp {{ number_format($filteredPrive, 0, ',', '.') }}</span>
                     </div>
                     <button type="button" wire:click="resetFilters" class="text-brand-primary hover:underline font-bold cursor-pointer">
                         ✕ Reset Filter
@@ -211,9 +221,7 @@
                                 @elseif($trx->type === 'expense')
                                     Pengeluaran Usaha
                                 @elseif($trx->type === 'prive')
-                                    Tarik Prive Keluarga
-                                @else
-                                    Pengeluaran Pribadi
+                                    Prive
                                 @endif
                             </p>
                         </td>
@@ -287,8 +295,7 @@
                                     class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary">
                                     <option value="expense">Pengeluaran Usaha (-)</option>
                                     <option value="income">Pemasukan Usaha (+)</option>
-                                    <option value="prive">Tarik Uang untuk Keluarga (Prive)</option>
-                                    <option value="personal_expense">Pengeluaran Pribadi (-)</option>
+                                    <option value="prive">Prive</option>
                                 </select>
                                 @error('type') <span class="text-xs text-red-600 font-semibold mt-1 block">{{ $message }}</span> @enderror
                             </div>
@@ -354,14 +361,9 @@
                                         Operasional Lain
                                     </button>
                                 @elseif($type === 'prive')
-                                    <button type="button" wire:click="$set('category', 'Pengambilan Uang Usaha untuk Keluarga (Prive)')"
+                                    <button type="button" wire:click="$set('category', 'Prive')"
                                         class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer bg-brand-primary text-white border-brand-primary">
-                                        Prive Keluarga
-                                    </button>
-                                @elseif($type === 'personal_expense')
-                                    <button type="button" wire:click="$set('category', 'Kebutuhan Dapur & Belanja Rumah')"
-                                        class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer bg-brand-primary text-white border-brand-primary">
-                                        Belanja Rumah Tangga
+                                        Prive
                                     </button>
                                 @endif
                             </div>
@@ -427,7 +429,7 @@
 
                 <div class="p-4 rounded-xl border border-brand-border bg-neutral-50 text-center space-y-1">
                     <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">
-                        {{ $type === 'income' ? 'Pemasukan' : ($type === 'prive' ? 'Tarik Prive' : 'Pengeluaran') }}
+                        {{ $type === 'income' ? 'Pemasukan' : ($type === 'prive' ? 'Prive' : 'Pengeluaran') }}
                     </span>
                     <p class="text-2xl font-mono font-extrabold text-brand-espresso">
                         {{ $type === 'income' ? '+' : '-' }} Rp {{ number_format((float) $amount, 0, ',', '.') }}
