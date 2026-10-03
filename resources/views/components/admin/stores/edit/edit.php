@@ -18,6 +18,8 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
     public ?string $route = '';
     public ?string $notes = '';
     public bool $is_active = true;
+    public ?string $photo_data = null;
+    public ?string $photo_url = null;
 
     public function mount(Store $store)
     {
@@ -36,6 +38,7 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
         $this->route = $store->route;
         $this->notes = $store->notes;
         $this->is_active = (bool) $store->is_active;
+        $this->photo_url = $store->photo_url;
     }
 
     public function rules(): array
@@ -50,6 +53,18 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
             'route' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
+            'photo_data' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (! empty($value) && $value !== 'DELETE') {
+                        $error = Store::validatePhotoBase64($value);
+                        if ($error) {
+                            $fail($error);
+                        }
+                    }
+                },
+            ],
         ];
     }
 
@@ -85,6 +100,16 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
             'notes' => ! empty($validated['notes']) ? trim($validated['notes']) : null,
             'is_active' => (bool) $validated['is_active'],
         ]);
+
+        if ($this->photo_data === 'DELETE') {
+            if ($this->store->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->store->photo)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($this->store->photo);
+            }
+            $this->store->photo = null;
+            $this->store->save();
+        } elseif (! empty($this->photo_data)) {
+            $this->store->updatePhotoFromBase64($this->photo_data);
+        }
 
         session()->flash('toast', [
             'message' => "Perubahan data toko '{$this->store->name}' berhasil disimpan.",

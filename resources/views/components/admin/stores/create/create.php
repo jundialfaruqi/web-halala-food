@@ -16,6 +16,7 @@ new #[Layout('components.layouts.admin'), Title('Tambah Toko Mitra Baru - Halala
     public ?string $route = '';
     public ?string $notes = '';
     public bool $is_active = true;
+    public ?string $photo_data = null;
 
     public function mount()
     {
@@ -36,6 +37,18 @@ new #[Layout('components.layouts.admin'), Title('Tambah Toko Mitra Baru - Halala
             'route' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
+            'photo_data' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (! empty($value)) {
+                        $error = Store::validatePhotoBase64($value);
+                        if ($error) {
+                            $fail($error);
+                        }
+                    }
+                },
+            ],
         ];
     }
 
@@ -71,6 +84,10 @@ new #[Layout('components.layouts.admin'), Title('Tambah Toko Mitra Baru - Halala
             'notes' => ! empty($validated['notes']) ? trim($validated['notes']) : null,
             'is_active' => (bool) $validated['is_active'],
         ]);
+
+        if (! empty($this->photo_data)) {
+            $store->updatePhotoFromBase64($this->photo_data);
+        }
 
         session()->flash('toast', [
             'message' => "Toko mitra '{$store->name}' berhasil ditambahkan.",

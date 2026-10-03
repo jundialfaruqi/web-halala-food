@@ -114,6 +114,152 @@
                     @enderror
                 </div>
 
+                <!-- Foto Toko Mitra -->
+                <div class="md:col-span-2 pt-2 border-t border-brand-border/60"
+                    x-data="{
+                        photoPreview: {{ \Illuminate\Support\Js::from($photo_url) }},
+                        hasExistingPhoto: {{ \Illuminate\Support\Js::from(!empty($photo_url)) }},
+                        isMarkedForDeletion: false,
+                        originalSize: '',
+                        compressedSize: '',
+                        photoFormat: '',
+                        progress: 0,
+                        statusText: '',
+                        isConverting: false,
+                        errorMessage: '',
+
+                        async handleFile(e) {
+                            const file = e.target.files ? e.target.files[0] : null;
+                            if (!file) return;
+
+                            this.errorMessage = '';
+                            this.isConverting = true;
+                            this.progress = 0;
+                            this.statusText = 'Mempersiapkan gambar...';
+
+                            try {
+                                const res = await window.compressStorePhoto(file, (pct, status) => {
+                                    this.progress = pct;
+                                    this.statusText = status;
+                                });
+
+                                this.photoPreview = res.dataUrl;
+                                this.originalSize = res.originalSizeFormatted;
+                                this.compressedSize = res.sizeFormatted;
+                                this.photoFormat = res.format;
+                                this.isMarkedForDeletion = false;
+                                $wire.set('photo_data', res.dataUrl);
+                            } catch (err) {
+                                this.errorMessage = err.message || 'Gagal memproses file foto.';
+                            } finally {
+                                this.isConverting = false;
+                                e.target.value = '';
+                            }
+                        },
+
+                        removePhoto() {
+                            this.photoPreview = null;
+                            this.originalSize = '';
+                            this.compressedSize = '';
+                            this.photoFormat = '';
+                            this.errorMessage = '';
+                            this.isMarkedForDeletion = true;
+                            $wire.set('photo_data', 'DELETE');
+                        }
+                    }">
+                    <label class="block text-sm font-semibold text-brand-espresso mb-1">
+                        Foto Toko Mitra (Opsional)
+                    </label>
+                    <p class="text-xs text-brand-warm-gray mb-3">Foto etalase/plang toko mitra untuk memudahkan kurir mengenali lokasi toko saat pengantaran konsinyasi.</p>
+
+                    <!-- Error Alert -->
+                    <template x-if="errorMessage">
+                        <div class="mb-3 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+                            <i class="ti ti-alert-triangle text-base shrink-0 mt-0.5"></i>
+                            <span x-text="errorMessage"></span>
+                        </div>
+                    </template>
+
+                    <!-- Photo Upload / Preview Container -->
+                    <div class="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-xl border border-brand-border bg-neutral-50/60">
+                        <!-- Preview Box -->
+                        <div class="relative w-36 h-36 rounded-xl border border-brand-border bg-white flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                            <template x-if="photoPreview">
+                                <img :src="photoPreview" alt="Pratinjau Foto Toko" class="w-full h-full object-contain p-1">
+                            </template>
+                            <template x-if="!photoPreview">
+                                <div class="text-center p-3 text-brand-warm-gray">
+                                    <i class="ti ti-camera text-3xl block mb-1"></i>
+                                    <span class="text-[11px] block">Belum ada foto</span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Actions & Controls -->
+                        <div class="flex-1 w-full space-y-3">
+                            <!-- Progress Bar -->
+                            <div x-show="isConverting" class="space-y-1.5">
+                                <div class="flex items-center justify-between text-xs font-semibold text-brand-espresso">
+                                    <span x-text="statusText"></span>
+                                    <span x-text="progress + '%'"></span>
+                                </div>
+                                <div class="w-full bg-neutral-200 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-brand-primary h-2 rounded-full transition-all duration-150" :style="'width: ' + progress + '%'"></div>
+                                </div>
+                            </div>
+
+                            <!-- Success Conversion Details -->
+                            <template x-if="photoPreview && photoFormat">
+                                <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-espresso bg-white px-3 py-1 rounded-lg border border-brand-border">
+                                    <i class="ti ti-check text-emerald-600"></i>
+                                    <span>Format: <strong x-text="photoFormat"></strong></span>
+                                    <span>&bull;</span>
+                                    <span x-text="compressedSize"></span>
+                                    <span class="text-brand-warm-gray font-normal" x-text="'(dari ' + originalSize + ')'"></span>
+                                </div>
+                            </template>
+
+                            <template x-if="photoPreview">
+                                <div>
+                                    <button type="button" @click="removePhoto()"
+                                        class="text-xs text-red-600 hover:text-red-700 font-semibold inline-flex items-center gap-1 cursor-pointer">
+                                        <i class="ti ti-trash"></i>
+                                        <span>Hapus Foto</span>
+                                    </button>
+                                </div>
+                            </template>
+
+                            <template x-if="isMarkedForDeletion">
+                                <p class="text-xs text-red-600 font-medium">Foto ditandai untuk dihapus saat Anda menekan tombol simpan.</p>
+                            </template>
+
+                            <!-- Hidden Inputs -->
+                            <input type="file" x-ref="editCameraInput" @change="handleFile($event)"
+                                accept="image/jpeg,image/png,image/webp,image/jpg" capture="environment" class="hidden">
+                            <input type="file" x-ref="editFileInput" @change="handleFile($event)"
+                                accept="image/jpeg,image/png,image/webp,image/jpg" class="hidden">
+
+                            <!-- Upload Buttons -->
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" @click="$refs.editCameraInput.click()" :disabled="isConverting"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-brand-border hover:bg-neutral-50 rounded-xl text-xs sm:text-sm font-semibold text-brand-espresso transition cursor-pointer disabled:opacity-50">
+                                    <i class="ti ti-camera text-base text-brand-primary"></i>
+                                    <span x-text="photoPreview ? 'Ganti via Kamera' : 'Ambil dari Kamera'"></span>
+                                </button>
+                                <button type="button" @click="$refs.editFileInput.click()" :disabled="isConverting"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-brand-border hover:bg-neutral-50 rounded-xl text-xs sm:text-sm font-semibold text-brand-espresso transition cursor-pointer disabled:opacity-50">
+                                    <i class="ti ti-photo text-base text-brand-espresso"></i>
+                                    <span x-text="photoPreview ? 'Ganti dari File' : 'Pilih dari File'"></span>
+                                </button>
+                            </div>
+
+                            <p class="text-[11px] text-brand-warm-gray">
+                                Format: <strong>JPG, JPEG, PNG, WEBP</strong>. Maks file <strong>10MB</strong>. Otomatis dikonversi ke WebP / JPEG (Safari/iOS) &le; 50KB di browser.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Status Aktif Switch -->
                 <div class="md:col-span-2 pt-2 border-t border-brand-border/60">
                     <label class="flex items-center gap-3 cursor-pointer">
@@ -386,4 +532,6 @@
         </div>
 
     </form>
+
+    <x-admin.photo-compressor-script />
 </div>
