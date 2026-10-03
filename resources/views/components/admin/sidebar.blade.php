@@ -12,7 +12,7 @@
     <!-- Top Section: Logo & Brand -->
     <div class="flex flex-col flex-1 min-h-0">
         <div class="h-20 flex items-center justify-between px-6 border-b border-brand-border">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center">
+            <a href="{{ route('admin.dashboard') }}" wire:navigate @click="sessionStorage.setItem('admin_sidebar_scroll', '0')" class="flex items-center">
                 <img src="{{ asset('assets/logo/logo.webp') }}" alt="Halala Food"
                     class="h-10 sm:h-11 w-auto object-contain">
             </a>
@@ -26,7 +26,41 @@
         </div>
 
         <!-- Navigation Menu -->
-        <div class="flex-1 overflow-y-auto py-6 space-y-6">
+        <div id="admin-sidebar-scroll"
+            x-data="{
+                init() {
+                    this.restore();
+                    this._navHandler = () => this.restore();
+                    window.addEventListener('livewire:navigated', this._navHandler);
+                },
+                destroy() {
+                    if (this._navHandler) {
+                        window.removeEventListener('livewire:navigated', this._navHandler);
+                    }
+                },
+                save() {
+                    sessionStorage.setItem('admin_sidebar_scroll', this.$el.scrollTop);
+                },
+                restore() {
+                    const el = this.$el;
+                    const apply = () => {
+                        const saved = sessionStorage.getItem('admin_sidebar_scroll');
+                        if (saved !== null) {
+                            el.scrollTop = parseInt(saved, 10);
+                        } else {
+                            const active = el.querySelector('[data-sidebar-active=\"true\"]');
+                            if (active) {
+                                active.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+                            }
+                        }
+                    };
+                    apply();
+                    requestAnimationFrame(apply);
+                }
+            }"
+            @scroll.debounce.50ms="save()"
+            @click="if ($event.target.closest('a')) { save(); if (window.innerWidth < 1024) sidebarOpen = false; }"
+            class="flex-1 overflow-y-auto py-6 space-y-6">
             <div>
                 <p class="px-6 text-xs font-bold text-brand-warm-gray uppercase tracking-wider mb-2">
                     Menu Utama
@@ -34,7 +68,8 @@
                 <nav class="space-y-1">
                     <!-- 1. Dashboard -->
                     @can('dashboard-view')
-                        <a href="{{ route('admin.dashboard') }}"
+                        <a href="{{ route('admin.dashboard') }}" wire:navigate
+                            @if(request()->routeIs('admin.dashboard')) data-sidebar-active="true" @endif
                             class="w-full flex items-center justify-between px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                             <div class="flex items-center gap-3.5">
                                 <i class="ti ti-layout-dashboard text-xl {{ request()->routeIs('admin.dashboard') ? 'text-white' : 'text-brand-primary' }}"></i>
@@ -45,7 +80,8 @@
 
                     <!-- 2. Pengguna -->
                     @can('user-manage')
-                        <a href="{{ route('admin.users') }}"
+                        <a href="{{ route('admin.users') }}" wire:navigate
+                            @if(request()->routeIs('admin.users*')) data-sidebar-active="true" @endif
                             class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.users*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                             <i class="ti ti-users text-xl {{ request()->routeIs('admin.users*') ? 'text-white' : 'text-brand-primary' }}"></i>
                             <span>Pengguna</span>
@@ -54,7 +90,8 @@
 
                     <!-- 3. Role & Permission -->
                     @canany(['role-manage', 'permission-manage'])
-                        <a href="{{ route('admin.roles') }}"
+                        <a href="{{ route('admin.roles') }}" wire:navigate
+                            @if(request()->routeIs('admin.roles*')) data-sidebar-active="true" @endif
                             class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.roles*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                             <i class="ti ti-shield-lock text-xl {{ request()->routeIs('admin.roles*') ? 'text-white' : 'text-brand-primary' }}"></i>
                             <span>Role & Permission</span>
@@ -71,7 +108,8 @@
                     </p>
                     <nav class="space-y-1">
                         @can('satuan-view')
-                            <a href="{{ route('admin.units') }}"
+                            <a href="{{ route('admin.units') }}" wire:navigate
+                                @if(request()->routeIs('admin.units*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.units*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-scale text-xl {{ request()->routeIs('admin.units*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Satuan</span>
@@ -79,7 +117,8 @@
                         @endcan
 
                         @can('bahan-baku-view')
-                            <a href="{{ route('admin.raw-materials') }}"
+                            <a href="{{ route('admin.raw-materials') }}" wire:navigate
+                                @if(request()->routeIs('admin.raw-materials*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.raw-materials*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-leaf text-xl {{ request()->routeIs('admin.raw-materials*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Bahan Baku &amp; Resep</span>
@@ -97,7 +136,8 @@
                     </p>
                     <nav class="space-y-1">
                         @can('produk-view')
-                            <a href="{{ route('admin.products') }}"
+                            <a href="{{ route('admin.products') }}" wire:navigate
+                                @if(request()->routeIs('admin.products*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.products*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-cookie text-xl {{ request()->routeIs('admin.products*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Produk Jadi</span>
@@ -105,7 +145,8 @@
                         @endcan
 
                         @can('produksi-view')
-                            <a href="{{ route('admin.production') }}"
+                            <a href="{{ route('admin.production') }}" wire:navigate
+                                @if(request()->routeIs('admin.production*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.production*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-flame text-xl {{ request()->routeIs('admin.production*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Produksi (Batch Masak)</span>
@@ -113,7 +154,8 @@
                         @endcan
 
                         @can('pembelian-view')
-                            <a href="{{ route('admin.purchases') }}"
+                            <a href="{{ route('admin.purchases') }}" wire:navigate
+                                @if(request()->routeIs('admin.purchases*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.purchases*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-shopping-cart text-xl {{ request()->routeIs('admin.purchases*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Pembelian Bahan</span>
@@ -131,7 +173,8 @@
                     </p>
                     <nav class="space-y-1">
                         @can('pengantaran-view')
-                            <a href="{{ route('admin.deliveries') }}"
+                            <a href="{{ route('admin.deliveries') }}" wire:navigate
+                                @if(request()->routeIs('admin.deliveries*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.deliveries*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-truck-delivery text-xl {{ request()->routeIs('admin.deliveries*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Pengantaran (Surat Jalan)</span>
@@ -139,7 +182,8 @@
                         @endcan
 
                         @can('toko-view')
-                            <a href="{{ route('admin.stores') }}"
+                            <a href="{{ route('admin.stores') }}" wire:navigate
+                                @if(request()->routeIs('admin.stores*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.stores*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-building-store text-xl {{ request()->routeIs('admin.stores*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Toko Mitra</span>
@@ -157,7 +201,8 @@
                     </p>
                     <nav class="space-y-1">
                         @can('faktur-view')
-                            <a href="{{ route('admin.invoices') }}"
+                            <a href="{{ route('admin.invoices') }}" wire:navigate
+                                @if(request()->routeIs('admin.invoices*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.invoices*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-receipt-2 text-xl {{ request()->routeIs('admin.invoices*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Faktur &amp; Piutang Toko</span>
@@ -165,7 +210,8 @@
                         @endcan
 
                         @can('laporan-view')
-                            <a href="{{ route('admin.reports') }}"
+                            <a href="{{ route('admin.reports') }}" wire:navigate
+                                @if(request()->routeIs('admin.reports*')) data-sidebar-active="true" @endif
                                 class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.reports*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                                 <i class="ti ti-report-analytics text-xl {{ request()->routeIs('admin.reports*') ? 'text-white' : 'text-brand-primary' }}"></i>
                                 <span>Laporan Bisnis</span>
@@ -182,7 +228,8 @@
                         Pengaturan
                     </p>
                     <nav class="space-y-1">
-                        <a href="{{ route('admin.settings') }}"
+                        <a href="{{ route('admin.settings') }}" wire:navigate
+                            @if(request()->routeIs('admin.settings*')) data-sidebar-active="true" @endif
                             class="w-full flex items-center gap-3.5 px-6 py-3.5 text-base font-semibold transition {{ request()->routeIs('admin.settings*') ? 'bg-brand-primary text-white' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/60' }}">
                             <i class="ti ti-settings text-xl {{ request()->routeIs('admin.settings*') ? 'text-white' : 'text-brand-primary' }}"></i>
                             <span>Pengaturan Usaha</span>
@@ -208,6 +255,24 @@
                 </nav>
             </div>
         </div>
+
+        <!-- Inline Restoration to eliminate any scroll jump on first render -->
+        <script>
+            (function() {
+                var el = document.getElementById('admin-sidebar-scroll');
+                if (el) {
+                    var saved = sessionStorage.getItem('admin_sidebar_scroll');
+                    if (saved !== null) {
+                        el.scrollTop = parseInt(saved, 10);
+                    } else {
+                        var active = el.querySelector('[data-sidebar-active="true"]');
+                        if (active) {
+                            active.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+                        }
+                    }
+                }
+            })();
+        </script>
     </div>
 
     <!-- Bottom Section: App Info & Version -->
