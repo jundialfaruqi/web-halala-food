@@ -39,8 +39,17 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
 
         $deliveryParam = request()->query('delivery');
         if ($deliveryParam) {
-            $delivery = Delivery::with(['store', 'items.product'])->find($deliveryParam);
+            $delivery = Delivery::with(['store', 'items.product', 'invoice'])->find($deliveryParam);
             if ($delivery) {
+                $activeInvoice = $delivery->invoice()->where('status', '!=', 'dibatalkan')->first();
+                if ($activeInvoice) {
+                    session()->flash('toast', [
+                        'message' => "Surat jalan {$delivery->delivery_number} sudah memiliki faktur ({$activeInvoice->invoice_number}).",
+                        'type' => 'info',
+                    ]);
+                    return redirect()->route('admin.invoices.show', $activeInvoice);
+                }
+
                 $this->delivery_id = $delivery->id;
                 $this->store_id = $delivery->store_id;
                 $this->populateFromDelivery($delivery);
@@ -159,7 +168,20 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
         $this->validate([
             'invoice_number' => ['required', 'string', 'max:50', 'unique:invoices,invoice_number'],
             'store_id' => ['required', 'exists:stores,id'],
-            'delivery_id' => ['nullable', 'exists:deliveries,id'],
+            'delivery_id' => [
+                'nullable',
+                'exists:deliveries,id',
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        $hasInvoice = Invoice::where('delivery_id', $value)
+                            ->where('status', '!=', 'dibatalkan')
+                            ->exists();
+                        if ($hasInvoice) {
+                            $fail('Surat jalan ini sudah memiliki faktur tagihan.');
+                        }
+                    }
+                },
+            ],
             'invoice_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
             'discount' => ['nullable', 'numeric', 'min:0'],
@@ -241,7 +263,21 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
     {
         $stores = Store::where('is_active', true)->orderBy('name')->get();
         $products = Product::where('is_active', true)->orderBy('name')->get();
-        $deliveries = Delivery::with('store')->orderByDesc('delivery_date')->take(30)->get();
+
+        $deliveries = Delivery::with('store')
+            ->where('status', '!=', 'dibatalkan')
+            ->where(function ($query) {
+                $query->whereDoesntHave('invoice', function ($q) {
+                    $q->where('status', '!=', 'dibatalkan');
+                });
+                if ($this->delivery_id) {
+                    $query->orWhere('id', $this->delivery_id);
+                }
+            })
+            ->orderByDesc('delivery_date')
+            ->orderByDesc('id')
+            ->take(30)
+            ->get();
 
         $selectedStore = $this->store_id ? Store::find($this->store_id) : null;
 

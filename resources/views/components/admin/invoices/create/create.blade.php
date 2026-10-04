@@ -58,8 +58,7 @@
                     @error('delivery_id')
                         <p class="text-xs text-red-600 font-medium mt-1">{{ $message }}</p>
                     @enderror
-                    <p class="text-xs text-brand-warm-gray mt-1">Memilih surat jalan akan otomatis mengisi toko dan
-                        rincian produk yang diantar.</p>
+                    <p class="text-xs text-brand-warm-gray mt-1">Hanya menampilkan surat jalan yang belum memiliki faktur. Memilih surat jalan akan otomatis mengisi toko dan rincian produk yang diantar.</p>
                 </div>
 
                 <!-- 3. Toko Mitra Tujuan -->

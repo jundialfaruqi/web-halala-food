@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
@@ -496,4 +497,76 @@ test('cancelling invoice deletes its damaged goods journal entry', function () {
     $invoice->refresh();
     expect($invoice->status)->toBe('dibatalkan');
     expect(JournalEntry::where('reference_type', 'invoice_damaged_goods')->where('reference_id', $invoice->id)->exists())->toBeFalse();
+});
+
+test('deliveries that already have an invoice are excluded from the invoice create select list', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    $store = Store::first();
+    $courier = User::where('email', 'courier@halala-food.id')->first() ?? $manager;
+
+    // 1. Create Delivery A (already has an invoice)
+    $deliveryA = Delivery::create([
+        'delivery_number' => 'SJ-WITH-INV-01',
+        'store_id' => $store->id,
+        'courier_id' => $courier->id,
+        'created_by' => $manager->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'selesai',
+        'total_items' => 10,
+        'total_amount' => 100000.0,
+    ]);
+
+    Invoice::create([
+        'invoice_number' => 'INV-FOR-DEL-A',
+        'delivery_id' => $deliveryA->id,
+        'store_id' => $store->id,
+        'invoice_date' => now()->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
+        'subtotal' => 100000.0,
+        'total_amount' => 100000.0,
+        'paid_amount' => 0.0,
+        'remaining_balance' => 100000.0,
+        'status' => 'belum_dibayar',
+    ]);
+
+    // 2. Create Delivery B (no invoice yet)
+    $deliveryB = Delivery::create([
+        'delivery_number' => 'SJ-NO-INV-02',
+        'store_id' => $store->id,
+        'courier_id' => $courier->id,
+        'created_by' => $manager->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'dikirim',
+        'total_items' => 5,
+        'total_amount' => 50000.0,
+    ]);
+
+    actingAs($manager);
+
+    $component = Livewire::test('admin.invoices.create');
+    $deliveries = $component->viewData('deliveries');
+
+    // Delivery A (has invoice) MUST NOT be in the list
+    expect($deliveries->pluck('id'))->not->toContain($deliveryA->id)
+        // Delivery B (no invoice) MUST be in the list
+        ->and($deliveries->pluck('id'))->toContain($deliveryB->id);
+
+    // 3. Submitting with delivery_id that already has an active invoice fails validation
+    $product = Product::first();
+    Livewire::test('admin.invoices.create')
+        ->set('invoice_number', 'INV-DOUBLE-LINK')
+        ->set('store_id', $store->id)
+        ->set('delivery_id', $deliveryA->id)
+        ->set('invoice_date', now()->toDateString())
+        ->set('due_date', now()->addDays(7)->toDateString())
+        ->set('items', [
+            [
+                'product_id' => $product->id,
+                'quantity' => 1,
+                'unit_price' => 10000.0,
+                'subtotal' => 10000.0,
+            ],
+        ])
+        ->call('save')
+        ->assertHasErrors(['delivery_id']);
 });
