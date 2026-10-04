@@ -32,4 +32,5 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/stores/routes', [StoreController::class, 'routes'])->name('api.stores.routes');
     Route::get('/stores', [StoreController::class, 'index'])->name('api.stores.index');
     Route::get('/stores/{store}', [StoreController::class, 'show'])->name('api.stores.show');
+    Route::match(['put', 'patch', 'post'], '/stores/{store}', [StoreController::class, 'update'])->name('api.stores.update');
 });
