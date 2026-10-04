@@ -15,6 +15,9 @@ class FixedAsset extends Model
         'asset_code',
         'purchase_date',
         'purchase_price',
+        'useful_life_months',
+        'accumulated_depreciation',
+        'last_depreciation_date',
         'book_value',
         'condition',
         'location',
@@ -41,8 +44,17 @@ class FixedAsset extends Model
     protected $casts = [
         'purchase_date' => 'date',
         'purchase_price' => 'float',
+        'useful_life_months' => 'integer',
+        'accumulated_depreciation' => 'float',
+        'last_depreciation_date' => 'date',
         'book_value' => 'float',
     ];
+
+    public function getMonthlyDepreciationAttribute(): float
+    {
+        $months = max(1, $this->useful_life_months ?: 36);
+        return round($this->purchase_price / $months, 2);
+    }
 
     public function journalEntry()
     {

@@ -36,10 +36,18 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
     public string $category = 'peralatan';
     public string $purchase_date = '';
     public float $purchase_price = 0;
+    public int $useful_life_months = 36;
     public string $condition = 'baik';
     public string $location = '';
     public string $notes = '';
     public ?int $account_id = null; // cash/bank account used to pay (optional)
+
+    // Depreciation modal state
+    public bool $showDepreciationModal = false;
+    public ?int $depreciatingAssetId = null;
+    public string $depreciationDate = '';
+    public float|int|string $depreciationAmount = 0;
+    public string $depreciationNotes = '';
 
     public function updatedSearch(): void { $this->resetPage(); }
     public function updatedCategoryFilter(): void { $this->resetPage(); }
@@ -65,10 +73,65 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
         $this->reset(['name', 'category', 'purchase_price', 'condition', 'location', 'notes']);
         $this->purchase_date = Carbon::now()->format('Y-m-d');
         $this->category = 'peralatan';
+        $this->useful_life_months = 36;
         $this->condition = 'baik';
         $this->account_id = Account::first()?->id;
         $this->editingId = null;
         $this->showAssetModal = true;
+    }
+
+    public function openDepreciationModal(int $id): void
+    {
+        $asset = FixedAsset::findOrFail($id);
+        $this->depreciatingAssetId = $id;
+        $this->depreciationDate = Carbon::now()->format('Y-m-d');
+        $this->depreciationAmount = min($asset->book_value, $asset->monthly_depreciation);
+        $this->depreciationNotes = "Penyusutan Bulanan {$asset->name} ({$asset->asset_code})";
+        $this->showDepreciationModal = true;
+    }
+
+    public function closeDepreciationModal(): void
+    {
+        $this->showDepreciationModal = false;
+        $this->depreciatingAssetId = null;
+    }
+
+    public function saveDepreciation(): void
+    {
+        if (Gate::denies('aset-edit') && Gate::denies('aset-create')) {
+            abort(403);
+        }
+
+        $asset = FixedAsset::findOrFail($this->depreciatingAssetId);
+        if (is_string($this->depreciationAmount)) {
+            $cleaned = preg_replace('/[^0-9]/', '', $this->depreciationAmount);
+            $this->depreciationAmount = $cleaned !== '' ? (float) $cleaned : 0.0;
+        }
+
+        $maxAmount = (float) $asset->book_value;
+        $this->validate([
+            'depreciationDate' => 'required|date',
+            'depreciationAmount' => ['required', 'numeric', 'min:1', "max:{$maxAmount}"],
+            'depreciationNotes' => 'nullable|string|max:500',
+        ], [
+            'depreciationDate.required' => 'Tanggal penyusutan wajib diisi.',
+            'depreciationAmount.required' => 'Nominal penyusutan wajib diisi.',
+            'depreciationAmount.min' => 'Nominal penyusutan minimal Rp 1.',
+            'depreciationAmount.max' => 'Nominal penyusutan tidak boleh melebihi sisa nilai buku (Rp ' . number_format($maxAmount, 0, ',', '.') . ').',
+        ]);
+
+        DB::transaction(function () use ($asset) {
+            AccountingService::recordFixedAssetDepreciation(
+                $asset,
+                (float) $this->depreciationAmount,
+                $this->depreciationDate,
+                $this->depreciationNotes
+            );
+        });
+
+        $this->showDepreciationModal = false;
+        $this->depreciatingAssetId = null;
+        session()->flash('success', "Penyusutan aset '{$asset->name}' sebesar Rp " . number_format((float) $this->depreciationAmount, 0, ',', '.') . " berhasil dicatat dan diposting ke Jurnal Akuntansi.");
     }
 
     public function openEditModal(int $id): void
@@ -125,6 +188,8 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
                     'asset_code'     => FixedAsset::generateAssetCode(),
                     'purchase_date'  => $this->purchase_date,
                     'purchase_price' => $this->purchase_price,
+                    'useful_life_months' => max(1, $this->useful_life_months ?: 36),
+                    'accumulated_depreciation' => 0.00,
                     'book_value'     => $this->purchase_price,
                     'condition'      => $this->condition,
                     'location'       => $this->location ?: null,
@@ -168,10 +233,15 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
         $asset = FixedAsset::findOrFail($this->deletingId);
 
         DB::transaction(function () use ($asset) {
-            // Delete associated journal entry if exists
+            // Delete associated purchase journal entry if exists
             if ($asset->journal_entry_id) {
                 JournalEntry::find($asset->journal_entry_id)?->delete();
             }
+
+            // Delete associated depreciation journal entries if exist
+            JournalEntry::where('reference_type', 'fixed_asset_depreciation')
+                ->where('reference_id', $asset->id)
+                ->delete();
 
             $name = $asset->name;
             $asset->delete();
@@ -197,12 +267,14 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
             ->paginate(12);
 
         $totalValue  = FixedAsset::whereIn('condition', ['baik', 'rusak_ringan'])->sum('book_value');
+        $totalDepreciation = FixedAsset::sum('accumulated_depreciation');
         $totalAssets = FixedAsset::count();
         $activeCount = FixedAsset::whereIn('condition', ['baik', 'rusak_ringan'])->count();
         $accounts    = Account::orderBy('name')->get();
+        $depreciatingAsset = $this->depreciatingAssetId ? FixedAsset::find($this->depreciatingAssetId) : null;
 
         $hasActiveFilters = $this->search !== '' || $this->categoryFilter !== '' || $this->conditionFilter !== '';
 
-        return compact('assets', 'categories', 'conditions', 'totalValue', 'totalAssets', 'activeCount', 'accounts', 'hasActiveFilters');
+        return compact('assets', 'categories', 'conditions', 'totalValue', 'totalDepreciation', 'totalAssets', 'activeCount', 'accounts', 'hasActiveFilters', 'depreciatingAsset');
     }
 };

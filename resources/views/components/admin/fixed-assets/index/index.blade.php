@@ -42,18 +42,32 @@
     @endif
 
     {{-- Summary Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {{-- Total Nilai Aset --}}
         <div class="p-5 rounded-xl border border-brand-border bg-white space-y-3">
             <div class="flex items-center justify-between pb-2 border-b border-brand-border/60">
                 <div>
-                    <h2 class="text-base font-bold text-brand-espresso">Total Nilai Aset</h2>
-                    <p class="text-xs text-brand-warm-gray">Nilai buku aset aktif & rusak ringan</p>
+                    <h2 class="text-base font-bold text-brand-espresso">Nilai Buku Aset</h2>
+                    <p class="text-xs text-brand-warm-gray">Nilai aset setelah penyusutan</p>
                 </div>
                 <span class="text-xs font-semibold text-brand-warm-gray uppercase tracking-wider">Aset Tetap</span>
             </div>
             <p class="text-3xl font-mono font-extrabold text-brand-espresso">
                 Rp {{ number_format($totalValue, 0, ',', '.') }}
+            </p>
+        </div>
+
+        {{-- Akumulasi Penyusutan --}}
+        <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-amber-200/60">
+                <div>
+                    <h2 class="text-base font-bold text-amber-900">Akumulasi Depresiasi</h2>
+                    <p class="text-xs text-amber-700">Total nilai yang telah disusutkan</p>
+                </div>
+                <span class="text-xs font-semibold text-amber-700 uppercase tracking-wider">Akumulasi</span>
+            </div>
+            <p class="text-3xl font-mono font-extrabold text-amber-900">
+                Rp {{ number_format($totalDepreciation, 0, ',', '.') }}
             </p>
         </div>
 
@@ -172,10 +186,14 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3.5 text-right hidden md:table-cell">
-                                <span
-                                    class="font-mono font-semibold text-sm {{ $asset->book_value < $asset->purchase_price ? 'text-brand-warm-gray' : 'text-brand-espresso' }}">
+                                <span class="font-mono font-semibold text-sm {{ $asset->book_value < $asset->purchase_price ? 'text-amber-700 font-bold' : 'text-brand-espresso' }}">
                                     Rp {{ number_format($asset->book_value, 0, ',', '.') }}
                                 </span>
+                                @if ($asset->accumulated_depreciation > 0)
+                                    <span class="block text-[11px] font-mono text-brand-warm-gray">
+                                        Susut: Rp {{ number_format($asset->accumulated_depreciation, 0, ',', '.') }}
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-4 py-3.5 text-center">
                                 @php
@@ -208,6 +226,13 @@
                                     </div>
                                 @else
                                     <div class="flex items-center justify-center gap-1">
+                                        @if ($asset->book_value > 0)
+                                            <button wire:click="openDepreciationModal({{ $asset->id }})"
+                                                class="p-2 text-brand-warm-gray hover:text-amber-700 rounded-lg hover:bg-amber-50 transition cursor-pointer"
+                                                title="Catat & Posting Penyusutan Bulanan">
+                                                <i class="ti ti-chart-arrows-vertical text-sm"></i>
+                                            </button>
+                                        @endif
                                         @can('aset-edit')
                                             <button wire:click="openEditModal({{ $asset->id }})"
                                                 class="p-2 text-brand-warm-gray hover:text-brand-primary rounded-lg hover:bg-neutral-100 transition cursor-pointer"
@@ -367,6 +392,31 @@
                                 </p>
                             </div>
                         @endif
+
+                        {{-- Estimasi Masa Manfaat (Bulan) --}}
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
+                                Estimasi Masa Manfaat (Bulan)
+                            </label>
+                            <div class="grid grid-cols-3 gap-2 mb-2">
+                                <button type="button" wire:click="$set('useful_life_months', 24)"
+                                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $useful_life_months == 24 ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border' }}">
+                                    24 Bln (2 Thn)
+                                </button>
+                                <button type="button" wire:click="$set('useful_life_months', 36)"
+                                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $useful_life_months == 36 ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border' }}">
+                                    36 Bln (3 Thn)
+                                </button>
+                                <button type="button" wire:click="$set('useful_life_months', 48)"
+                                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $useful_life_months == 48 ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border' }}">
+                                    48 Bln (4 Thn)
+                                </button>
+                            </div>
+                            <input type="number" wire:model="useful_life_months" min="1" max="240"
+                                placeholder="36"
+                                class="w-full px-4 py-2 bg-white border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                            <p class="text-xs text-brand-warm-gray mt-1">Digunakan untuk acuan perhitungan rekomendasi beban depresiasi bulanan.</p>
+                        </div>
                     @endif
 
                     {{-- Kondisi & Lokasi --}}
@@ -418,6 +468,91 @@
                         <span wire:loading wire:target="saveAsset">Menyimpan...</span>
                     </button>
                 </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Modal Depresiasi Bulanan Aset Tetap --}}
+    @if ($showDepreciationModal && $depreciatingAsset)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+            <div class="bg-white rounded-2xl border border-brand-border shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div class="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-neutral-50/50">
+                    <div>
+                        <h2 class="text-base font-bold text-brand-espresso">Posting Penyusutan Bulanan</h2>
+                        <span class="text-xs font-mono text-brand-warm-gray">{{ $depreciatingAsset->asset_code }} &bull; {{ $depreciatingAsset->name }}</span>
+                    </div>
+                    <button type="button" wire:click="closeDepreciationModal" class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                        <i class="ti ti-x text-lg"></i>
+                    </button>
+                </div>
+
+                <form wire:submit.prevent="saveDepreciation" class="p-6 space-y-4">
+                    {{-- Asset info summary --}}
+                    <div class="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2">
+                        <div class="flex justify-between text-xs text-amber-900 font-medium">
+                            <span>Harga Perolehan:</span>
+                            <span class="font-mono font-bold">Rp {{ number_format($depreciatingAsset->purchase_price, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-amber-900 font-medium">
+                            <span>Akumulasi Depresiasi:</span>
+                            <span class="font-mono font-bold text-amber-800">Rp {{ number_format($depreciatingAsset->accumulated_depreciation, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="border-t border-amber-200/80 pt-1.5 flex justify-between text-sm font-bold text-amber-950">
+                            <span>Nilai Buku Saat Ini:</span>
+                            <span class="font-mono text-base text-amber-900">Rp {{ number_format($depreciatingAsset->book_value, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="pt-1 text-[11px] text-brand-warm-gray flex justify-between">
+                            <span>Estimasi Rekomendasi / Bulan:</span>
+                            <span class="font-semibold text-brand-espresso">Rp {{ number_format($depreciatingAsset->monthly_depreciation, 0, ',', '.') }} (Masa: {{ $depreciatingAsset->useful_life_months }} bln)</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {{-- Tanggal Penyusutan --}}
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1.5">
+                                Tanggal Jurnal <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" wire:model="depreciationDate" class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-medium text-brand-espresso focus:outline-none focus:border-brand-primary">
+                            @error('depreciationDate') <span class="text-xs text-red-600 font-semibold block mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        {{-- Nominal Depresiasi --}}
+                        <div x-data="{
+                            formatRupiah(val) {
+                                if (!val && val !== 0) return '';
+                                let clean = val.toString().replace(/[^0-9]/g, '').replace(/^0+/, '');
+                                return clean ? 'Rp ' + clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+                            }
+                        }">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1.5">
+                                Nominal Susut <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                x-on:input="$event.target.value = formatRupiah($event.target.value)"
+                                wire:model.defer="depreciationAmount"
+                                placeholder="Rp 0"
+                                class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-mono font-bold text-brand-espresso focus:outline-none focus:border-brand-primary">
+                            @error('depreciationAmount') <span class="text-xs text-red-600 font-semibold block mt-1">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Catatan --}}
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1.5">Catatan Memo Jurnal</label>
+                        <input type="text" wire:model="depreciationNotes" placeholder="Penyusutan bulanan aset..." class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
+                    </div>
+
+                    <div class="pt-3 border-t border-brand-border flex items-center justify-end gap-3">
+                        <button type="button" wire:click="closeDepreciationModal" class="px-4 py-2 rounded-xl text-sm font-bold text-brand-espresso border border-brand-border hover:bg-neutral-100 transition cursor-pointer">
+                            Batal
+                        </button>
+                        <button type="submit" wire:loading.attr="disabled" class="px-5 py-2 bg-brand-primary text-white rounded-xl text-sm font-bold hover:bg-brand-primary/90 transition flex items-center gap-2 cursor-pointer shadow-xs">
+                            <span wire:loading.remove wire:target="saveDepreciation">Posting Jurnal Depresiasi</span>
+                            <span wire:loading wire:target="saveDepreciation">Memproses...</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif

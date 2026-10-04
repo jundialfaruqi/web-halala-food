@@ -373,6 +373,10 @@
                                         class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $category === 'Belanja Bahan Baku' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50' }}">
                                         Belanja Bahan
                                     </button>
+                                    <button type="button" wire:click="$set('category', 'Gaji & Upah Karyawan')"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $category === 'Gaji & Upah Karyawan' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50' }}">
+                                        Gaji &amp; Upah
+                                    </button>
                                     <button type="button" wire:click="$set('category', 'Beli Kemasan & Stiker')"
                                         class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $category === 'Beli Kemasan & Stiker' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50' }}">
                                         Kemasan &amp; Stiker
@@ -384,6 +388,10 @@
                                     <button type="button" wire:click="$set('category', 'Bensin & Transportasi')"
                                         class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $category === 'Bensin & Transportasi' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50' }}">
                                         Bensin &amp; Kurir
+                                    </button>
+                                    <button type="button" wire:click="$set('category', 'Pelunasan Hutang Supplier')"
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $category === 'Pelunasan Hutang Supplier' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50' }}">
+                                        Hutang Supplier
                                     </button>
                                     <button type="button" wire:click="$set('category', 'Operasional Lainnya')"
                                         class="px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer {{ $category === 'Operasional Lainnya' ? 'bg-brand-primary text-white border-brand-primary' : 'bg-white text-brand-espresso border-brand-border hover:bg-neutral-50' }}">

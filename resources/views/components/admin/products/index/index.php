@@ -104,4 +104,52 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
             'message' => "Produk '{$name}' berhasil dihapus.",
         ];
     }
+
+    /**
+     * Perform Stock Opname (Physical Inventory Adjustment) for a finished product.
+     */
+    public function adjustProductStock(int $id, int $physicalStock, string $reason, string $date): array
+    {
+        if (Gate::denies('produk-edit')) {
+            return ['success' => false, 'message' => 'Anda tidak memiliki izin untuk menyesuaikan stok produk.'];
+        }
+
+        $product = Product::find($id);
+        if (! $product) {
+            return ['success' => false, 'message' => 'Data produk tidak ditemukan.'];
+        }
+
+        $currentStock = (int) $product->stock_ready;
+        $diff = $physicalStock - $currentStock;
+
+        if ($diff == 0) {
+            return ['success' => false, 'message' => 'Stok fisik sama dengan stok sistem (tidak ada selisih).'];
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($product, $physicalStock, $currentStock, $diff, $reason, $date) {
+            $cost = (float) $product->material_cost;
+            if ($cost <= 0) {
+                $cost = (float) $product->consignment_price;
+            }
+
+            // 1. Update stock
+            $product->stock_ready = $physicalStock;
+            $product->save();
+
+            // 2. Record accounting journal
+            \App\Services\AccountingService::recordStockAdjustment(
+                $product,
+                (float) $diff,
+                $cost,
+                $reason ?: 'Stock Opname Produk Jadi',
+                $date ?: now()->toDateString()
+            );
+        });
+
+        $diffStr = ($diff > 0 ? '+' : '') . $diff . ' ' . ($product->unitModel?->short_name ?? $product->unit ?? 'pcs');
+        return [
+            'success' => true,
+            'message' => "Stok produk '{$product->name}' berhasil disesuaikan ({$diffStr}) dan diposting ke Jurnal Akuntansi.",
+        ];
+    }
 };

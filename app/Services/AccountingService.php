@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\Account;
 use App\Models\CashTransaction;
 use App\Models\ChartOfAccount;
+use App\Models\FixedAsset;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Models\JournalEntry;
+use App\Models\Product;
 use App\Models\ProductionBatch;
+use App\Models\RawMaterial;
 use App\Models\RawMaterialPurchase;
 use Carbon\Carbon;
 use Database\Seeders\AccountingSeeder;
@@ -116,8 +120,8 @@ class AccountingService
      */
     public static function recordCashTransaction(CashTransaction $transaction): ?JournalEntry
     {
-        if ($transaction->reference_type === 'purchase' || $transaction->reference_type === 'invoice_payment') {
-            return null; // Handled directly by recordPurchase() and recordInvoicePayment() to avoid duplicate journals
+        if ($transaction->reference_type === 'purchase' || $transaction->reference_type === 'invoice_payment' || $transaction->reference_type === 'purchase_payment') {
+            return null; // Handled directly by recordPurchase(), recordInvoicePayment(), and recordPurchaseDebtPayment() to avoid duplicate journals
         }
 
         $amount = (float) $transaction->amount;
@@ -148,7 +152,11 @@ class AccountingService
                     || str_contains(strtolower($mat->name), $cat);
             });
 
-            if ($matchedMaterial) {
+            if (str_contains($cat, 'gaji') || str_contains($cat, 'upah') || str_contains($cat, 'honor') || str_contains($cat, 'lembur') || str_contains($cat, 'thr') || str_contains($cat, 'bonus') || str_contains($cat, 'insentif')) {
+                $expenseCode = '6-1007'; // Beban Gaji & Upah Karyawan / Kurir
+            } elseif (str_contains($cat, 'hutang supplier') || str_contains($cat, 'bayar hutang') || str_contains($cat, 'pelunasan hutang') || str_contains($cat, 'utang supplier')) {
+                $expenseCode = '2-1000'; // Pelunasan Hutang Usaha
+            } elseif ($matchedMaterial) {
                 $expenseCode = self::getAccountCodeForRawMaterial($matchedMaterial->id);
             } elseif (str_contains($cat, 'bahan') || str_contains($cat, 'baku') || str_contains($cat, 'kacang') || str_contains($cat, 'gula') || str_contains($cat, 'susu') || str_contains($cat, 'margarin') || str_contains($cat, 'wijen')) {
                 $expenseCode = '1-1300'; // Pembelian bahan baku umum
@@ -160,6 +168,8 @@ class AccountingService
                 $expenseCode = '6-1003';
             } elseif (str_contains($cat, 'rusak') || str_contains($cat, 'retur') || str_contains($cat, 'basi') || str_contains($cat, 'kadaluarsa') || str_contains($cat, 'reject')) {
                 $expenseCode = '6-1004';
+            } elseif (str_contains($cat, 'susut') || str_contains($cat, 'depresiasi')) {
+                $expenseCode = '6-1005';
             }
 
             $items[] = ['account_code' => $expenseCode, 'debit' => $amount, 'credit' => 0, 'memo' => $transaction->category];
@@ -781,11 +791,232 @@ class AccountingService
     }
 
     /**
+     * Record payment for Tempo/Credit Raw Material Purchase (Pelunasan Hutang Supplier)
+     * Debit: 2-1000 Hutang Usaha
+     * Credit: 1-1001 (Kas Tunai) or 1-1002 (Kas Bank)
+     */
+    public static function recordPurchaseDebtPayment(
+        RawMaterialPurchase $purchase,
+        Account $account,
+        float $amount,
+        ?string $date = null,
+        ?string $notes = null
+    ): ?JournalEntry {
+        if ($amount <= 0) {
+            return null;
+        }
+
+        self::ensureChartOfAccountsExist();
+
+        $txDate = $date ? Carbon::parse($date)->format('Y-m-d') : Carbon::now()->format('Y-m-d');
+        $isBank = (
+            str_contains(strtolower($account->name), 'bank') ||
+            str_contains(strtolower($account->name), 'bca') ||
+            str_contains(strtolower($account->name), 'bri') ||
+            str_contains(strtolower($account->name), 'mandiri') ||
+            str_contains(strtolower($account->name), 'bni')
+        );
+        $cashCode = $isBank ? '1-1002' : '1-1001';
+
+        // 1. Decrement cash account
+        $account->decrement('balance', $amount);
+
+        // 2. Create cash transaction in Cash Book
+        $desc = $notes ?: "Pelunasan Hutang Pembelian {$purchase->purchase_number} ke Supplier {$purchase->supplier_name}";
+        CashTransaction::create([
+            'transaction_date' => $txDate,
+            'account_id' => $account->id,
+            'type' => 'expense',
+            'category' => 'Pelunasan Hutang Supplier',
+            'amount' => $amount,
+            'reference_type' => 'purchase_payment',
+            'reference_id' => $purchase->id,
+            'description' => $desc,
+        ]);
+
+        // 3. Post Journal Entry
+        $items = [
+            [
+                'account_code' => '2-1000', // Hutang Usaha (-)
+                'debit' => $amount,
+                'credit' => 0,
+                'memo' => "Pelunasan Hutang {$purchase->purchase_number} - Supplier: {$purchase->supplier_name}",
+            ],
+            [
+                'account_code' => $cashCode, // Kas/Bank (-)
+                'debit' => 0,
+                'credit' => $amount,
+                'memo' => "Kas Keluar: {$account->name}",
+            ],
+        ];
+
+        $journal = self::postEntry(
+            $txDate,
+            "Pelunasan Hutang Pembelian {$purchase->purchase_number} ({$purchase->supplier_name})",
+            $items,
+            'purchase_payment',
+            $purchase->id
+        );
+
+        // 4. Update purchase
+        $newPaid = (float) $purchase->paid_amount + $amount;
+        $purchase->paid_amount = $newPaid;
+        if ($newPaid >= (float) $purchase->total_amount) {
+            $purchase->payment_status = 'lunas';
+        }
+        $purchase->paid_at = Carbon::parse($txDate);
+        $purchase->paid_account_id = $account->id;
+        $purchase->save();
+
+        return $journal;
+    }
+
+    /**
+     * Record monthly depreciation for Fixed Asset
+     * Debit: 6-1005 (Beban Penyusutan Aset Tetap)
+     * Credit: 1-2100 (Akumulasi Penyusutan Aset Tetap)
+     */
+    public static function recordFixedAssetDepreciation(
+        FixedAsset $asset,
+        float $amount,
+        ?string $date = null,
+        ?string $notes = null
+    ): ?JournalEntry {
+        if ($amount <= 0) {
+            return null;
+        }
+
+        self::ensureChartOfAccountsExist();
+
+        $depDate = $date ? Carbon::parse($date)->format('Y-m-d') : Carbon::now()->format('Y-m-d');
+        $desc = $notes ?: "Penyusutan Aset Tetap: {$asset->name} ({$asset->asset_code})";
+
+        $items = [
+            [
+                'account_code' => '6-1005', // Beban Penyusutan Aset Tetap (+)
+                'debit' => $amount,
+                'credit' => 0,
+                'memo' => "Beban Depresiasi {$asset->name} ({$asset->asset_code})",
+            ],
+            [
+                'account_code' => '1-2100', // Akumulasi Penyusutan Aset Tetap (+)
+                'debit' => 0,
+                'credit' => $amount,
+                'memo' => "Akum. Depresiasi {$asset->name} ({$asset->asset_code})",
+            ],
+        ];
+
+        $journal = self::postEntry(
+            $depDate,
+            $desc,
+            $items,
+            'fixed_asset_depreciation',
+            $asset->id
+        );
+
+        // Update asset
+        $newAccum = (float) $asset->accumulated_depreciation + $amount;
+        $asset->accumulated_depreciation = $newAccum;
+        $asset->book_value = max(0, (float) $asset->purchase_price - $newAccum);
+        $asset->last_depreciation_date = $depDate;
+        $asset->save();
+
+        return $journal;
+    }
+
+    /**
+     * Auto journal for Stock Opname / Physical Inventory Adjustment
+     * Model can be RawMaterial or Product
+     *
+     * If diffQty < 0 (Selisih Kurang / Kehilangan / Rusak):
+     *   Debit: 6-1006 Beban Selisih Stok Opname / Kehilangan Persediaan
+     *   Credit: Persediaan (Bahan Baku / Produk Jadi)
+     *
+     * If diffQty > 0 (Selisih Lebih / Penyesuaian Positif):
+     *   Debit: Persediaan (Bahan Baku / Produk Jadi)
+     *   Credit: 6-1006 Beban Selisih Stok Opname / Koreksi Persediaan
+     */
+    public static function recordStockAdjustment(
+        RawMaterial|Product $item,
+        float $diffQty,
+        float $costPerUnit,
+        string $reason = 'Stock Opname',
+        ?string $date = null
+    ): ?JournalEntry {
+        if ($diffQty == 0) {
+            return null;
+        }
+
+        self::ensureChartOfAccountsExist();
+
+        $totalValue = round(abs($diffQty) * $costPerUnit, 2);
+        if ($totalValue <= 0) {
+            return null;
+        }
+
+        $adjDate = $date ? Carbon::parse($date)->format('Y-m-d') : Carbon::now()->format('Y-m-d');
+
+        if ($item instanceof RawMaterial) {
+            $inventoryCode = self::getAccountCodeForRawMaterial($item->id);
+            $itemName = "Bahan Baku: {$item->name}";
+            $unit = $item->display_unit;
+        } else {
+            $inventoryCode = '1-1400'; // Persediaan Produk Jadi
+            $itemName = "Produk Jadi: {$item->name}";
+            $unit = $item->unitModel?->short_name ?? $item->unit ?? 'pcs';
+        }
+
+        $formattedDiff = ($diffQty > 0 ? '+' : '') . number_format($diffQty, 2, ',', '.') . ' ' . $unit;
+        $memo = "Stock Opname {$itemName} ({$formattedDiff}) - {$reason}";
+
+        $items = [];
+        if ($diffQty < 0) {
+            // Selisih Kurang (Kehilangan / Rusak)
+            $items[] = [
+                'account_code' => '6-1006', // Beban Selisih Stok Opname
+                'debit' => $totalValue,
+                'credit' => 0,
+                'memo' => $memo,
+            ];
+            $items[] = [
+                'account_code' => $inventoryCode, // Persediaan (-)
+                'debit' => 0,
+                'credit' => $totalValue,
+                'memo' => "Penurunan persediaan fisik: {$item->name}",
+            ];
+        } else {
+            // Selisih Lebih (Temuan / Penyesuaian Positif)
+            $items[] = [
+                'account_code' => $inventoryCode, // Persediaan (+)
+                'debit' => $totalValue,
+                'credit' => 0,
+                'memo' => "Peningkatan persediaan fisik: {$item->name}",
+            ];
+            $items[] = [
+                'account_code' => '6-1006', // Koreksi Beban Persediaan
+                'debit' => 0,
+                'credit' => $totalValue,
+                'memo' => $memo,
+            ];
+        }
+
+        $refType = ($item instanceof RawMaterial) ? 'stock_opname_material' : 'stock_opname_product';
+
+        return self::postEntry(
+            $adjDate,
+            "Penyesuaian Fisik (Stock Opname) {$itemName}: {$reason}",
+            $items,
+            $refType,
+            $item->id
+        );
+    }
+
+    /**
      * Ensure chart of accounts and all raw material sub-accounts exist.
      */
     public static function ensureChartOfAccountsExist(): void
     {
-        if (ChartOfAccount::count() === 0) {
+        if (ChartOfAccount::whereIn('code', ['1-2000', '1-2100', '6-1005', '6-1006', '6-1007'])->count() < 5) {
             $seeder = new AccountingSeeder;
             $seeder->run();
         }
@@ -793,3 +1024,4 @@ class AccountingService
         self::syncAllRawMaterialAccounts();
     }
 }
+

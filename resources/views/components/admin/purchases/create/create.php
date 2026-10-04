@@ -281,6 +281,10 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                 'purchase_date' => $this->purchase_date,
                 'total_amount' => $total,
                 'payment_method' => $this->payment_method,
+                'payment_status' => $this->payment_method === 'tempo' ? 'belum_lunas' : 'lunas',
+                'paid_amount' => $this->payment_method === 'tempo' ? 0.00 : $total,
+                'paid_at' => $this->payment_method === 'tempo' ? null : $this->purchase_date,
+                'paid_account_id' => $this->payment_method === 'tempo' ? null : $this->account_id,
                 'notes' => trim($this->notes) !== '' ? trim($this->notes) : null,
                 'created_by' => Auth::id(),
             ]);

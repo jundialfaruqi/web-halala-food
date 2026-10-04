@@ -316,6 +316,45 @@
         }
     },
 
+    // Opname Material Modal State
+    showOpnameModal: false,
+    opnameTarget: { id: null, name: '', stock: 0, unit_short: '', physical_stock: 0, reason: '', date: '' },
+
+    openOpnameMaterialModal(mat) {
+        this.opnameTarget = {
+            id: mat.id,
+            name: mat.name,
+            stock: mat.stock,
+            unit_short: mat.unit_short,
+            physical_stock: mat.stock,
+            reason: '',
+            date: new Date().toISOString().slice(0, 10)
+        };
+        this.showOpnameModal = true;
+    },
+
+    async executeMaterialOpname() {
+        if (!this.opnameTarget.id) return;
+        this.isProcessing = true;
+        const res = await $wire.adjustMaterialStock(
+            this.opnameTarget.id,
+            parseFloat(this.opnameTarget.physical_stock) || 0,
+            this.opnameTarget.reason,
+            this.opnameTarget.date
+        );
+        this.isProcessing = false;
+
+        if (res.success) {
+            const m = this.materials.find(item => item.id === this.opnameTarget.id);
+            if (m) m.stock = parseFloat(this.opnameTarget.physical_stock) || 0;
+            this.showOpnameModal = false;
+            this.notify(res.message, 'success');
+            $wire.$refresh();
+        } else {
+            this.notify(res.message, 'error');
+        }
+    },
+
     // Open Recipe Modal
     openRecipeModal(product) {
         this.selectedProduct = product;
@@ -543,6 +582,11 @@
                             <td class="py-4 px-6 text-right">
                                 <div class="inline-flex items-center gap-1">
                                     @can('bahan-baku-edit')
+                                        <button type="button" @click="openOpnameMaterialModal(mat)"
+                                            class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-amber-700 hover:bg-brand-soft-cream/60 transition cursor-pointer"
+                                            title="Stock Opname / Sesuaikan Fisik">
+                                            <i class="ti ti-clipboard-check text-lg"></i>
+                                        </button>
                                         <button type="button" @click="openEditMaterialModal(mat)"
                                             class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-brand-primary hover:bg-brand-soft-cream/60 transition cursor-pointer"
                                             title="Ubah Data Bahan">
@@ -1117,6 +1161,79 @@
                     </button>
                 </div>
 
+    <!-- Modal Stock Opname Bahan Baku -->
+    <div x-cloak x-show="showOpnameModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 text-center">
+            <div x-show="showOpnameModal" x-transition.opacity.duration.200ms
+                class="fixed inset-0 bg-neutral-900/40 backdrop-blur-xs" @click="showOpnameModal = false"></div>
+
+            <div x-show="showOpnameModal" x-transition.scale.duration.200ms
+                class="relative bg-white rounded-2xl max-w-lg w-full p-6 text-left shadow-xl border border-brand-border space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-brand-border">
+                    <div>
+                        <h3 class="text-base font-bold text-brand-espresso">Stock Opname Bahan Baku</h3>
+                        <p class="text-xs text-brand-warm-gray" x-text="opnameTarget.name"></p>
+                    </div>
+                    <button type="button" @click="showOpnameModal = false" class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                        <i class="ti ti-x text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2">
+                    <div class="flex justify-between text-xs text-amber-900 font-medium">
+                        <span>Stok Sistem Saat Ini:</span>
+                        <span class="font-mono font-bold" x-text="opnameTarget.stock + ' ' + opnameTarget.unit_short"></span>
+                    </div>
+                    <div class="flex justify-between text-xs text-amber-900 font-medium">
+                        <span>Stok Fisik Dihitung:</span>
+                        <span class="font-mono font-bold" x-text="(opnameTarget.physical_stock || 0) + ' ' + opnameTarget.unit_short"></span>
+                    </div>
+                    <div class="border-t border-amber-200/80 pt-1.5 flex justify-between text-sm font-bold"
+                        :class="(opnameTarget.physical_stock - opnameTarget.stock) < 0 ? 'text-red-700' : ((opnameTarget.physical_stock - opnameTarget.stock) > 0 ? 'text-emerald-700' : 'text-brand-warm-gray')">
+                        <span>Selisih:</span>
+                        <span class="font-mono" x-text="((opnameTarget.physical_stock - opnameTarget.stock) > 0 ? '+' : '') + Math.round((opnameTarget.physical_stock - opnameTarget.stock) * 100) / 100 + ' ' + opnameTarget.unit_short"></span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1">
+                                Tanggal Opname <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" x-model="opnameTarget.date"
+                                class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-medium text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1">
+                                Stok Fisik Riil <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" step="any" min="0" x-model="opnameTarget.physical_stock"
+                                class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-mono font-bold text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1">
+                            Alasan / Keterangan Penyesuaian
+                        </label>
+                        <input type="text" x-model="opnameTarget.reason"
+                            placeholder="Contoh: Selisih timbangan dapur, bahan tercecer/rusak, dll"
+                            class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-brand-border">
+                    <button type="button" @click="showOpnameModal = false" :disabled="isProcessing"
+                        class="px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="button" @click="executeMaterialOpname()" :disabled="isProcessing"
+                        class="px-5 py-2 bg-brand-primary text-white rounded-xl text-sm font-bold hover:bg-brand-primary/90 shadow-xs transition cursor-pointer disabled:opacity-50">
+                        <span x-show="!isProcessing">Simpan & Posting Jurnal</span>
+                        <span x-show="isProcessing">Menyimpan...</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

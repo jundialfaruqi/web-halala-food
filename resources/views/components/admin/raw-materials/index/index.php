@@ -176,6 +176,66 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
     }
 
     /**
+     * Perform Stock Opname (Physical Inventory Adjustment) for a raw material.
+     */
+    public function adjustMaterialStock(int $id, float $physicalStock, string $reason, string $date): array
+    {
+        if (Gate::denies('bahan-baku-edit')) {
+            return ['success' => false, 'message' => 'Anda tidak memiliki izin untuk menyesuaikan stok bahan baku.'];
+        }
+
+        $material = RawMaterial::find($id);
+        if (! $material) {
+            return ['success' => false, 'message' => 'Data bahan baku tidak ditemukan.'];
+        }
+
+        $currentStock = (float) $material->stock;
+        $diff = round($physicalStock - $currentStock, 4);
+
+        if ($diff == 0) {
+            return ['success' => false, 'message' => 'Stok fisik yang dimasukkan sama dengan stok sistem (tidak ada selisih).'];
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($material, $physicalStock, $currentStock, $diff, $reason, $date) {
+            $cost = (float) $material->cost_per_unit;
+
+            // 1. Catat ke StockMutation
+            \App\Models\StockMutation::create([
+                'raw_material_id' => $material->id,
+                'reference_type' => 'stock_opname',
+                'reference_id' => $material->id,
+                'reference_number' => 'OPN-BAHAN-' . date('Ymd-His'),
+                'type' => $diff > 0 ? 'in' : 'out',
+                'quantity' => abs($diff),
+                'stock_before' => $currentStock,
+                'stock_after' => $physicalStock,
+                'cost_per_unit' => $cost,
+                'notes' => 'Stock Opname: ' . ($reason ?: 'Penyesuaian fisik dapur/gudang'),
+                'user_id' => \Illuminate\Support\Facades\Auth::id(),
+            ]);
+
+            // 2. Update stock bahan
+            $material->stock = $physicalStock;
+            $material->save();
+
+            // 3. Catat dan posting Jurnal Akuntansi otomatis
+            \App\Services\AccountingService::recordStockAdjustment(
+                $material,
+                $diff,
+                $cost,
+                $reason ?: 'Penyesuaian fisik opname',
+                $date ?: now()->toDateString()
+            );
+        });
+
+        $diffStr = ($diff > 0 ? '+' : '') . number_format($diff, 2, ',', '.') . ' ' . $material->display_unit;
+        return [
+            'success' => true,
+            'message' => "Stok bahan '{$material->name}' berhasil disesuaikan ({$diffStr}) dan diposting ke Jurnal Akuntansi.",
+        ];
+    }
+
+    /**
      * Save product recipe items (Bill of Material).
      */
     public function saveRecipe(int $productId, array $ingredients): array

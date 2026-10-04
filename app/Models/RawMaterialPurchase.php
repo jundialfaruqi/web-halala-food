@@ -17,6 +17,10 @@ class RawMaterialPurchase extends Model
         'purchase_date',
         'total_amount',
         'payment_method',
+        'payment_status',
+        'paid_amount',
+        'paid_at',
+        'paid_account_id',
         'notes',
         'created_by',
     ];
@@ -26,6 +30,8 @@ class RawMaterialPurchase extends Model
         return [
             'purchase_date' => 'date',
             'total_amount' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
+            'paid_at' => 'datetime',
         ];
     }
 
@@ -34,9 +40,29 @@ class RawMaterialPurchase extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function paidAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'paid_account_id');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(RawMaterialPurchaseItem::class, 'purchase_id');
+    }
+
+    public function isTempo(): bool
+    {
+        return strtolower($this->payment_method) === 'tempo';
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->payment_status === 'lunas';
+    }
+
+    public function getRemainingDebtAttribute(): float
+    {
+        return max(0, (float) $this->total_amount - (float) $this->paid_amount);
     }
 
     /**

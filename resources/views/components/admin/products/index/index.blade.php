@@ -21,6 +21,44 @@
         }
     },
 
+    // Stock Opname Modal State
+    showOpnameModal: false,
+    opnameTarget: { id: null, name: '', stock_ready: 0, unit_short: '', physical_stock: 0, reason: '', date: '' },
+
+    openOpnameModal(product) {
+        this.opnameTarget = {
+            id: product.id,
+            name: product.name,
+            stock_ready: product.stock_ready,
+            unit_short: product.unit_short,
+            physical_stock: product.stock_ready,
+            reason: '',
+            date: new Date().toISOString().slice(0, 10)
+        };
+        this.showOpnameModal = true;
+    },
+
+    async executeOpname() {
+        if (!this.opnameTarget.id) return;
+        this.isProcessing = true;
+        const res = await $wire.adjustProductStock(
+            this.opnameTarget.id,
+            parseInt(this.opnameTarget.physical_stock) || 0,
+            this.opnameTarget.reason,
+            this.opnameTarget.date
+        );
+        this.isProcessing = false;
+
+        if (res.success) {
+            const p = this.products.find(item => item.id === this.opnameTarget.id);
+            if (p) p.stock_ready = parseInt(this.opnameTarget.physical_stock) || 0;
+            this.showOpnameModal = false;
+            this.notify(res.message, 'success');
+        } else {
+            this.notify(res.message, 'error');
+        }
+    },
+
     // Handle incoming flash message after redirect
     init() {
         @if ($flashToast = session('toast') ?? (session('success') ? ['message' => session('success'), 'type' => 'success'] : null))
@@ -240,6 +278,11 @@
                             <td class="py-4 px-6 text-right whitespace-nowrap">
                                 <div class="inline-flex items-center gap-1">
                                     @can('produk-edit')
+                                        <button type="button" @click="openOpnameModal(product)"
+                                            class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-amber-700 hover:bg-neutral-100 transition cursor-pointer"
+                                            title="Stock Opname / Sesuaikan Stok Fisik">
+                                            <i class="ti ti-clipboard-check text-base"></i>
+                                        </button>
                                         <a :href="product.edit_url" wire:navigate
                                             class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-brand-espresso hover:bg-neutral-100 transition cursor-pointer"
                                             title="Ubah Data Produk">
@@ -308,6 +351,81 @@
                         class="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-xl text-sm font-bold shadow-xs transition cursor-pointer disabled:opacity-50">
                         <span x-show="!isProcessing">Hapus Sekarang</span>
                         <span x-show="isProcessing">Menghapus...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    <!-- Modal Stock Opname Produk Jadi -->
+    <div x-cloak x-show="showOpnameModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 text-center">
+            <div x-show="showOpnameModal" x-transition.opacity.duration.200ms
+                class="fixed inset-0 bg-neutral-900/40 backdrop-blur-xs" @click="showOpnameModal = false"></div>
+
+            <div x-show="showOpnameModal" x-transition.scale.duration.200ms
+                class="relative bg-white rounded-2xl max-w-lg w-full p-6 text-left shadow-xl border border-brand-border space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-brand-border">
+                    <div>
+                        <h3 class="text-base font-bold text-brand-espresso">Stock Opname Produk Jadi</h3>
+                        <p class="text-xs text-brand-warm-gray" x-text="opnameTarget.name"></p>
+                    </div>
+                    <button type="button" @click="showOpnameModal = false" class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                        <i class="ti ti-x text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2">
+                    <div class="flex justify-between text-xs text-amber-900 font-medium">
+                        <span>Stok Sistem Saat Ini:</span>
+                        <span class="font-mono font-bold" x-text="opnameTarget.stock_ready + ' ' + opnameTarget.unit_short"></span>
+                    </div>
+                    <div class="flex justify-between text-xs text-amber-900 font-medium">
+                        <span>Stok Fisik Dihitung:</span>
+                        <span class="font-mono font-bold" x-text="(opnameTarget.physical_stock || 0) + ' ' + opnameTarget.unit_short"></span>
+                    </div>
+                    <div class="border-t border-amber-200/80 pt-1.5 flex justify-between text-sm font-bold"
+                        :class="(opnameTarget.physical_stock - opnameTarget.stock_ready) < 0 ? 'text-red-700' : ((opnameTarget.physical_stock - opnameTarget.stock_ready) > 0 ? 'text-emerald-700' : 'text-brand-warm-gray')">
+                        <span>Selisih:</span>
+                        <span class="font-mono" x-text="((opnameTarget.physical_stock - opnameTarget.stock_ready) > 0 ? '+' : '') + (opnameTarget.physical_stock - opnameTarget.stock_ready) + ' ' + opnameTarget.unit_short"></span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1">
+                                Tanggal Opname <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" x-model="opnameTarget.date"
+                                class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-medium text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1">
+                                Stok Fisik Riil <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" min="0" x-model="opnameTarget.physical_stock"
+                                class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-mono font-bold text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1">
+                            Alasan / Keterangan Penyesuaian
+                        </label>
+                        <input type="text" x-model="opnameTarget.reason"
+                            placeholder="Contoh: Selisih hitung fisik bulanan, rusak saat display, dll"
+                            class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary" />
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-brand-border">
+                    <button type="button" @click="showOpnameModal = false" :disabled="isProcessing"
+                        class="px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="button" @click="executeOpname()" :disabled="isProcessing"
+                        class="px-5 py-2 bg-brand-primary text-white rounded-xl text-sm font-bold hover:bg-brand-primary/90 shadow-xs transition cursor-pointer disabled:opacity-50">
+                        <span x-show="!isProcessing">Simpan & Posting Jurnal</span>
+                        <span x-show="isProcessing">Menyimpan...</span>
                     </button>
                 </div>
             </div>

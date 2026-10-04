@@ -54,6 +54,22 @@ class AccountingSeeder extends Seeder
                 'is_system' => true,
                 'description' => 'Nilai persediaan makanan jadi siap antar/jual',
             ],
+            [
+                'code' => '1-2000',
+                'name' => 'Aset Tetap Usaha',
+                'type' => 'asset',
+                'normal_balance' => 'debit',
+                'is_system' => true,
+                'description' => 'Nilai perolehan aset tetap: mesin, peralatan dapur, kendaraan, inventaris usaha',
+            ],
+            [
+                'code' => '1-2100',
+                'name' => 'Akumulasi Penyusutan Aset Tetap',
+                'type' => 'asset',
+                'normal_balance' => 'credit',
+                'is_system' => true,
+                'description' => 'Akumulasi penyusutan (kontra-aset) nilai buku aset tetap operasional',
+            ],
 
             // 2. KEWAJIBAN / HUTANG
             [
@@ -151,6 +167,30 @@ class AccountingSeeder extends Seeder
                 'normal_balance' => 'debit',
                 'is_system' => true,
                 'description' => 'Penyusutan dan kerugian atas barang retur rusak/basi',
+            ],
+            [
+                'code' => '6-1005',
+                'name' => 'Beban Penyusutan Aset Tetap',
+                'type' => 'expense',
+                'normal_balance' => 'debit',
+                'is_system' => true,
+                'description' => 'Beban depresiasi / penyusutan nilai aset tetap bulanan',
+            ],
+            [
+                'code' => '6-1006',
+                'name' => 'Beban Selisih Stok Opname / Kehilangan Persediaan',
+                'type' => 'expense',
+                'normal_balance' => 'debit',
+                'is_system' => true,
+                'description' => 'Selisih kurang saat stock opname fisik persediaan bahan baku / produk jadi',
+            ],
+            [
+                'code' => '6-1007',
+                'name' => 'Beban Gaji & Upah Karyawan / Kurir',
+                'type' => 'expense',
+                'normal_balance' => 'debit',
+                'is_system' => true,
+                'description' => 'Beban gaji bulanan, upah harian, honor kurir antar titip, lembur, dan bonus karyawan',
             ],
             [
                 'code' => '6-1099',

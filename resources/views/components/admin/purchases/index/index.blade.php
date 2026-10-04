@@ -50,13 +50,13 @@
     @endif
 
     <!-- Clean Metric Summary (No Icon BG, No Badge) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-5 rounded-xl border border-brand-border bg-white space-y-1">
             <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Belanja Bulan Ini</span>
             <p class="text-2xl font-extrabold text-brand-espresso">
                 Rp {{ number_format($monthlyTotalAmount, 0, ',', '.') }}
             </p>
-            <p class="text-xs text-brand-warm-gray">Total pengeluaran kas pembelian bahan baku</p>
+            <p class="text-xs text-brand-warm-gray">Total pengeluaran kas belanja bahan</p>
         </div>
 
         <div class="p-5 rounded-xl border border-brand-border bg-white space-y-1">
@@ -67,8 +67,16 @@
             <p class="text-xs text-brand-warm-gray">Jumlah pengadaan bahan yang tercatat</p>
         </div>
 
+        <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/40 space-y-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-700">Sisa Hutang Supplier (Tempo)</span>
+            <p class="text-2xl font-extrabold text-amber-900">
+                Rp {{ number_format($totalUnpaidDebt, 0, ',', '.') }}
+            </p>
+            <p class="text-xs text-amber-700">Kewajiban tempo yang belum dilunasi</p>
+        </div>
+
         <div class="p-5 rounded-xl border border-brand-border bg-white space-y-1">
-            <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Transaksi Terdata</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Total Transaksi</span>
             <p class="text-2xl font-extrabold text-brand-espresso">
                 {{ $purchases->total() }} <span class="text-sm font-normal text-brand-warm-gray">transaksi</span>
             </p>
@@ -95,6 +103,16 @@
                     <option value="tunai">Tunai / Kas Kecil</option>
                     <option value="transfer_bank">Transfer Bank</option>
                     <option value="tempo">Tempo / Kredit Supplier</option>
+                </select>
+            </div>
+
+            <!-- Status Pembayaran Filter -->
+            <div class="w-full sm:w-auto">
+                <select wire:model.live="paymentStatus"
+                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
+                    <option value="">Semua Status Bayar</option>
+                    <option value="lunas">Lunas</option>
+                    <option value="belum_lunas">Belum Lunas (Tempo)</option>
                 </select>
             </div>
         </div>
@@ -160,7 +178,7 @@
                             Rp {{ number_format($item->total_amount, 0, ',', '.') }}
                         </td>
 
-                        <!-- 5. Metode Bayar (Dot + Text, NO BADGE) -->
+                        <!-- 5. Metode Bayar & Status -->
                         <td class="py-4 px-6 whitespace-nowrap">
                             <div class="flex items-center gap-2">
                                 <span class="inline-block size-2 rounded-full {{ $item->payment_method === 'tempo' ? 'bg-amber-600' : ($item->payment_method === 'transfer_bank' ? 'bg-brand-primary' : 'bg-stone-500') }}"></span>
@@ -168,11 +186,33 @@
                                     {{ $item->payment_method === 'transfer_bank' ? 'Transfer Bank' : ($item->payment_method === 'tempo' ? 'Tempo / Kredit' : 'Tunai') }}
                                 </span>
                             </div>
+                            @if ($item->isTempo())
+                                <div class="mt-1">
+                                    @if ($item->isPaid())
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                                            <i class="ti ti-check text-xs"></i> Lunas
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                                            <i class="ti ti-clock text-xs"></i> Belum Lunas
+                                        </span>
+                                        <span class="block text-[11px] font-mono text-amber-800/80">Sisa: Rp {{ number_format($item->remaining_debt, 0, ',', '.') }}</span>
+                                    @endif
+                                </div>
+                            @endif
                         </td>
 
                         <!-- 6. Aksi -->
                         <td class="py-4 px-6 text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-2">
+                                @if ($item->isTempo() && !$item->isPaid())
+                                    <button type="button" wire:click="openPaymentModal({{ $item->id }})"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-primary text-white rounded-lg text-xs font-bold hover:bg-brand-primary/90 transition shadow-xs cursor-pointer">
+                                        <i class="ti ti-cash text-xs"></i>
+                                        <span>Bayar Hutang</span>
+                                    </button>
+                                @endif
+
                                 <button type="button" wire:click="viewDetails({{ $item->id }})"
                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-brand-border rounded-lg text-xs font-semibold text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
                                     <span>Rincian</span>
@@ -307,6 +347,100 @@
                         Tutup
                     </button>
                 </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Modal Pelunasan Hutang Pembelian Tempo -->
+    @if ($showPaymentModal && $payingPurchase)
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+            <div class="bg-white rounded-2xl border border-brand-border shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div class="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-neutral-50/50">
+                    <div>
+                        <h2 class="text-base font-bold text-brand-espresso">Pelunasan Hutang Supplier</h2>
+                        <span class="text-xs font-mono text-brand-warm-gray">{{ $payingPurchase->purchase_number }} &bull; {{ $payingPurchase->supplier_name }}</span>
+                    </div>
+                    <button type="button" wire:click="closePaymentModal" class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                        <i class="ti ti-x text-lg"></i>
+                    </button>
+                </div>
+
+                <form wire:submit.prevent="saveDebtPayment" class="p-6 space-y-4">
+                    <!-- Debt info box -->
+                    <div class="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2">
+                        <div class="flex justify-between text-xs text-amber-900 font-medium">
+                            <span>Total Pembelian:</span>
+                            <span class="font-mono font-bold">Rp {{ number_format($payingPurchase->total_amount, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-amber-900 font-medium">
+                            <span>Sudah Dibayar:</span>
+                            <span class="font-mono font-bold text-emerald-700">Rp {{ number_format($payingPurchase->paid_amount, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="border-t border-amber-200/80 pt-1.5 flex justify-between text-sm font-bold text-amber-950">
+                            <span>Sisa Hutang:</span>
+                            <span class="font-mono text-base text-amber-800">Rp {{ number_format($payingPurchase->remaining_debt, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Pilih Akun Kas/Bank -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1.5">
+                            Sumber Dana (Kas / Rekening) <span class="text-red-500">*</span>
+                        </label>
+                        <select wire:model="paymentAccountId" class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-medium text-brand-espresso focus:outline-none focus:border-brand-primary">
+                            @foreach ($accounts as $acc)
+                                <option value="{{ $acc->id }}">{{ $acc->name }} (Saldo: Rp {{ number_format($acc->balance, 0, ',', '.') }})</option>
+                            @endforeach
+                        </select>
+                        @error('paymentAccountId') <span class="text-xs text-red-600 font-semibold block mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Tanggal Pembayaran -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1.5">
+                                Tanggal Bayar <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" wire:model="paymentDate" class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-medium text-brand-espresso focus:outline-none focus:border-brand-primary">
+                            @error('paymentDate') <span class="text-xs text-red-600 font-semibold block mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Nominal Pembayaran -->
+                        <div x-data="{
+                            formatRupiah(val) {
+                                if (!val && val !== 0) return '';
+                                let clean = val.toString().replace(/[^0-9]/g, '').replace(/^0+/, '');
+                                return clean ? 'Rp ' + clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '';
+                            }
+                        }">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1.5">
+                                Nominal Bayar <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                x-on:input="$event.target.value = formatRupiah($event.target.value)"
+                                wire:model.defer="paymentAmount"
+                                placeholder="Rp 0"
+                                class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-mono font-bold text-brand-espresso focus:outline-none focus:border-brand-primary">
+                            @error('paymentAmount') <span class="text-xs text-red-600 font-semibold block mt-1">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <!-- Catatan -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-brand-espresso mb-1.5">Catatan Pembayaran (Opsional)</label>
+                        <input type="text" wire:model="paymentNotes" placeholder="Misal: Lunas via transfer BCA atau dicicil" class="w-full px-3.5 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
+                    </div>
+
+                    <div class="pt-3 border-t border-brand-border flex items-center justify-end gap-3">
+                        <button type="button" wire:click="closePaymentModal" class="px-4 py-2 rounded-xl text-sm font-bold text-brand-espresso border border-brand-border hover:bg-neutral-100 transition cursor-pointer">
+                            Batal
+                        </button>
+                        <button type="submit" wire:loading.attr="disabled" class="px-5 py-2 bg-brand-primary text-white rounded-xl text-sm font-bold hover:bg-brand-primary/90 transition flex items-center gap-2 cursor-pointer shadow-xs">
+                            <span wire:loading.remove wire:target="saveDebtPayment">Posting Pelunasan Hutang</span>
+                            <span wire:loading wire:target="saveDebtPayment">Memproses...</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif
