@@ -156,7 +156,50 @@
                 @endif
 
                 @if ($showReconciliation)
-                    <form wire:submit="saveReconciliation" @keydown.enter.prevent class="pt-2 space-y-4">
+                    <form @submit.prevent="submitForm" @keydown.enter.prevent class="pt-2 space-y-4"
+                        x-data="{
+                            items: @entangle('reconciliationItems'),
+                            discount: {{ (float) $invoice->discount }},
+
+                            getSold(item) {
+                                if (!item) return 0;
+                                const delivered = Math.max(0, parseInt(item.delivered_quantity) || 0);
+                                const remaining = Math.max(0, parseInt(item.remaining_quantity) || 0);
+                                const damaged = Math.max(0, parseInt(item.damaged_quantity) || 0);
+                                const returned = Math.max(0, parseInt(item.returned_quantity) || 0);
+                                const sold = Math.max(0, delivered - remaining - damaged - returned);
+                                item.quantity = sold;
+                                return sold;
+                            },
+
+                            getSubtotal(item) {
+                                if (!item) return 0;
+                                const sold = this.getSold(item);
+                                const price = parseFloat(item.unit_price) || 0;
+                                const subtotal = sold * price;
+                                item.subtotal = subtotal;
+                                return subtotal;
+                            },
+
+                            getTotal() {
+                                if (!Array.isArray(this.items)) return 0;
+                                const totalSubtotal = this.items.reduce((acc, item) => acc + (parseFloat(item.subtotal) || 0), 0);
+                                return Math.max(0, totalSubtotal - this.discount);
+                            },
+
+                            formatRupiah(amount) {
+                                return new Intl.NumberFormat('id-ID').format(Math.round(amount || 0));
+                            },
+
+                            submitForm() {
+                                if (Array.isArray(this.items)) {
+                                    this.items.forEach(item => {
+                                        this.getSubtotal(item);
+                                    });
+                                }
+                                $wire.saveReconciliation(this.items);
+                            }
+                        }">
                         <div class="border border-brand-border rounded-xl overflow-hidden overflow-x-auto bg-white">
                             <table class="w-full text-left text-sm text-brand-espresso">
                                 <thead class="bg-neutral-50 border-b border-brand-border text-xs uppercase tracking-wider font-semibold text-brand-warm-gray">
@@ -182,19 +225,21 @@
                                                 {{ $rItem['delivered_quantity'] }}
                                             </td>
                                             <td class="px-3 py-2.5">
-                                                <input type="number" min="0" max="{{ $rItem['delivered_quantity'] }}"
-                                                    wire:key="recon-input-remaining-{{ $rItem['id'] }}"
-                                                    wire:model.live.debounce.300ms="reconciliationItems.{{ $idx }}.remaining_quantity"
+                                                <input type="number" min="0" :max="items[{{ $idx }}]?.delivered_quantity ?? {{ $rItem['delivered_quantity'] }}"
+                                                    x-model.number="items[{{ $idx }}].remaining_quantity"
                                                     class="w-full px-2.5 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-center font-mono text-brand-espresso focus:outline-none focus:border-brand-primary"
                                                     placeholder="0">
+                                                <div x-cloak x-show="items[{{ $idx }}] && ((Number(items[{{ $idx }}].remaining_quantity) + Number(items[{{ $idx }}].damaged_quantity) + Number(items[{{ $idx }}].returned_quantity)) > items[{{ $idx }}].delivered_quantity)"
+                                                    class="text-[11px] text-red-600 mt-1 font-sans">
+                                                    Melebihi terkirim (<span x-text="items[{{ $idx }}]?.delivered_quantity"></span>)
+                                                </div>
                                                 @error("reconciliationItems.{$idx}.remaining_quantity")
                                                     <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                                                 @enderror
                                             </td>
                                             <td class="px-3 py-2.5">
-                                                <input type="number" min="0" max="{{ $rItem['delivered_quantity'] }}"
-                                                    wire:key="recon-input-damaged-{{ $rItem['id'] }}"
-                                                    wire:model.live.debounce.300ms="reconciliationItems.{{ $idx }}.damaged_quantity"
+                                                <input type="number" min="0" :max="items[{{ $idx }}]?.delivered_quantity ?? {{ $rItem['delivered_quantity'] }}"
+                                                    x-model.number="items[{{ $idx }}].damaged_quantity"
                                                     class="w-full px-2.5 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-center font-mono text-brand-espresso focus:outline-none focus:border-brand-primary"
                                                     placeholder="0">
                                                 @error("reconciliationItems.{$idx}.damaged_quantity")
@@ -202,22 +247,23 @@
                                                 @enderror
                                             </td>
                                             <td class="px-3 py-2.5">
-                                                <input type="number" min="0" max="{{ $rItem['delivered_quantity'] }}"
-                                                    wire:key="recon-input-returned-{{ $rItem['id'] }}"
-                                                    wire:model.live.debounce.300ms="reconciliationItems.{{ $idx }}.returned_quantity"
+                                                <input type="number" min="0" :max="items[{{ $idx }}]?.delivered_quantity ?? {{ $rItem['delivered_quantity'] }}"
+                                                    x-model.number="items[{{ $idx }}].returned_quantity"
                                                     class="w-full px-2.5 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-center font-mono text-brand-espresso focus:outline-none focus:border-brand-primary"
                                                     placeholder="0">
                                                 @error("reconciliationItems.{$idx}.returned_quantity")
                                                     <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                                                 @enderror
                                             </td>
-                                            <td class="px-3 py-2.5 text-center font-mono font-bold text-brand-espresso">
+                                            <td class="px-3 py-2.5 text-center font-mono font-bold text-brand-espresso"
+                                                x-text="items[{{ $idx }}] ? getSold(items[{{ $idx }}]) : {{ $rItem['quantity'] }}">
                                                 {{ $rItem['quantity'] }}
                                             </td>
                                             <td class="px-4 py-2.5 text-right font-mono text-brand-espresso">
                                                 Rp {{ number_format($rItem['unit_price'], 0, ',', '.') }}
                                             </td>
-                                            <td class="px-4 py-2.5 text-right font-mono font-bold text-brand-espresso">
+                                            <td class="px-4 py-2.5 text-right font-mono font-bold text-brand-espresso"
+                                                x-text="items[{{ $idx }}] ? 'Rp ' + formatRupiah(getSubtotal(items[{{ $idx }}])) : 'Rp {{ number_format($rItem['subtotal'], 0, ',', '.') }}'">
                                                 Rp {{ number_format($rItem['subtotal'], 0, ',', '.') }}
                                             </td>
                                         </tr>
@@ -227,7 +273,7 @@
                                     <tr>
                                         <td colspan="7" class="px-4 py-2.5 text-right font-medium text-brand-warm-gray">Total Tagihan Hasil Rekonsiliasi</td>
                                         <td class="px-4 py-2.5 text-right font-mono font-bold text-brand-espresso">
-                                            Rp {{ number_format(max(0.0, collect($reconciliationItems)->sum('subtotal') - (float)$invoice->discount), 0, ',', '.') }}
+                                            Rp <span x-text="formatRupiah(getTotal())">{{ number_format(max(0.0, collect($reconciliationItems)->sum('subtotal') - (float)$invoice->discount), 0, ',', '.') }}</span>
                                         </td>
                                     </tr>
                                 </tfoot>

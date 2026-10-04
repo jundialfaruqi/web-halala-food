@@ -146,10 +146,14 @@ new #[Layout('components.layouts.admin')] class extends Component
         }
     }
 
-    public function saveReconciliation(): void
+    public function saveReconciliation(?array $items = null): void
     {
         if (Gate::denies('faktur-edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk merekonsiliasi faktur.');
+        }
+
+        if ($items !== null) {
+            $this->reconciliationItems = $items;
         }
 
         if ($this->invoice->status === 'dibatalkan') {
