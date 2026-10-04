@@ -435,9 +435,9 @@
                             <tr>
                                 <td colspan="7" class="py-12 text-center text-brand-warm-gray">
                                     <div class="max-w-sm mx-auto space-y-2">
-                                        <p class="font-bold text-brand-espresso">Belum ada riwayat batch masak</p>
-                                        <p class="text-xs text-brand-warm-gray">Mulai proses produksi pertama Anda
-                                            untuk mengonversi stok bahan baku menjadi produk jadi siap jual.</p>
+                                        <i class="ti ti-chef-hat text-3xl text-brand-warm-gray"></i>
+                                        <p class="font-bold text-brand-espresso text-base">Belum ada riwayat batch masak</p>
+                                        <p class="text-xs text-brand-warm-gray">Mulai proses produksi pertama Anda untuk mengonversi stok bahan baku menjadi produk jadi siap jual.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -560,9 +560,9 @@
                             <tr>
                                 <td colspan="6" class="py-12 text-center text-brand-warm-gray">
                                     <div class="max-w-sm mx-auto space-y-2">
-                                        <p class="font-bold text-brand-espresso">Tidak ada catatan mutasi stok</p>
-                                        <p class="text-xs text-brand-warm-gray">Semua pergerakan bahan baku keluar dan
-                                            masuk akan dicatat secara otomatis di sini.</p>
+                                        <i class="ti ti-arrows-exchange text-3xl text-brand-warm-gray"></i>
+                                        <p class="font-bold text-brand-espresso text-base">Tidak ada catatan mutasi stok</p>
+                                        <p class="text-xs text-brand-warm-gray">Semua pergerakan bahan baku keluar dan masuk akan dicatat secara otomatis di sini.</p>
                                     </div>
                                 </td>
                             </tr>

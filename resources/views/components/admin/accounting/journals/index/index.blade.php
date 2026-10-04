@@ -156,8 +156,12 @@
                     @endforeach
                 @empty
                     <tr>
-                        <td colspan="5" class="py-14 text-center text-brand-warm-gray">
-                            Belum ada catatan jurnal umum yang terdaftar.
+                        <td colspan="5" class="py-12 text-center text-brand-warm-gray">
+                            <div class="max-w-sm mx-auto space-y-2">
+                                <i class="ti ti-notebook-off text-3xl text-brand-warm-gray"></i>
+                                <p class="font-bold text-brand-espresso text-base">Belum ada jurnal umum</p>
+                                <p class="text-xs text-brand-warm-gray">Belum ada catatan jurnal umum yang terdaftar untuk periode yang dipilih.</p>
+                            </div>
                         </td>
                     </tr>
                 @endforelse

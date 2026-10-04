@@ -344,9 +344,12 @@
 
                     <!-- Empty State -->
                     <tr x-show="filteredDeliveries.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center text-brand-warm-gray">
-                            <p class="text-base font-semibold text-brand-espresso">Tidak ada surat jalan yang cocok</p>
-                            <p class="text-xs text-brand-warm-gray mt-1">Coba sesuaikan kata kunci pencarian atau filter status yang dipilih.</p>
+                        <td colspan="6" class="py-12 text-center text-brand-warm-gray">
+                            <div class="max-w-sm mx-auto space-y-2">
+                                <i class="ti ti-truck-off text-3xl text-brand-warm-gray"></i>
+                                <p class="font-bold text-brand-espresso text-base">Tidak ada surat jalan yang cocok</p>
+                                <p class="text-xs text-brand-warm-gray">Coba sesuaikan kata kunci pencarian atau filter status yang dipilih.</p>
+                            </div>
                         </td>
                     </tr>
                 </tbody>

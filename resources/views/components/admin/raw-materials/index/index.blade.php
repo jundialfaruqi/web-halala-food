@@ -609,16 +609,11 @@
 
                     <!-- Empty State -->
                     <tr x-show="filteredMaterials.length === 0">
-                        <td colspan="8" class="py-12 text-center">
-                            <div class="flex flex-col items-center justify-center max-w-sm mx-auto">
-                                <div
-                                    class="size-16 rounded-2xl bg-neutral-100 flex items-center justify-center text-neutral-400 mb-3">
-                                    <i class="ti ti-box-off text-3xl"></i>
-                                </div>
-                                <h3 class="text-base font-bold text-brand-espresso">Tidak ada bahan baku ditemukan</h3>
-                                <p class="text-sm text-brand-warm-gray mt-1">
-                                    Coba ubah kata kunci pencarian atau filter status untuk menemukan bahan.
-                                </p>
+                        <td colspan="8" class="py-12 text-center text-brand-warm-gray">
+                            <div class="max-w-sm mx-auto space-y-2">
+                                <i class="ti ti-box-off text-3xl text-brand-warm-gray"></i>
+                                <p class="font-bold text-brand-espresso text-base">Tidak ada bahan baku ditemukan</p>
+                                <p class="text-xs text-brand-warm-gray">Coba ubah kata kunci pencarian atau filter status untuk menemukan bahan.</p>
                             </div>
                         </td>
                     </tr>

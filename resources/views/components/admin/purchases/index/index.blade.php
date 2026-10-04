@@ -233,11 +233,11 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-16 text-center text-brand-warm-gray">
-                            <div class="flex flex-col items-center justify-center">
-                                <i class="ti ti-shopping-cart-off text-3xl text-brand-warm-gray/50 mb-2"></i>
-                                <p class="font-bold text-brand-espresso">Tidak ada transaksi pembelian bahan</p>
-                                <p class="text-xs text-brand-warm-gray mt-0.5">Belum ada data pengadaan bahan baku yang cocok dengan pencarian atau filter Anda.</p>
+                        <td colspan="6" class="py-12 text-center text-brand-warm-gray">
+                            <div class="max-w-sm mx-auto space-y-2">
+                                <i class="ti ti-shopping-cart-off text-3xl text-brand-warm-gray"></i>
+                                <p class="font-bold text-brand-espresso text-base">Tidak ada transaksi pembelian bahan</p>
+                                <p class="text-xs text-brand-warm-gray">Belum ada data pengadaan bahan baku yang cocok dengan pencarian atau filter Anda.</p>
                             </div>
                         </td>
                     </tr>

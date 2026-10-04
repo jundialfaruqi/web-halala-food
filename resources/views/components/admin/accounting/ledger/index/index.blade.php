@@ -228,7 +228,11 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="py-12 text-center text-brand-warm-gray">
-                                    Belum ada mutasi transaksi untuk akun perkiraan ini pada periode yang dipilih.
+                                    <div class="max-w-sm mx-auto space-y-2">
+                                        <i class="ti ti-report-off text-3xl text-brand-warm-gray"></i>
+                                        <p class="font-bold text-brand-espresso text-base">Belum ada mutasi transaksi</p>
+                                        <p class="text-xs text-brand-warm-gray">Belum ada mutasi transaksi untuk akun perkiraan ini pada periode yang dipilih.</p>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse

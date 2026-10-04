@@ -274,7 +274,11 @@
                 @empty
                     <tr>
                         <td colspan="6" class="py-12 text-center text-brand-warm-gray">
-                            Belum ada catatan mutasi kas yang ditemukan.
+                            <div class="max-w-sm mx-auto space-y-2">
+                                <i class="ti ti-wallet-off text-3xl text-brand-warm-gray"></i>
+                                <p class="font-bold text-brand-espresso text-base">Belum ada catatan mutasi kas</p>
+                                <p class="text-xs text-brand-warm-gray">Sesuaikan filter periode atau catat transaksi kas masuk dan kas keluar baru.</p>
+                            </div>
                         </td>
                     </tr>
                 @endforelse

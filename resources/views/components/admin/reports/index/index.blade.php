@@ -225,8 +225,12 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-brand-warm-gray">
-                                    Tidak ada mitra toko terdaftar.
+                                <td colspan="6" class="py-12 text-center text-brand-warm-gray">
+                                    <div class="max-w-sm mx-auto space-y-2">
+                                        <i class="ti ti-building-store text-3xl text-brand-warm-gray"></i>
+                                        <p class="font-bold text-brand-espresso text-base">Tidak ada mitra toko terdaftar</p>
+                                        <p class="text-xs text-brand-warm-gray">Belum ada data toko mitra untuk laporan piutang dan distribusi.</p>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse

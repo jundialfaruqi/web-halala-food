@@ -106,10 +106,12 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="text-center py-12 text-brand-warm-gray">
-                            <i class="ti ti-key-off text-3xl mb-2 text-brand-warm-gray block"></i>
-                            <p class="font-bold text-base text-brand-espresso">Belum ada permission</p>
-                            <p class="text-sm mt-1">Klik tombol "Tambah Permission" untuk membuat permission baru.</p>
+                        <td colspan="4" class="py-12 text-center text-brand-warm-gray">
+                            <div class="max-w-sm mx-auto space-y-2">
+                                <i class="ti ti-key-off text-3xl text-brand-warm-gray"></i>
+                                <p class="font-bold text-brand-espresso text-base">Belum ada permission</p>
+                                <p class="text-xs text-brand-warm-gray">Klik tombol "Tambah Permission" untuk membuat hak akses baru.</p>
+                            </div>
                         </td>
                     </tr>
                 @endforelse

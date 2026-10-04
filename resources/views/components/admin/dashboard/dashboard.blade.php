@@ -145,8 +145,12 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="py-8 text-center text-sm text-brand-warm-gray">
-                                    Belum ada data surat jalan pengantaran.
+                                <td colspan="5" class="py-8 text-center text-brand-warm-gray">
+                                    <div class="max-w-sm mx-auto space-y-1">
+                                        <i class="ti ti-truck-delivery text-2xl text-brand-warm-gray"></i>
+                                        <p class="font-bold text-brand-espresso text-sm">Belum ada surat jalan</p>
+                                        <p class="text-xs text-brand-warm-gray">Belum ada data surat jalan pengantaran terkini.</p>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse
@@ -307,8 +311,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="py-8 text-center text-sm text-brand-warm-gray">
-                                Tidak ada data pengguna yang sesuai.
+                            <td colspan="4" class="py-8 text-center text-brand-warm-gray">
+                                <div class="max-w-sm mx-auto space-y-1">
+                                    <i class="ti ti-users text-2xl text-brand-warm-gray"></i>
+                                    <p class="font-bold text-brand-espresso text-sm">Tidak ada data pengguna</p>
+                                    <p class="text-xs text-brand-warm-gray">Tidak ada pengguna yang cocok dengan kriteria pencarian.</p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

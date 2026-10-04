@@ -253,24 +253,23 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-16 text-center">
-                                <div class="flex flex-col items-center gap-3 text-brand-warm-gray">
-                                    <i class="ti ti-tools text-5xl opacity-40"></i>
-                                    <p class="font-semibold text-sm">
+                            <td colspan="7" class="py-12 text-center text-brand-warm-gray">
+                                <div class="max-w-sm mx-auto space-y-2">
+                                    <i class="ti ti-tools text-3xl text-brand-warm-gray"></i>
+                                    <p class="font-bold text-brand-espresso text-base">
                                         @if ($hasActiveFilters)
-                                            Tidak ada aset yang cocok dengan filter.
+                                            Tidak ada aset yang cocok dengan filter
                                         @else
-                                            Belum ada aset tetap yang dicatat.
+                                            Belum ada aset tetap yang dicatat
                                         @endif
                                     </p>
-                                    @if (!$hasActiveFilters)
-                                        @can('aset-create')
-                                            <button wire:click="openCreateModal"
-                                                class="mt-1 px-4 py-2 text-sm font-bold text-white bg-brand-primary rounded-xl hover:bg-brand-primary/90 transition cursor-pointer">
-                                                + Catat Aset Pertama
-                                            </button>
-                                        @endcan
-                                    @endif
+                                    <p class="text-xs text-brand-warm-gray">
+                                        @if ($hasActiveFilters)
+                                            Coba sesuaikan kata kunci pencarian atau filter status dan kategori aset.
+                                        @else
+                                            Mulai catat aset tetap operasional, mesin, atau peralatan pabrik Anda di sini.
+                                        @endif
+                                    </p>
                                 </div>
                             </td>
                         </tr>
