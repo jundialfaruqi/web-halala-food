@@ -3,7 +3,9 @@
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
+use App\Models\JournalEntry;
 use App\Models\Product;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -228,6 +230,8 @@ new #[Layout('components.layouts.admin')] class extends Component
                 'remaining_balance' => $newRemainingBalance,
                 'status' => $newStatus,
             ]);
+
+            AccountingService::recordInvoiceDamagedGoods($this->invoice, $this->reconciliationItems);
         });
 
         $this->invoice->refresh();
@@ -345,7 +349,12 @@ new #[Layout('components.layouts.admin')] class extends Component
             return;
         }
 
-        $this->invoice->update(['status' => 'dibatalkan']);
+        DB::transaction(function () {
+            $this->invoice->update(['status' => 'dibatalkan']);
+            JournalEntry::where('reference_type', 'invoice_damaged_goods')
+                ->where('reference_id', $this->invoice->id)
+                ->delete();
+        });
         $this->invoice->refresh();
 
         session()->flash('toast', [

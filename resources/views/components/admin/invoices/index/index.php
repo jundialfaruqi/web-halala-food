@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Invoice;
+use App\Models\JournalEntry;
 use App\Models\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -32,7 +33,12 @@ new #[Layout('components.layouts.admin'), Title('Faktur & Piutang Toko - Halala 
             return ['success' => false, 'message' => 'Faktur ini sudah dalam status dibatalkan.'];
         }
 
-        $invoice->update(['status' => 'dibatalkan']);
+        DB::transaction(function () use ($invoice) {
+            $invoice->update(['status' => 'dibatalkan']);
+            JournalEntry::where('reference_type', 'invoice_damaged_goods')
+                ->where('reference_id', $invoice->id)
+                ->delete();
+        });
 
         return ['success' => true, 'message' => "Faktur {$invoice->invoice_number} berhasil dibatalkan."];
     }
@@ -58,6 +64,9 @@ new #[Layout('components.layouts.admin'), Title('Faktur & Piutang Toko - Halala 
         $invoiceNumber = $invoice->invoice_number;
 
         DB::transaction(function () use ($invoice) {
+            JournalEntry::where('reference_type', 'invoice_damaged_goods')
+                ->where('reference_id', $invoice->id)
+                ->delete();
             $invoice->payments()->delete();
             $invoice->items()->delete();
             $invoice->delete();

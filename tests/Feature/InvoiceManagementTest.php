@@ -3,6 +3,7 @@
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
+use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Unit;
@@ -422,6 +423,22 @@ test('manager can reconcile consignment goods and bill the client during pickup 
     $product->refresh();
     expect($product->stock_ready)->toBe($initialStock + $returned);
 
+    // Damaged items (3 pcs) recorded into General Ledger (Buku Besar)
+    $journalEntry = JournalEntry::with('items.account')
+        ->where('reference_type', 'invoice_damaged_goods')
+        ->where('reference_id', $invoice->id)
+        ->first();
+
+    expect($journalEntry)->not->toBeNull();
+    expect($journalEntry->items)->toHaveCount(2);
+
+    $debitItem = $journalEntry->items->firstWhere('debit', '>', 0);
+    $creditItem = $journalEntry->items->firstWhere('credit', '>', 0);
+
+    expect($debitItem->account->code)->toBe('6-1004') // Beban Kerugian Barang Rusak / Kadaluarsa
+        ->and($creditItem->account->code)->toBe('1-1400') // Persediaan Produk Jadi
+        ->and((float) $debitItem->debit)->toBe((float) $creditItem->credit);
+
     // 3. Payment form is ready with the new reconciled amount
     expect((float) $component->get('payment_amount'))->toBe((float) $expectedReconciledTotal);
 
@@ -433,4 +450,50 @@ test('manager can reconcile consignment goods and bill the client during pickup 
     expect($invoice->status)->toBe('lunas')
         ->and((float) $invoice->remaining_balance)->toBe(0.0)
         ->and((float) $invoice->paid_amount)->toBe((float) $expectedReconciledTotal);
+});
+
+test('cancelling invoice deletes its damaged goods journal entry', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->first();
+    $store = Store::first();
+    $product = Product::first();
+
+    actingAs($manager);
+
+    $invoice = Invoice::create([
+        'invoice_number' => 'INV-BS-CANCEL-01',
+        'store_id' => $store->id,
+        'invoice_date' => now()->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
+        'subtotal' => 100000.0,
+        'total_amount' => 100000.0,
+        'paid_amount' => 0.0,
+        'remaining_balance' => 100000.0,
+        'status' => 'belum_dibayar',
+    ]);
+
+    $item = InvoiceItem::create([
+        'invoice_id' => $invoice->id,
+        'product_id' => $product->id,
+        'delivered_quantity' => 10,
+        'quantity' => 10,
+        'unit_price' => 10000.0,
+        'subtotal' => 100000.0,
+    ]);
+
+    // Perform reconciliation with damaged goods
+    Livewire::test('admin.invoices.show', ['invoice' => $invoice])
+        ->call('openReconciliation')
+        ->set('reconciliationItems.0.damaged_quantity', 2)
+        ->call('saveReconciliation')
+        ->assertHasNoErrors();
+
+    expect(JournalEntry::where('reference_type', 'invoice_damaged_goods')->where('reference_id', $invoice->id)->exists())->toBeTrue();
+
+    // Cancel invoice
+    Livewire::test('admin.invoices.show', ['invoice' => $invoice])
+        ->call('cancelInvoice');
+
+    $invoice->refresh();
+    expect($invoice->status)->toBe('dibatalkan');
+    expect(JournalEntry::where('reference_type', 'invoice_damaged_goods')->where('reference_id', $invoice->id)->exists())->toBeFalse();
 });

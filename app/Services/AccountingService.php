@@ -374,6 +374,81 @@ class AccountingService
     }
 
     /**
+     * Auto journal for Damaged / Expired Goods from Invoice Reconciliation
+     */
+    public static function recordInvoiceDamagedGoods(Invoice $invoice, array $itemsData): ?JournalEntry
+    {
+        self::ensureChartOfAccountsExist();
+
+        $date = now()->format('Y-m-d');
+        $storeName = $invoice->store?->name ?? 'Toko Mitra';
+
+        $totalDamagedValue = 0.0;
+        $memos = [];
+
+        foreach ($itemsData as $item) {
+            $qty = (int) ($item['damaged_quantity'] ?? 0);
+            if ($qty <= 0) {
+                continue;
+            }
+
+            $productId = (int) ($item['product_id'] ?? 0);
+            $product = \App\Models\Product::with(['recipes.rawMaterial', 'unitModel'])->find($productId);
+
+            $costPerUnit = 0.0;
+            if ($product) {
+                $materialCost = (float) $product->material_cost;
+                $costPerUnit = $materialCost > 0 ? $materialCost : (float) ($item['unit_price'] ?? $product->consignment_price);
+            } else {
+                $costPerUnit = (float) ($item['unit_price'] ?? 0);
+            }
+
+            $subtotalCost = $qty * $costPerUnit;
+            $totalDamagedValue += $subtotalCost;
+
+            $productName = $product?->name ?? ($item['product_name'] ?? 'Produk');
+            $unit = $product?->unit ?? ($item['unit'] ?? 'pcs');
+            $memos[] = "{$productName} ({$qty} {$unit} @ Rp ".number_format($costPerUnit, 0, ',', '.').")";
+        }
+
+        $totalDamagedValue = round($totalDamagedValue, 2);
+
+        // Jika tidak ada barang rusak (0), hapus jurnal sebelumnya jika ada
+        if ($totalDamagedValue <= 0) {
+            JournalEntry::where('reference_type', 'invoice_damaged_goods')
+                ->where('reference_id', $invoice->id)
+                ->delete();
+
+            return null;
+        }
+
+        $memoStr = implode(', ', $memos);
+
+        $items = [
+            [
+                'account_code' => '6-1004', // Beban Kerugian Barang Rusak / Kadaluarsa (+)
+                'debit' => $totalDamagedValue,
+                'credit' => 0,
+                'memo' => "Beban Rusak/BS Toko {$storeName}: {$memoStr}",
+            ],
+            [
+                'account_code' => '1-1400', // Persediaan Produk Jadi (-)
+                'debit' => 0,
+                'credit' => $totalDamagedValue,
+                'memo' => "Pengurangan Stok Rusak/BS Faktur {$invoice->invoice_number}",
+            ],
+        ];
+
+        return self::postEntry(
+            $date,
+            "Kerugian Barang Rusak/BS Toko {$storeName} (Faktur {$invoice->invoice_number})",
+            $items,
+            'invoice_damaged_goods',
+            $invoice->id
+        );
+    }
+
+    /**
      * Get Chart of Account code for specific raw material
      * e.g. ID 1 -> 1-1301, ID 2 -> 1-1302
      */

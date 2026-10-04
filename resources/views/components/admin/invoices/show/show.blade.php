@@ -328,7 +328,7 @@
                         <label for="payment_amount" class="block text-xs font-semibold text-brand-espresso mb-1">
                             Nominal Bayar (Rp) <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" id="payment_amount" wire:model="payment_amount" step="1000" min="1"
+                        <input type="number" id="payment_amount" wire:model="payment_amount" step="any" min="1"
                             max="{{ $invoice->remaining_balance }}" placeholder="Contoh: 150000"
                             class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-mono focus:outline-none focus:border-brand-primary">
                         @error('payment_amount')
