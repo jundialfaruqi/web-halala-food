@@ -168,7 +168,10 @@
                 <!-- Search Input -->
                 <div class="relative flex-1 max-w-md">
                     <i class="ti ti-search absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-warm-gray text-lg"></i>
-                    <input type="text" x-model="search" placeholder="Cari nama, email, atau no. WhatsApp..."
+                    <input type="search" name="user_search_filter" x-model="search"
+                        placeholder="Cari nama, email, atau no. WhatsApp..."
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                        data-lpignore="true" data-1p-ignore="true" data-form-type="other"
                         class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-base text-brand-espresso placeholder-brand-warm-gray focus:outline-none focus:border-brand-primary">
                 </div>
 

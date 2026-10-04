@@ -58,7 +58,7 @@
                     <label class="block text-sm font-bold text-brand-espresso mb-1.5">
                         Alamat Email <span class="text-red-500">*</span>
                     </label>
-                    <input type="email" x-model="userForm.email"
+                    <input type="email" name="user_email_field" x-model="userForm.email" autocomplete="off"
                         @input="if (userErrors.email) delete userErrors.email" placeholder="Contoh: user@halala-food.id"
                         class="w-full px-4 py-2.5 bg-white border rounded-xl text-base text-brand-espresso focus:outline-none focus:ring-2 font-medium transition"
                         :class="userErrors.email ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50/20' :
@@ -133,6 +133,7 @@
                     </label>
                     <div class="relative">
                         <input :type="showPassword ? 'text' : 'password'" x-model="userForm.password"
+                            name="user_password_field" autocomplete="new-password"
                             @input="if (userErrors.password) delete userErrors.password"
                             :placeholder="userForm.id ? 'Kosongkan jika tidak ingin mengubah kata sandi' : 'Minimal 6 karakter'"
                             class="w-full pl-4 pr-11 py-2.5 bg-white border rounded-xl text-base text-brand-espresso focus:outline-none focus:ring-2 font-medium transition"
