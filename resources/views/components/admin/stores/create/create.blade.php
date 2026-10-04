@@ -52,11 +52,29 @@
                     <label for="phone" class="block text-sm font-semibold text-brand-espresso mb-1.5">
                         No. Telepon / WhatsApp (Opsional)
                     </label>
-                    <input type="text" id="phone" wire:model="phone" placeholder="Misal: 081234567890"
-                        class="w-full px-4 py-2.5 font-mono bg-white border {{ $errors->has('phone') ? 'border-red-500' : 'border-brand-border' }} rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary transition">
+                    <div class="relative flex items-stretch"
+                        x-data="{
+                            sanitizePhone(val) {
+                                if (!val) return '';
+                                let d = String(val).replace(/\D/g, '');
+                                if (d.startsWith('62')) d = d.substring(2);
+                                while (d.startsWith('0')) d = d.substring(1);
+                                return d;
+                            }
+                        }">
+                        <div class="inline-flex items-center gap-1 px-3.5 bg-neutral-100 border border-r-0 {{ $errors->has('phone') ? 'border-red-500' : 'border-brand-border' }} rounded-l-xl text-sm font-bold text-brand-espresso select-none">
+                            <i class="ti ti-brand-whatsapp text-green-600 text-base"></i>
+                            <span>+62</span>
+                        </div>
+                        <input type="text" id="phone" wire:model="phone"
+                            @input="$wire.set('phone', sanitizePhone($event.target.value))"
+                            placeholder="81234567890"
+                            class="w-full px-4 py-2.5 bg-white border {{ $errors->has('phone') ? 'border-red-500' : 'border-brand-border' }} rounded-r-xl text-base text-brand-espresso focus:outline-none focus:border-brand-primary font-mono transition">
+                    </div>
                     @error('phone')
                         <p class="text-xs text-red-600 font-medium mt-1">{{ $message }}</p>
                     @enderror
+                    <p class="text-xs text-brand-warm-gray mt-1">Format nomor HP tanpa angka 0 atau 62 di depan. Contoh: <code class="font-mono text-brand-primary font-bold">81234567890</code></p>
                 </div>
 
                 <!-- Rute Pengiriman -->

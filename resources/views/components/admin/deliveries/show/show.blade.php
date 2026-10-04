@@ -114,9 +114,25 @@
                         <label for="recipient_phone" class="block text-xs font-semibold text-brand-espresso mb-1">
                             No. HP Penerima (Opsional)
                         </label>
-                        <input type="text" id="recipient_phone" wire:model="recipient_phone"
-                            placeholder="Contoh: 081234567890"
-                            class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-hidden focus:border-brand-primary font-mono">
+                        <div class="relative flex items-stretch"
+                            x-data="{
+                                sanitizePhone(val) {
+                                    if (!val) return '';
+                                    let d = String(val).replace(/\D/g, '');
+                                    if (d.startsWith('62')) d = d.substring(2);
+                                    while (d.startsWith('0')) d = d.substring(1);
+                                    return d;
+                                }
+                            }">
+                            <div class="inline-flex items-center gap-1 px-3 bg-neutral-100 border border-r-0 border-brand-border rounded-l-xl text-xs font-bold text-brand-espresso select-none">
+                                <i class="ti ti-brand-whatsapp text-green-600 text-sm"></i>
+                                <span>+62</span>
+                            </div>
+                            <input type="text" id="recipient_phone" wire:model="recipient_phone"
+                                @input="$wire.set('recipient_phone', sanitizePhone($event.target.value))"
+                                placeholder="81234567890"
+                                class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-r-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary font-mono">
+                        </div>
                         @error('recipient_phone')
                             <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                         @enderror

@@ -31,7 +31,13 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
         $this->storeId = $store->id;
         $this->name = $store->name;
         $this->owner_name = $store->owner_name;
-        $this->phone = $store->phone;
+        $rawPhone = $store->phone ?? '';
+        // Normalize to digits only without 62 prefix for display in +62 input
+        $digits = preg_replace('/\D/', '', $rawPhone);
+        if (str_starts_with($digits, '62')) {
+            $digits = substr($digits, 2);
+        }
+        $this->phone = $digits ?: '';
         $this->address = $store->address;
         $this->latitude = $store->latitude !== null ? (float) $store->latitude : null;
         $this->longitude = $store->longitude !== null ? (float) $store->longitude : null;
@@ -92,7 +98,7 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
         $this->store->update([
             'name' => trim($validated['name']),
             'owner_name' => ! empty($validated['owner_name']) ? trim($validated['owner_name']) : null,
-            'phone' => ! empty($validated['phone']) ? trim($validated['phone']) : null,
+            'phone' => ! empty($validated['phone']) ? '62' . preg_replace('/\D/', '', $validated['phone']) : null,
             'address' => ! empty($validated['address']) ? trim($validated['address']) : null,
             'latitude' => isset($validated['latitude']) && $validated['latitude'] !== '' && $validated['latitude'] !== null ? (float) $validated['latitude'] : null,
             'longitude' => isset($validated['longitude']) && $validated['longitude'] !== '' && $validated['longitude'] !== null ? (float) $validated['longitude'] : null,

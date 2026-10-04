@@ -35,7 +35,12 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         $this->recipient_name = $delivery->recipient_name ?? $delivery->store?->owner_name ?? '';
         $this->recipient_role = $delivery->recipient_role ?? '';
-        $this->recipient_phone = $delivery->recipient_phone ?? $delivery->store?->phone ?? '';
+        $rawPhone = $delivery->recipient_phone ?? $delivery->store?->phone ?? '';
+        $digits = preg_replace('/\D/', '', $rawPhone);
+        if (str_starts_with($digits, '62')) {
+            $digits = substr($digits, 2);
+        }
+        $this->recipient_phone = $digits ?: '';
         $this->signature_data = $delivery->signature_data ?? '';
     }
 
@@ -117,7 +122,7 @@ new #[Layout('components.layouts.admin')] class extends Component
                 'delivered_at' => now(),
                 'recipient_name' => $this->recipient_name,
                 'recipient_role' => $this->recipient_role ?: null,
-                'recipient_phone' => $this->recipient_phone ?: null,
+                'recipient_phone' => ! empty($this->recipient_phone) ? '62' . preg_replace('/\D/', '', $this->recipient_phone) : null,
                 'proof_image' => $proofPath,
                 'signature_data' => $this->signature_data ?: $this->delivery->signature_data,
                 'notes' => $updatedNotes,
