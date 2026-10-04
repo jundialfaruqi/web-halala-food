@@ -124,9 +124,13 @@ new #[Layout('components.layouts.admin'), Title('Pengaturan Usaha - Halala Food'
             $this->addBankAccount();
         }
 
+        $msg = 'Pengaturan profil usaha dan rekening pembayaran berhasil disimpan.';
+
         session()->flash('toast', [
-            'message' => 'Pengaturan profil usaha dan rekening pembayaran berhasil disimpan.',
+            'message' => $msg,
             'type' => 'success',
         ]);
+
+        $this->dispatch('show-toast', message: $msg, type: 'success');
     }
 };
