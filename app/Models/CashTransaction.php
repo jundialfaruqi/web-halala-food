@@ -39,6 +39,16 @@ class CashTransaction extends Model
         return $this->belongsTo(RawMaterialPurchase::class, 'reference_id');
     }
 
+    public function invoicePayment(): BelongsTo
+    {
+        return $this->belongsTo(InvoicePayment::class, 'reference_id');
+    }
+
+    public function fixedAsset(): BelongsTo
+    {
+        return $this->belongsTo(FixedAsset::class, 'reference_id');
+    }
+
     /**
      * Get a formatted string listing all raw material names and quantities for purchase-related cash transactions.
      */

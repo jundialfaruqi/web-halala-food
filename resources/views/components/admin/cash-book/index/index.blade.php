@@ -222,7 +222,9 @@
             </thead>
             <tbody class="divide-y divide-brand-border/60 text-sm">
                 @forelse($transactions as $trx)
-                    <tr class="hover:bg-neutral-50/50 transition-colors">
+                    <tr wire:key="trx-row-{{ $trx->id }}" wire:click="showDetail({{ $trx->id }})"
+                        class="hover:bg-neutral-100/70 transition-colors cursor-pointer"
+                        title="Klik untuk melihat rincian transaksi lengkap">
                         <td class="py-4 px-6 font-mono font-bold text-brand-espresso whitespace-nowrap">
                             {{ $trx->transaction_date->format('d/m/Y') }}
                         </td>
@@ -261,7 +263,7 @@
                         </td>
                         <td class="py-4 px-6 text-right whitespace-nowrap">
                             @can('buku-kas-delete')
-                                <button type="button" wire:click="confirmDeleteTransaction({{ $trx->id }})"
+                                <button type="button" wire:click.stop="confirmDeleteTransaction({{ $trx->id }})"
                                     class="text-brand-warm-gray hover:text-red-700 transition cursor-pointer p-1"
                                     title="Hapus Transaksi">
                                     <i class="ti ti-trash text-lg"></i>
@@ -763,6 +765,178 @@
                         Hapus Transaksi
                     </button>
                 </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Modal Detail Transaksi Kas (Minimalis, Bersih & Mudah Dibaca Orang Tua) -->
+    @if ($showDetailModal && $selectedTransaction)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto"
+            x-data
+            @keydown.escape.window="$wire.closeDetailModal()">
+            <div class="bg-white w-full max-w-xl rounded-2xl p-6 sm:p-8 border border-neutral-300 shadow-2xl space-y-6 text-neutral-900 my-8"
+                @click.outside="$wire.closeDetailModal()">
+
+                <!-- Header Modal -->
+                <div class="flex items-center justify-between pb-4 border-b border-neutral-200">
+                    <h3 class="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900">
+                        Detail Transaksi Kas
+                    </h3>
+                    <button type="button" wire:click="closeDetailModal"
+                        class="text-neutral-400 hover:text-neutral-900 transition p-1 cursor-pointer"
+                        title="Tutup Modal">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Nominal & Jenis Transaksi (Besar & Kontras Tinggi) -->
+                <div class="p-5 bg-neutral-50 rounded-xl border border-neutral-200 space-y-1">
+                    <p class="text-sm font-semibold text-neutral-500 uppercase tracking-wider">
+                        @if ($selectedTransaction->type === 'income')
+                            Pemasukan Kas
+                        @elseif ($selectedTransaction->type === 'expense')
+                            Pengeluaran Kas
+                        @elseif ($selectedTransaction->type === 'prive')
+                            Penarikan Prive
+                        @endif
+                    </p>
+                    <p class="text-3xl sm:text-4xl font-extrabold font-mono text-neutral-900 tracking-tight">
+                        {{ $selectedTransaction->type === 'income' ? '+' : '-' }} Rp {{ number_format($selectedTransaction->amount, 0, ',', '.') }}
+                    </p>
+                </div>
+
+                <!-- Informasi Pokok Transaksi -->
+                <div class="divide-y divide-neutral-200 border-y border-neutral-200 text-base">
+                    <div class="py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                        <span class="text-neutral-500 font-medium">Tanggal Transaksi</span>
+                        <span class="font-bold text-neutral-900">{{ $selectedTransaction->transaction_date->translatedFormat('l, d F Y') }}</span>
+                    </div>
+                    <div class="py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                        <span class="text-neutral-500 font-medium">Kategori Pos</span>
+                        <span class="font-bold text-neutral-900">{{ $selectedTransaction->category }}</span>
+                    </div>
+                    <div class="py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+                        <span class="text-neutral-500 font-medium">Rekening / Akun Kas</span>
+                        <span class="font-bold text-neutral-900">{{ $selectedTransaction->account?->name }}</span>
+                    </div>
+                    <div class="py-3 flex flex-col gap-1.5">
+                        <span class="text-neutral-500 font-medium">Keterangan Lengkap</span>
+                        <span class="font-medium text-neutral-800 leading-relaxed">{{ $selectedTransaction->description ?: '-' }}</span>
+                    </div>
+                </div>
+
+                <!-- Rincian Bahan Baku (Jika Transaksi Pembelian atau Pelunasan Hutang Supplier) -->
+                @if ($selectedTransaction->purchase && $selectedTransaction->purchase->items->isNotEmpty())
+                    <div class="space-y-3 pt-1">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-base font-bold text-neutral-900">
+                                Rincian Bahan Baku yang Dibeli
+                            </h4>
+                            <span class="text-xs text-neutral-500 font-mono">
+                                {{ $selectedTransaction->purchase->purchase_number }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-neutral-600">
+                            Supplier: <strong class="text-neutral-900">{{ $selectedTransaction->purchase->supplier_name }}</strong>
+                        </p>
+                        <div class="border border-neutral-200 rounded-xl overflow-hidden">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-neutral-100 text-neutral-700 font-semibold border-b border-neutral-200">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Bahan Baku</th>
+                                        <th class="py-2.5 px-3 text-right">Jumlah</th>
+                                        <th class="py-2.5 px-3 text-right">Harga Satuan</th>
+                                        <th class="py-2.5 px-3 text-right">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutral-200">
+                                    @foreach ($selectedTransaction->purchase->items as $pItem)
+                                        <tr>
+                                            <td class="py-2.5 px-3 font-medium text-neutral-900">
+                                                {{ $pItem->rawMaterial?->name }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono text-neutral-800">
+                                                {{ number_format($pItem->quantity, (floor($pItem->quantity) == $pItem->quantity ? 0 : 2), ',', '.') }}
+                                                {{ $pItem->rawMaterial?->display_unit }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono text-neutral-800">
+                                                Rp {{ number_format($pItem->cost_per_unit, 0, ',', '.') }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono font-bold text-neutral-900">
+                                                Rp {{ number_format($pItem->subtotal, 0, ',', '.') }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Rincian Pelunasan Faktur Toko -->
+                @if ($selectedTransaction->invoicePayment && $selectedTransaction->invoicePayment->invoice)
+                    <div class="space-y-3 pt-1 border-t border-neutral-200">
+                        <h4 class="text-base font-bold text-neutral-900">
+                            Rincian Faktur Toko Mitra
+                        </h4>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span class="text-neutral-500 block text-xs">Toko Mitra:</span>
+                                <span class="font-bold text-neutral-900">{{ $selectedTransaction->invoicePayment->invoice->store?->name }}</span>
+                            </div>
+                            <div>
+                                <span class="text-neutral-500 block text-xs">Nomor Faktur:</span>
+                                <span class="font-bold text-neutral-900 font-mono">{{ $selectedTransaction->invoicePayment->invoice->invoice_number }}</span>
+                            </div>
+                            <div>
+                                <span class="text-neutral-500 block text-xs">No. Pembayaran:</span>
+                                <span class="font-bold text-neutral-900 font-mono">{{ $selectedTransaction->invoicePayment->payment_number }}</span>
+                            </div>
+                            <div>
+                                <span class="text-neutral-500 block text-xs">Metode Pembayaran:</span>
+                                <span class="font-bold text-neutral-900">{{ strtoupper(str_replace('_', ' ', $selectedTransaction->invoicePayment->payment_method)) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Rincian Aset Tetap -->
+                @if ($selectedTransaction->fixedAsset)
+                    <div class="space-y-3 pt-1 border-t border-neutral-200">
+                        <h4 class="text-base font-bold text-neutral-900">
+                            Rincian Aset Tetap
+                        </h4>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span class="text-neutral-500 block text-xs">Nama Aset:</span>
+                                <span class="font-bold text-neutral-900">{{ $selectedTransaction->fixedAsset->name }}</span>
+                            </div>
+                            <div>
+                                <span class="text-neutral-500 block text-xs">Kode Aset:</span>
+                                <span class="font-bold text-neutral-900 font-mono">{{ $selectedTransaction->fixedAsset->asset_code }}</span>
+                            </div>
+                            <div>
+                                <span class="text-neutral-500 block text-xs">Lokasi:</span>
+                                <span class="font-bold text-neutral-900">{{ $selectedTransaction->fixedAsset->location ?: '-' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-neutral-500 block text-xs">Kondisi:</span>
+                                <span class="font-bold text-neutral-900 capitalize">{{ str_replace('_', ' ', $selectedTransaction->fixedAsset->condition) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Tombol Tutup Besar & Nyaman -->
+                <div class="pt-2">
+                    <button type="button" wire:click="closeDetailModal"
+                        class="w-full py-3.5 px-6 rounded-xl font-bold text-base text-white bg-neutral-900 hover:bg-neutral-800 transition cursor-pointer text-center">
+                        Tutup
+                    </button>
+                </div>
+
             </div>
         </div>
     @endif

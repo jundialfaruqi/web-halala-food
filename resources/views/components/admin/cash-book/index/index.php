@@ -38,6 +38,10 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
     public ?int $deletingTransactionId = null;
 
+    public ?int $selectedTransactionId = null;
+
+    public bool $showDetailModal = false;
+
     // Transaction Form fields
     public string $transaction_date = '';
 
@@ -313,6 +317,18 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
         session()->flash('success', 'Catatan transaksi kas berhasil dibatalkan dan saldo dikembalikan.');
     }
 
+    public function showDetail(int $id): void
+    {
+        $this->selectedTransactionId = $id;
+        $this->showDetailModal = true;
+    }
+
+    public function closeDetailModal(): void
+    {
+        $this->showDetailModal = false;
+        $this->selectedTransactionId = null;
+    }
+
     public function with(): array
     {
         $accounts = Account::orderBy('name')->get();
@@ -361,6 +377,16 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
 
         $hasActiveFilters = $this->search !== '' || $this->typeFilter !== 'all' || $this->accountFilter !== '' || $this->dateRange !== '';
 
+        $selectedTransaction = null;
+        if ($this->selectedTransactionId) {
+            $selectedTransaction = CashTransaction::with([
+                'account',
+                'purchase.items.rawMaterial.unitModel',
+                'invoicePayment.invoice.store',
+                'fixedAsset',
+            ])->find($this->selectedTransactionId);
+        }
+
         return [
             'accounts' => $accounts,
             'transactions' => $transactions,
@@ -369,6 +395,7 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
             'filteredExpense' => $filteredExpense,
             'filteredPrive' => $filteredPrive,
             'hasActiveFilters' => $hasActiveFilters,
+            'selectedTransaction' => $selectedTransaction,
         ];
     }
 };

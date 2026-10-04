@@ -449,6 +449,8 @@ class FinalAcceptanceSimulationSeeder extends Seeder
                 'category' => 'Aset Tetap Usaha',
                 'amount' => $assetPrice,
                 'description' => "Pembelian Aset Tetap: {$asset->name} ({$asset->asset_code})",
+                'reference_type' => 'fixed_asset_purchase',
+                'reference_id' => $asset->id,
             ]);
 
             // Jurnal Perolehan Aset: Debit Aset Tetap (1-2000) vs Kredit Kas Bank (1-1002)
