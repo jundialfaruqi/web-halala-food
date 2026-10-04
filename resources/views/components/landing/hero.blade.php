@@ -22,7 +22,7 @@
 
                 <!-- Description -->
                 <p class="text-brand-warm-gray text-base sm:text-lg leading-relaxed max-w-xl">
-                    Marie Wijen dan Ting-Ting Susu, camilan tradisional dengan cita rasa autentik yang selalu
+                    Merie Wijen dan Ting-Ting Susu, camilan tradisional dengan cita rasa autentik yang selalu
                     bikin rindu.
                 </p>
 
@@ -84,15 +84,15 @@
 
                     <!-- Main Product Composition Image -->
                     <img src="{{ asset('assets/images/hero_products.webp') }}"
-                        alt="Marie Wijen dan Ting-Ting Susu Halala Food"
+                        alt="Merie Wijen dan Ting-Ting Susu Halala Food"
                         class="w-full h-auto object-cover transform group-hover:scale-102 transition duration-700">
 
-                    <!-- Handwritten Annotation: Marie Wijen -->
+                    <!-- Handwritten Annotation: Merie Wijen -->
                     <div class="absolute top-4 left-6 sm:top-7 sm:left-10 z-20 pointer-events-none select-none">
                         <div class="flex flex-col items-center">
                             <span
                                 class="text-brand-espresso font-bold text-base sm:text-xl font-serif tracking-tight leading-tight drop-shadow-xs">
-                                Marie<br>Wijen
+                                Merie<br>Wijen
                             </span>
                             <svg class="w-6 h-6 sm:w-8 sm:h-8 text-brand-primary -mt-0.5 sm:-mt-1 transform rotate-12"
                                 viewBox="0 0 50 50" fill="none" stroke="currentColor" stroke-width="2.5"

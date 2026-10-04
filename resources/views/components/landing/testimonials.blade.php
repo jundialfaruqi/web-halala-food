@@ -38,7 +38,7 @@
 
                     <!-- Feedback -->
                     <p class="text-brand-text-primary text-sm leading-relaxed italic">
-                        &ldquo;Marie Wijennya enak banget, renyah dan gurih. Sudah langganan dari dulu!&rdquo;
+                        &ldquo;Merie Wijennya enak banget, renyah dan gurih. Sudah langganan dari dulu!&rdquo;
                     </p>
                 </div>
 

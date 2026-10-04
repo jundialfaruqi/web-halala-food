@@ -33,7 +33,7 @@
             <div class="lg:col-span-2 space-y-3">
                 <h5 class="font-bold text-sm text-brand-espresso">Produk</h5>
                 <ul class="space-y-2 text-xs sm:text-sm">
-                    <li><a href="{{ route('home') }}#produk" class="text-brand-warm-gray hover:text-brand-primary transition">Marie
+                    <li><a href="{{ route('home') }}#produk" class="text-brand-warm-gray hover:text-brand-primary transition">Merie
                             Wijen</a></li>
                     <li><a href="{{ route('home') }}#produk"
                             class="text-brand-warm-gray hover:text-brand-primary transition">Ting-Ting Susu</a>

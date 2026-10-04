@@ -16,13 +16,13 @@
         <!-- Products Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 max-w-5xl mx-auto">
 
-            <!-- Product 1: Marie Wijen -->
+            <!-- Product 1: Merie Wijen -->
             <div
                 class="group bg-white rounded-3xl border border-brand-border p-5 sm:p-6 transition-all duration-300 hover:border-brand-primary/40 hover:shadow-xl flex flex-col justify-between">
                 <div>
                     <!-- Product Image Box -->
                     <div class="relative aspect-4/3 rounded-2xl overflow-hidden bg-brand-soft-cream/30">
-                        <img src="{{ asset('assets/images/marie_wijen.webp') }}" alt="Marie Wijen Halala Food"
+                        <img src="{{ asset('assets/images/marie_wijen.webp') }}" alt="Merie Wijen Halala Food"
                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
 
                         <!-- Category Badge -->
@@ -40,7 +40,7 @@
                         <div class="flex items-start justify-between gap-2">
                             <h3
                                 class="text-xl sm:text-2xl font-bold text-brand-espresso group-hover:text-brand-primary transition">
-                                Marie Wijen
+                                Merie Wijen
                             </h3>
                             <span
                                 class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-brand-soft-cream text-brand-espresso shrink-0">
@@ -78,7 +78,7 @@
                         <i class="ti ti-building-store text-brand-primary text-base"></i>
                         <span>Tersedia di Toko Mitra</span>
                     </div>
-                    <a href="https://wa.me/6281234567890?text=Halo%20Halala%20Food,%20saya%20ingin%20informasi%20pasokan%20dan%20kemitraan%20toko%20untuk%20produk%20Marie%20Wijen"
+                    <a href="https://wa.me/6281234567890?text=Halo%20Halala%20Food,%20saya%20ingin%20informasi%20pasokan%20dan%20kemitraan%20toko%20untuk%20produk%20Merie%20Wijen"
                         target="_blank"
                         class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-soft-cream hover:bg-brand-primary text-brand-espresso hover:text-white font-semibold text-xs sm:text-sm transition cursor-pointer">
                         <i class="ti ti-brand-whatsapp text-base"></i>
