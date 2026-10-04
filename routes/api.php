@@ -31,6 +31,8 @@ Route::middleware(['auth:api'])->group(function () {
     // Toko Mitra
     Route::get('/stores/routes', [StoreController::class, 'routes'])->name('api.stores.routes');
     Route::get('/stores', [StoreController::class, 'index'])->name('api.stores.index');
+    Route::post('/stores', [StoreController::class, 'store'])->name('api.stores.store');
     Route::get('/stores/{store}', [StoreController::class, 'show'])->name('api.stores.show');
     Route::match(['put', 'patch', 'post'], '/stores/{store}', [StoreController::class, 'update'])->name('api.stores.update');
+    Route::delete('/stores/{store}', [StoreController::class, 'destroy'])->name('api.stores.destroy');
 });
