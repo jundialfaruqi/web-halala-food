@@ -159,10 +159,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         }
 
         if ($this->invoice->status === 'dibatalkan') {
-            session()->flash('toast', [
-                'message' => 'Faktur yang telah dibatalkan tidak dapat direkonsiliasi.',
-                'type' => 'error',
-            ]);
+            $this->notify('Faktur yang telah dibatalkan tidak dapat direkonsiliasi.', 'error');
             return;
         }
 
@@ -239,10 +236,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->resetPaymentForm();
         $this->showReconciliation = false;
 
-        session()->flash('toast', [
-            'message' => 'Rekonsiliasi titip jual berhasil disimpan. Tagihan baru sebesar Rp ' . number_format($this->invoice->total_amount, 0, ',', '.') . '.',
-            'type' => 'success',
-        ]);
+        $this->notify('Rekonsiliasi titip jual berhasil disimpan. Tagihan baru sebesar Rp ' . number_format($this->invoice->total_amount, 0, ',', '.') . '.', 'success');
     }
 
     public function recordPayment(): void
@@ -252,19 +246,13 @@ new #[Layout('components.layouts.admin')] class extends Component
         }
 
         if ($this->invoice->status === 'dibatalkan') {
-            session()->flash('toast', [
-                'message' => 'Faktur yang telah dibatalkan tidak dapat menerima pembayaran.',
-                'type' => 'error',
-            ]);
+            $this->notify('Faktur yang telah dibatalkan tidak dapat menerima pembayaran.', 'error');
             return;
         }
 
         $remaining = (float) $this->invoice->remaining_balance;
         if ($remaining <= 0) {
-            session()->flash('toast', [
-                'message' => 'Faktur tagihan ini sudah lunas.',
-                'type' => 'warning',
-            ]);
+            $this->notify('Faktur tagihan ini sudah lunas.', 'warning');
             return;
         }
 
@@ -303,10 +291,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->invoice->load(['payments.user']);
         $this->resetPaymentForm();
 
-        session()->flash('toast', [
-            'message' => 'Pembayaran sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dicatat.',
-            'type' => 'success',
-        ]);
+        $this->notify('Pembayaran sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dicatat.', 'success');
     }
 
     public function deletePayment(int $paymentId): void
@@ -329,10 +314,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->invoice->load(['payments.user']);
         $this->resetPaymentForm();
 
-        session()->flash('toast', [
-            'message' => 'Catatan pembayaran berhasil dihapus dan saldo piutang diperbarui.',
-            'type' => 'success',
-        ]);
+        $this->notify('Catatan pembayaran berhasil dihapus dan saldo piutang diperbarui.', 'success');
     }
 
     public function cancelInvoice(): void
@@ -342,10 +324,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         }
 
         if ((float) $this->invoice->paid_amount > 0) {
-            session()->flash('toast', [
-                'message' => 'Faktur yang sudah memiliki riwayat pembayaran tidak dapat dibatalkan. Hapus pembayaran terlebih dahulu jika ingin membatalkan.',
-                'type' => 'error',
-            ]);
+            $this->notify('Faktur yang sudah memiliki riwayat pembayaran tidak dapat dibatalkan. Hapus pembayaran terlebih dahulu jika ingin membatalkan.', 'error');
             return;
         }
 
@@ -357,10 +336,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         });
         $this->invoice->refresh();
 
-        session()->flash('toast', [
-            'message' => 'Faktur tagihan berhasil dibatalkan.',
-            'type' => 'success',
-        ]);
+        $this->notify('Faktur tagihan berhasil dibatalkan.', 'success');
     }
 
     public function getWhatsappUrlProperty(): string
@@ -426,5 +402,14 @@ new #[Layout('components.layouts.admin')] class extends Component
         return [
             'businessSetting' => \App\Models\BusinessSetting::getSettings(),
         ];
+    }
+
+    private function notify(string $message, string $type = 'success'): void
+    {
+        session()->flash('toast', [
+            'message' => $message,
+            'type' => $type,
+        ]);
+        $this->dispatch('show-toast', message: $message, type: $type);
     }
 };

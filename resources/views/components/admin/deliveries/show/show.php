@@ -61,10 +61,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         $this->delivery->refresh();
 
-        session()->flash('toast', [
-            'message' => "Surat jalan {$this->delivery->delivery_number} kini dalam perjalanan.",
-            'type' => 'success',
-        ]);
+        $this->notify("Surat jalan {$this->delivery->delivery_number} kini dalam perjalanan.", 'success');
     }
 
     public function completeDelivery(): void
@@ -134,10 +131,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : "";
 
-        session()->flash('toast', [
-            'message' => "Pengantaran selesai! Barang telah diterima oleh {$this->recipient_name}.{$invoiceMsg}",
-            'type' => 'success',
-        ]);
+        $this->notify("Pengantaran selesai! Barang telah diterima oleh {$this->recipient_name}.{$invoiceMsg}", 'success');
     }
 
     public function cancelDelivery(): void
@@ -161,10 +155,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         $this->delivery->refresh();
 
-        session()->flash('toast', [
-            'message' => "Surat jalan dibatalkan dan stok produk dikembalikan ke gudang.",
-            'type' => 'success',
-        ]);
+        $this->notify("Surat jalan dibatalkan dan stok produk dikembalikan ke gudang.", 'success');
     }
 
     public function with(): array
@@ -172,5 +163,14 @@ new #[Layout('components.layouts.admin')] class extends Component
         return [
             'businessSetting' => \App\Models\BusinessSetting::getSettings(),
         ];
+    }
+
+    private function notify(string $message, string $type = 'success'): void
+    {
+        session()->flash('toast', [
+            'message' => $message,
+            'type' => $type,
+        ]);
+        $this->dispatch('show-toast', message: $message, type: $type);
     }
 };
