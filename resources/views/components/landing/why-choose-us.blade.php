@@ -16,7 +16,7 @@
                 <div class="lg:col-span-5 order-2 lg:order-1">
                     <div
                         class="relative rounded-3xl overflow-hidden shadow-md border border-white/60 bg-white">
-                        <img src="{{ asset('assets/images/why_choose_us.jpg') }}" alt="Kualitas Halala Food"
+                        <img src="{{ asset('assets/images/why_choose_us.webp') }}" alt="Kualitas Halala Food"
                             class="w-full h-auto object-cover">
                     </div>
                 </div>

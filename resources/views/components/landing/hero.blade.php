@@ -83,7 +83,7 @@
                     class="relative mx-auto max-w-lg lg:max-w-none rounded-3xl overflow-hidden border border-brand-border/80 bg-white shadow-xl shadow-brand-espresso/5 group">
 
                     <!-- Main Product Composition Image -->
-                    <img src="{{ asset('assets/images/hero_products.jpg') }}"
+                    <img src="{{ asset('assets/images/hero_products.webp') }}"
                         alt="Marie Wijen dan Ting-Ting Susu Halala Food"
                         class="w-full h-auto object-cover transform group-hover:scale-102 transition duration-700">
 

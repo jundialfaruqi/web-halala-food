@@ -22,7 +22,7 @@
                 <div>
                     <!-- Product Image Box -->
                     <div class="relative aspect-4/3 rounded-2xl overflow-hidden bg-brand-soft-cream/30">
-                        <img src="{{ asset('assets/images/marie_wijen.jpg') }}" alt="Marie Wijen Halala Food"
+                        <img src="{{ asset('assets/images/marie_wijen.webp') }}" alt="Marie Wijen Halala Food"
                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
 
                         <!-- Category Badge -->
@@ -93,7 +93,7 @@
                 <div>
                     <!-- Product Image Box -->
                     <div class="relative aspect-4/3 rounded-2xl overflow-hidden bg-brand-soft-cream/30">
-                        <img src="{{ asset('assets/images/ting_ting_susu.jpg') }}" alt="Ting-Ting Susu Halala Food"
+                        <img src="{{ asset('assets/images/ting_ting_susu.webp') }}" alt="Ting-Ting Susu Halala Food"
                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
 
                         <!-- Category Badge -->
