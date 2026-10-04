@@ -123,13 +123,13 @@
 
                     <div class="shrink-0">
                         @if (! $showReconciliation)
-                            <button type="button" wire:click="openReconciliation"
-                                class="inline-flex items-center gap-1.5 px-4 py-2 border border-brand-border bg-white rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-50 transition cursor-pointer">
+                            <button type="button" wire:click="openReconciliation" wire:loading.attr="disabled" wire:target="openReconciliation"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 border border-brand-border bg-white rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-50 transition cursor-pointer disabled:opacity-50">
                                 <span>{{ $isReconciled ? 'Ubah Rekonsiliasi' : 'Hitung Rekonsiliasi' }}</span>
                             </button>
                         @else
-                            <button type="button" wire:click="closeReconciliation"
-                                class="inline-flex items-center gap-1.5 px-4 py-2 border border-brand-border bg-white rounded-xl text-sm font-semibold text-brand-warm-gray hover:bg-neutral-50 transition cursor-pointer">
+                            <button type="button" wire:click="closeReconciliation" wire:loading.attr="disabled" wire:target="closeReconciliation"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 border border-brand-border bg-white rounded-xl text-sm font-semibold text-brand-warm-gray hover:bg-neutral-50 transition cursor-pointer disabled:opacity-50">
                                 <span>Tutup</span>
                             </button>
                         @endif
@@ -156,7 +156,7 @@
                 @endif
 
                 @if ($showReconciliation)
-                    <form wire:submit="saveReconciliation" class="pt-2 space-y-4">
+                    <form wire:submit="saveReconciliation" @keydown.enter.prevent class="pt-2 space-y-4">
                         <div class="border border-brand-border rounded-xl overflow-hidden overflow-x-auto bg-white">
                             <table class="w-full text-left text-sm text-brand-espresso">
                                 <thead class="bg-neutral-50 border-b border-brand-border text-xs uppercase tracking-wider font-semibold text-brand-warm-gray">
@@ -173,7 +173,7 @@
                                 </thead>
                                 <tbody class="divide-y divide-brand-border/60">
                                     @foreach ($reconciliationItems as $idx => $rItem)
-                                        <tr class="hover:bg-neutral-50/50 transition">
+                                        <tr wire:key="recon-row-{{ $rItem['id'] }}" class="hover:bg-neutral-50/50 transition">
                                             <td class="px-4 py-2.5">
                                                 <div class="font-bold text-brand-espresso">{{ $rItem['product_name'] }}</div>
                                                 <div class="text-xs text-brand-warm-gray">Satuan: {{ $rItem['unit'] }}</div>
@@ -183,6 +183,7 @@
                                             </td>
                                             <td class="px-3 py-2.5">
                                                 <input type="number" min="0" max="{{ $rItem['delivered_quantity'] }}"
+                                                    wire:key="recon-input-remaining-{{ $rItem['id'] }}"
                                                     wire:model.live.debounce.300ms="reconciliationItems.{{ $idx }}.remaining_quantity"
                                                     class="w-full px-2.5 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-center font-mono text-brand-espresso focus:outline-none focus:border-brand-primary"
                                                     placeholder="0">
@@ -192,6 +193,7 @@
                                             </td>
                                             <td class="px-3 py-2.5">
                                                 <input type="number" min="0" max="{{ $rItem['delivered_quantity'] }}"
+                                                    wire:key="recon-input-damaged-{{ $rItem['id'] }}"
                                                     wire:model.live.debounce.300ms="reconciliationItems.{{ $idx }}.damaged_quantity"
                                                     class="w-full px-2.5 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-center font-mono text-brand-espresso focus:outline-none focus:border-brand-primary"
                                                     placeholder="0">
@@ -201,6 +203,7 @@
                                             </td>
                                             <td class="px-3 py-2.5">
                                                 <input type="number" min="0" max="{{ $rItem['delivered_quantity'] }}"
+                                                    wire:key="recon-input-returned-{{ $rItem['id'] }}"
                                                     wire:model.live.debounce.300ms="reconciliationItems.{{ $idx }}.returned_quantity"
                                                     class="w-full px-2.5 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-center font-mono text-brand-espresso focus:outline-none focus:border-brand-primary"
                                                     placeholder="0">
@@ -236,14 +239,14 @@
                                 Barang retur ditarik otomatis dikembalikan ke stok gudang. Sisa piutang faktur akan langsung disesuaikan.
                             </p>
                             <div class="flex items-center gap-2.5 self-end sm:self-auto">
-                                <button type="button" wire:click="closeReconciliation"
-                                    class="px-4 py-2 border border-brand-border bg-white rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-50 transition cursor-pointer">
+                                <button type="button" wire:click="closeReconciliation" wire:loading.attr="disabled" wire:target="closeReconciliation, saveReconciliation"
+                                    class="px-4 py-2 border border-brand-border bg-white rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-50 transition cursor-pointer disabled:opacity-50">
                                     Batal
                                 </button>
-                                <button type="submit" wire:loading.attr="disabled"
+                                <button type="submit" wire:loading.attr="disabled" wire:target="saveReconciliation"
                                     class="inline-flex items-center justify-center gap-2 px-5 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-bold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50">
-                                    <span wire:loading.remove>Simpan Rekonsiliasi</span>
-                                    <span wire:loading>Menyimpan...</span>
+                                    <span wire:loading.remove wire:target="saveReconciliation">Simpan Rekonsiliasi</span>
+                                    <span wire:loading wire:target="saveReconciliation">Menyimpan...</span>
                                 </button>
                             </div>
                         </div>
@@ -265,8 +268,8 @@
                         </p>
                     </div>
                     <div>
-                        <button type="button" wire:click="fillFullPayment"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-brand-border bg-white rounded-lg text-xs font-semibold text-brand-espresso hover:bg-neutral-100 transition cursor-pointer">
+                        <button type="button" wire:click="fillFullPayment" wire:loading.attr="disabled" wire:target="fillFullPayment"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 border border-brand-border bg-white rounded-lg text-xs font-semibold text-brand-espresso hover:bg-neutral-100 transition cursor-pointer disabled:opacity-50">
                             <i class="ti ti-check text-xs"></i>
                             <span>Isi Pelunasan Penuh (Rp
                                 {{ number_format($invoice->remaining_balance, 0, ',', '.') }})</span>
@@ -335,11 +338,11 @@
                     </div>
 
                     <div class="flex items-end justify-end">
-                        <button type="submit" wire:loading.attr="disabled"
+                        <button type="submit" wire:loading.attr="disabled" wire:target="recordPayment"
                             class="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-bold rounded-xl shadow-xs transition cursor-pointer disabled:opacity-50">
-                            <i class="ti ti-wallet text-base"></i>
-                            <span wire:loading.remove>Simpan Pembayaran</span>
-                            <span wire:loading>Menyimpan...</span>
+                            <i class="ti ti-wallet text-base" wire:loading.remove wire:target="recordPayment"></i>
+                            <span wire:loading.remove wire:target="recordPayment">Simpan Pembayaran</span>
+                            <span wire:loading wire:target="recordPayment">Menyimpan...</span>
                         </button>
                     </div>
                 </form>
@@ -672,7 +675,8 @@
                                         @can('faktur-edit')
                                             <button type="button" wire:click="deletePayment({{ $pay->id }})"
                                                 wire:confirm="Hapus catatan pembayaran ini? Saldo faktur akan dihitung ulang."
-                                                class="text-xs text-red-600 hover:text-red-800 hover:underline cursor-pointer">
+                                                wire:loading.attr="disabled" wire:target="deletePayment({{ $pay->id }})"
+                                                class="text-xs text-red-600 hover:text-red-800 hover:underline cursor-pointer disabled:opacity-50">
                                                 Hapus
                                             </button>
                                         @endcan
@@ -715,7 +719,8 @@
                 class="flex items-center justify-between p-4 bg-neutral-50 rounded-2xl border border-brand-border text-xs print:hidden">
                 <span class="text-brand-warm-gray">Faktur salah buat atau dibatalkan oleh pihak toko?</span>
                 <button type="button" wire:click="cancelInvoice" wire:confirm="Batalkan faktur tagihan ini?"
-                    class="px-3.5 py-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900 hover:bg-amber-100 rounded-lg transition cursor-pointer">
+                    wire:loading.attr="disabled" wire:target="cancelInvoice"
+                    class="px-3.5 py-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900 hover:bg-amber-100 rounded-lg transition cursor-pointer disabled:opacity-50">
                     Batalkan Faktur Tagihan
                 </button>
             </div>
