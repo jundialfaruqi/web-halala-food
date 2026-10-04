@@ -30,12 +30,12 @@
                 <div class="flex flex-wrap items-center gap-4 pt-2">
                     <a href="#produk"
                         class="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-brand-primary text-white font-semibold text-sm sm:text-base shadow-sm hover:bg-brand-primary-hover hover:shadow-md transition-all">
-                        <i class="ti ti-shopping-cart text-lg"></i>
-                        <span>Pesan Sekarang</span>
+                        <i class="ti ti-cookie text-lg"></i>
+                        <span>Lihat Produk Kami</span>
                     </a>
-                    <a href="#produk"
+                    <a href="#tentang-kami"
                         class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full border border-brand-border bg-white text-brand-espresso font-semibold text-sm sm:text-base hover:border-brand-primary hover:text-brand-primary transition-all">
-                        <span>Lihat Produk</span>
+                        <span>Tentang Kami</span>
                         <i class="ti ti-chevron-right text-base"></i>
                     </a>
                 </div>

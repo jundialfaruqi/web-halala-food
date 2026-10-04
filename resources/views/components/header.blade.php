@@ -76,21 +76,6 @@
 
             <!-- Right Actions (Search, Cart & Login) -->
             <div class="flex items-center gap-2 sm:gap-3">
-                <button type="button" aria-label="Cari Produk"
-                    class="size-10 flex items-center justify-center text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/70 rounded-full transition cursor-pointer">
-                    <i class="ti ti-search text-xl"></i>
-                </button>
-
-                <a href="{{ route('home') }}#produk" aria-label="Keranjang Belanja"
-                    @click="if (isHome) setActive('#produk')"
-                    class="relative size-10 flex items-center justify-center text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/70 rounded-full transition">
-                    <i class="ti ti-shopping-bag text-xl"></i>
-                    <span
-                        class="absolute top-1 right-1 size-4 bg-brand-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                        0
-                    </span>
-                </a>
-
                 <a href="{{ route('login') }}" aria-label="Masuk ke Akun"
                     class="size-10 flex items-center justify-center {{ request()->routeIs('login') ? 'text-brand-primary bg-brand-soft-cream' : 'text-brand-espresso hover:text-brand-primary hover:bg-brand-soft-cream/70' }} rounded-full transition"
                     title="Masuk ke Akun">
