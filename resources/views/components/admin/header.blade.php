@@ -1,107 +1,13 @@
 <!-- Admin Header Component -->
 <header class="sticky top-0 z-30 h-20 bg-white border-b border-brand-border px-4 sm:px-6 lg:px-8 flex items-center justify-between print:hidden">
 
-    <!-- Left: Mobile Menu Toggle & Title/Breadcrumb -->
-    <div class="flex items-center gap-3 sm:gap-4">
+    <!-- Left: Mobile Menu Toggle -->
+    <div class="flex items-center">
         <button type="button" @click="sidebarOpen = !sidebarOpen"
             class="lg:hidden size-11 rounded-xl flex items-center justify-center text-brand-espresso hover:text-brand-primary hover:bg-neutral-100 transition cursor-pointer"
             aria-label="Toggle Sidebar">
             <i class="ti ti-menu-2 text-2xl"></i>
         </button>
-
-        <nav aria-label="Breadcrumb" class="hidden sm:flex items-center gap-2 text-sm text-brand-warm-gray font-medium">
-            <a href="{{ route('admin.dashboard') }}" wire:navigate class="hover:text-brand-primary transition">Admin</a>
-            <i class="ti ti-chevron-right text-xs"></i>
-            @if(request()->routeIs('admin.dashboard'))
-                <span class="text-brand-espresso font-semibold">Dashboard</span>
-            @elseif(request()->routeIs('admin.users*'))
-                <span class="text-brand-espresso font-semibold">Pengguna</span>
-            @elseif(request()->routeIs('admin.roles*'))
-                <span class="text-brand-espresso font-semibold">Role &amp; Permission</span>
-            @elseif(request()->routeIs('admin.units.create'))
-                <a href="{{ route('admin.units') }}" wire:navigate class="hover:text-brand-primary transition">Master Satuan</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Tambah Satuan</span>
-            @elseif(request()->routeIs('admin.units.edit'))
-                <a href="{{ route('admin.units') }}" wire:navigate class="hover:text-brand-primary transition">Master Satuan</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Ubah Satuan</span>
-            @elseif(request()->routeIs('admin.units*'))
-                <span class="text-brand-espresso font-semibold">Master Satuan</span>
-            @elseif(request()->routeIs('admin.raw-materials*'))
-                <span class="text-brand-espresso font-semibold">Bahan Baku &amp; Resep</span>
-            @elseif(request()->routeIs('admin.products.create'))
-                <a href="{{ route('admin.products') }}" wire:navigate class="hover:text-brand-primary transition">Produk Jadi</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Tambah Produk</span>
-            @elseif(request()->routeIs('admin.products.edit'))
-                <a href="{{ route('admin.products') }}" wire:navigate class="hover:text-brand-primary transition">Produk Jadi</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Ubah Produk</span>
-            @elseif(request()->routeIs('admin.products*'))
-                <span class="text-brand-espresso font-semibold">Produk Jadi</span>
-            @elseif(request()->routeIs('admin.production*'))
-                <span class="text-brand-espresso font-semibold">Produksi (Batch Masak)</span>
-            @elseif(request()->routeIs('admin.purchases.create'))
-                <a href="{{ route('admin.purchases') }}" wire:navigate class="hover:text-brand-primary transition">Pembelian Bahan</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Catat Pembelian</span>
-            @elseif(request()->routeIs('admin.purchases*'))
-                <span class="text-brand-espresso font-semibold">Pembelian Bahan</span>
-            @elseif(request()->routeIs('admin.stores.create'))
-                <a href="{{ route('admin.stores') }}" wire:navigate class="hover:text-brand-primary transition">Toko Mitra</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Tambah Toko</span>
-            @elseif(request()->routeIs('admin.stores.edit'))
-                <a href="{{ route('admin.stores') }}" wire:navigate class="hover:text-brand-primary transition">Toko Mitra</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Ubah Toko</span>
-            @elseif(request()->routeIs('admin.stores*'))
-                <span class="text-brand-espresso font-semibold">Toko Mitra</span>
-            @elseif(request()->routeIs('admin.deliveries.create'))
-                <a href="{{ route('admin.deliveries') }}" wire:navigate class="hover:text-brand-primary transition">Pengantaran</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Buat Surat Jalan</span>
-            @elseif(request()->routeIs('admin.deliveries.show'))
-                <a href="{{ route('admin.deliveries') }}" wire:navigate class="hover:text-brand-primary transition">Pengantaran</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Detail Surat Jalan</span>
-            @elseif(request()->routeIs('admin.deliveries.edit'))
-                <a href="{{ route('admin.deliveries') }}" wire:navigate class="hover:text-brand-primary transition">Pengantaran</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Ubah Surat Jalan</span>
-            @elseif(request()->routeIs('admin.deliveries*'))
-                <span class="text-brand-espresso font-semibold">Pengantaran &amp; Surat Jalan</span>
-            @elseif(request()->routeIs('admin.invoices.create'))
-                <a href="{{ route('admin.invoices') }}" wire:navigate class="hover:text-brand-primary transition">Faktur &amp; Piutang</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Buat Faktur Baru</span>
-            @elseif(request()->routeIs('admin.invoices.show'))
-                <a href="{{ route('admin.invoices') }}" wire:navigate class="hover:text-brand-primary transition">Faktur &amp; Piutang</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Detail Faktur</span>
-            @elseif(request()->routeIs('admin.invoices.edit'))
-                <a href="{{ route('admin.invoices') }}" wire:navigate class="hover:text-brand-primary transition">Faktur &amp; Piutang</a>
-                <i class="ti ti-chevron-right text-xs"></i>
-                <span class="text-brand-espresso font-semibold">Ubah Faktur</span>
-            @elseif(request()->routeIs('admin.invoices*'))
-                <span class="text-brand-espresso font-semibold">Faktur &amp; Piutang Toko</span>
-            @elseif(request()->routeIs('admin.cash-book*'))
-                <span class="text-brand-espresso font-semibold">Buku Kas &amp; Keuangan</span>
-            @elseif(request()->routeIs('admin.accounting.journals*'))
-                <span class="text-brand-espresso font-semibold">Jurnal Umum Akuntansi</span>
-            @elseif(request()->routeIs('admin.accounting.ledger*'))
-                <span class="text-brand-espresso font-semibold">Buku Besar</span>
-            @elseif(request()->routeIs('admin.accounting.financial-statements*'))
-                <span class="text-brand-espresso font-semibold">Laporan Keuangan Formal</span>
-            @elseif(request()->routeIs('admin.reports*'))
-                <span class="text-brand-espresso font-semibold">Laporan Bisnis</span>
-            @elseif(request()->routeIs('admin.settings*'))
-                <span class="text-brand-espresso font-semibold">Pengaturan Usaha</span>
-            @else
-                <span class="text-brand-espresso font-semibold">Sistem</span>
-            @endif
-        </nav>
     </div>
 
     <!-- Right: Actions & Profile -->
