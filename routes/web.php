@@ -12,6 +12,11 @@ Route::post('/logout', function () {
     session()->invalidate();
     session()->regenerateToken();
 
+    session()->flash('toast', [
+        'message' => 'Anda telah berhasil keluar dari akun.',
+        'type'    => 'success',
+    ]);
+
     return redirect()->route('login');
 })->name('logout');
 

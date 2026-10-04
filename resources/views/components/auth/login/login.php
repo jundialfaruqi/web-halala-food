@@ -66,6 +66,11 @@ new #[Layout('layouts.app'), Title('Masuk ke Akun - Halala Food')] class extends
             ? route('admin.dashboard')
             : route('home');
 
+        session()->flash('toast', [
+            'message' => 'Selamat datang kembali, ' . ($user?->name ?? 'Admin') . '!',
+            'type'    => 'success',
+        ]);
+
         $this->redirectIntended(default: $defaultRoute, navigate: true);
     }
 };
