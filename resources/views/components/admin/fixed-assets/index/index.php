@@ -243,6 +243,15 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
                 ->where('reference_id', $asset->id)
                 ->delete();
 
+            // Revert and delete associated cash transaction if paid via cash/bank
+            $cashTx = \App\Models\CashTransaction::where('reference_type', 'fixed_asset_purchase')
+                ->where('reference_id', $asset->id)
+                ->first();
+            if ($cashTx) {
+                $cashTx->account?->increment('balance', $cashTx->amount);
+                $cashTx->delete();
+            }
+
             $name = $asset->name;
             $asset->delete();
             session()->flash('success', "Aset '{$name}' dihapus dari daftar inventaris.");

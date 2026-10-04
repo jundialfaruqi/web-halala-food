@@ -77,7 +77,9 @@ new #[Layout('components.layouts.admin')] #[Title('Laporan Keuangan Formal - Hal
         $liabilityAccounts = $balanceSheetAccounts->where('type', 'liability');
         $equityAccounts = $balanceSheetAccounts->where('type', 'equity');
 
-        $totalAssets = (float) $assetAccounts->sum('balance');
+        $totalAssets = (float) $assetAccounts->sum(function ($acc) {
+            return $acc->normal_balance === 'credit' ? -$acc->balance : $acc->balance;
+        });
         $totalLiabilities = (float) $liabilityAccounts->sum('balance');
 
         // Net income cumulative for equity

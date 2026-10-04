@@ -197,6 +197,22 @@ new #[Layout('components.layouts.admin')] class extends Component
             }
         }
 
+        // Prevent reducing invoice total below already collected payment
+        $newSubtotalCalc = 0;
+        foreach ($this->reconciliationItems as $rItem) {
+            $delivered = (int) $rItem['delivered_quantity'];
+            $rem = (int) $rItem['remaining_quantity'];
+            $dmg = (int) $rItem['damaged_quantity'];
+            $ret = (int) $rItem['returned_quantity'];
+            $sold = max(0, $delivered - $rem - $dmg - $ret);
+            $newSubtotalCalc += $sold * (float) $rItem['unit_price'];
+        }
+        $newTotalCalc = max(0.0, $newSubtotalCalc - (float) $this->invoice->discount);
+        if ((float) $this->invoice->paid_amount > $newTotalCalc) {
+            $this->notify('Total tagihan hasil rekonsiliasi (Rp ' . number_format($newTotalCalc, 0, ',', '.') . ') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp ' . number_format((float) $this->invoice->paid_amount, 0, ',', '.') . ').', 'error');
+            return;
+        }
+
         DB::transaction(function () {
             foreach ($this->reconciliationItems as $rItem) {
                 $itemModel = InvoiceItem::where('invoice_id', $this->invoice->id)->find($rItem['id']);

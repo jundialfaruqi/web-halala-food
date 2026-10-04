@@ -692,6 +692,43 @@ class AccountingService
     }
 
     /**
+     * Record opening balance for a Cash/Bank account in Cash Book and General Ledger
+     * Debit: 1-1001 (Kas Tunai) or 1-1002 (Kas Bank)
+     * Credit: 3-1000 (Modal Usaha Pemilik)
+     */
+    public static function recordOpeningBalance(\App\Models\Account $account, float $amount, ?string $date = null): ?CashTransaction
+    {
+        if ($amount <= 0) {
+            return null;
+        }
+
+        self::ensureChartOfAccountsExist();
+
+        $txDate = $date ? Carbon::parse($date)->format('Y-m-d') : Carbon::now()->format('Y-m-d');
+
+        $existingTx = CashTransaction::where('reference_type', 'opening_balance')
+            ->where('reference_id', $account->id)
+            ->first();
+
+        if (! $existingTx) {
+            $existingTx = CashTransaction::create([
+                'transaction_date' => $txDate,
+                'account_id' => $account->id,
+                'type' => 'income',
+                'category' => 'Setoran Modal',
+                'amount' => $amount,
+                'reference_type' => 'opening_balance',
+                'reference_id' => $account->id,
+                'description' => "Setoran Modal Saldo Awal: {$account->name}",
+            ]);
+        }
+
+        self::recordCashTransaction($existingTx);
+
+        return $existingTx;
+    }
+
+    /**
      * Record journal entry for a new fixed asset purchase
      * Debit: 1-2000 Aset Tetap Usaha
      * Credit: Cash/Bank account used to pay
@@ -728,13 +765,36 @@ class AccountingService
                 // Decrement cash balance
                 $cashAccount->decrement('balance', $asset->purchase_price);
 
-                // Map cash account to COA — use the closest code
-                $cashCoa = ChartOfAccount::where('name', 'like', '%Kas%')
-                    ->where('normal_balance', 'debit')
+                // Create CashTransaction in Cash Book if not already recorded
+                $existingTx = CashTransaction::where('reference_type', 'fixed_asset_purchase')
+                    ->where('reference_id', $asset->id)
                     ->first();
 
+                if (! $existingTx) {
+                    CashTransaction::create([
+                        'transaction_date' => Carbon::parse($asset->purchase_date)->format('Y-m-d'),
+                        'account_id' => $cashAccount->id,
+                        'type' => 'expense',
+                        'category' => 'Aset Tetap Usaha',
+                        'amount' => $asset->purchase_price,
+                        'reference_type' => 'fixed_asset_purchase',
+                        'reference_id' => $asset->id,
+                        'description' => "Pembelian Aset Tetap: {$asset->name} ({$asset->asset_code})",
+                    ]);
+                }
+
+                // Map cash account to COA
+                $isBank = (
+                    str_contains(strtolower($cashAccount->name), 'bank') ||
+                    str_contains(strtolower($cashAccount->name), 'bca') ||
+                    str_contains(strtolower($cashAccount->name), 'bri') ||
+                    str_contains(strtolower($cashAccount->name), 'mandiri') ||
+                    str_contains(strtolower($cashAccount->name), 'bni')
+                );
+                $cashCode = $isBank ? '1-1002' : '1-1001';
+
                 $items[] = [
-                    'account_code' => $cashCoa?->code ?? '1-1001',
+                    'account_code' => $cashCode,
                     'debit'        => 0,
                     'credit'       => $asset->purchase_price,
                     'memo'         => "Pembayaran aset: {$asset->name} via {$cashAccount->name}",

@@ -145,12 +145,16 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
             'initial_balance.min' => 'Saldo awal tidak boleh kurang dari 0.',
         ]);
 
-        Account::create([
+        $account = Account::create([
             'name' => $this->account_name,
             'type' => $this->account_type,
             'balance' => $this->initial_balance,
             'description' => $this->account_description ?: null,
         ]);
+
+        if ($this->initial_balance > 0) {
+            AccountingService::recordOpeningBalance($account, (float) $this->initial_balance);
+        }
 
         $this->showAccountModal = false;
         session()->flash('success', "Akun kas '{$this->account_name}' berhasil ditambahkan.");

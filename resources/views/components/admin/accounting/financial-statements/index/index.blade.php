@@ -198,7 +198,9 @@
                             @foreach($assetAccounts as $asset)
                                 <div class="flex justify-between py-1.5 border-b border-brand-border/40">
                                     <span class="text-brand-espresso font-medium">{{ $asset->name }}</span>
-                                    <span class="font-mono font-bold text-brand-espresso">Rp {{ number_format($asset->balance, 0, ',', '.') }}</span>
+                                    <span class="font-mono font-bold {{ $asset->normal_balance === 'credit' ? 'text-amber-700' : 'text-brand-espresso' }}">
+                                        {{ $asset->normal_balance === 'credit' ? '(Rp ' . number_format($asset->balance, 0, ',', '.') . ')' : 'Rp ' . number_format($asset->balance, 0, ',', '.') }}
+                                    </span>
                                 </div>
                             @endforeach
                         </div>
