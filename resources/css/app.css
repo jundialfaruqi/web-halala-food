@@ -43,6 +43,15 @@ html {
     color: var(--text-primary);
 }
 
+/* Hide scrollbar indicator globally — scrolling still works */
+* {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE / Edge legacy */
+}
+*::-webkit-scrollbar {
+    display: none;               /* Chrome, Safari, Opera */
+}
+
 .handwriting-accent {
     font-family: 'Comic Sans MS', 'Caveat', 'Segoe Script', cursive, sans-serif;
 }
