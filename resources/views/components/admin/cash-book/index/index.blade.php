@@ -241,8 +241,18 @@
                         <td class="py-4 px-6 text-brand-espresso font-medium whitespace-nowrap">
                             {{ $trx->account->name }}
                         </td>
-                        <td class="py-4 px-6 text-brand-warm-gray">
-                            {{ $trx->description ?: '-' }}
+                        <td class="py-4 px-6 text-brand-espresso">
+                            <div class="space-y-1">
+                                <p class="text-sm font-medium text-brand-espresso leading-snug">{{ $trx->description ?: '-' }}</p>
+                                @if ($trx->materials_summary && !str_contains($trx->description ?? '', $trx->materials_summary))
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-medium">
+                                        <svg class="w-3.5 h-3.5 text-amber-700 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                        <span><strong class="font-semibold text-amber-950">Bahan Baku:</strong> {{ $trx->materials_summary }}</span>
+                                    </div>
+                                @endif
+                            </div>
                         </td>
                         <td
                             class="py-4 px-6 text-right font-mono font-extrabold text-base whitespace-nowrap text-brand-espresso">

@@ -139,7 +139,9 @@ class FinalAcceptanceSimulationSeeder extends Seeder
             // Potong Kas Tunai
             $kasTunai->decrement('balance', 1040000.00);
 
-            // Catat Buku Kas
+            $purchaseTunai->loadMissing('items.rawMaterial.unitModel');
+            $itemsTunaiStr = $purchaseTunai->items->map(fn ($it) => "{$it->rawMaterial?->name} (" . number_format($it->quantity, (floor($it->quantity) == $it->quantity ? 0 : 2), ',', '.') . " {$it->rawMaterial?->display_unit})")->implode(', ');
+
             CashTransaction::create([
                 'transaction_date' => $today,
                 'account_id' => $kasTunai->id,
@@ -148,7 +150,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
                 'amount' => 1040000.00,
                 'reference_type' => 'purchase',
                 'reference_id' => $purchaseTunai->id,
-                'description' => "Pembelian Bahan Baku ({$purchaseTunai->purchase_number}): CV Berkah Jaya Abadi",
+                'description' => "Pembelian Bahan Baku ({$purchaseTunai->purchase_number}): " . ($itemsTunaiStr ? "{$itemsTunaiStr} - " : "") . "Supplier: {$purchaseTunai->supplier_name}",
             ]);
 
             // Auto Journal

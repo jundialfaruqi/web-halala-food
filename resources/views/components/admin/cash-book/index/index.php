@@ -325,11 +325,14 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
             $endDate = trim($dates[1] ?? $startDate);
         }
 
-        $query = CashTransaction::with('account')
+        $query = CashTransaction::with(['account', 'purchase.items.rawMaterial.unitModel'])
             ->when($this->search, function ($q) {
                 $q->where(function ($sub) {
                     $sub->where('category', 'like', '%'.$this->search.'%')
-                        ->orWhere('description', 'like', '%'.$this->search.'%');
+                        ->orWhere('description', 'like', '%'.$this->search.'%')
+                        ->orWhereHas('purchase.items.rawMaterial', function ($mq) {
+                            $mq->where('name', 'like', '%'.$this->search.'%');
+                        });
                 });
             })
             ->when($this->typeFilter && $this->typeFilter !== 'all', function ($q) {

@@ -882,7 +882,16 @@ class AccountingService
         $account->decrement('balance', $amount);
 
         // 2. Create cash transaction in Cash Book
-        $desc = $notes ?: "Pelunasan Hutang Pembelian {$purchase->purchase_number} ke Supplier {$purchase->supplier_name}";
+        $purchase->loadMissing(['items.rawMaterial.unitModel']);
+        $materialsStr = $purchase->items->map(function ($it) {
+            $name = $it->rawMaterial?->name ?? 'Bahan';
+            $unit = $it->rawMaterial?->display_unit ?? '';
+            $qty = (float) $it->quantity;
+            $formattedQty = number_format($qty, (floor($qty) == $qty ? 0 : 2), ',', '.');
+            return "{$name} ({$formattedQty} {$unit})";
+        })->filter()->implode(', ');
+
+        $desc = $notes ?: ("Pelunasan Hutang Pembelian {$purchase->purchase_number}: " . ($materialsStr ? "{$materialsStr} - " : "") . "Supplier: {$purchase->supplier_name}");
         CashTransaction::create([
             'transaction_date' => $txDate,
             'account_id' => $account->id,
