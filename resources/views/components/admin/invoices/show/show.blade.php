@@ -351,13 +351,28 @@
                         <label for="payment_method" class="block text-xs font-semibold text-brand-espresso mb-1">
                             Metode Pembayaran <span class="text-red-500">*</span>
                         </label>
-                        <select id="payment_method" wire:model="payment_method"
+                        <select id="payment_method" wire:model.live="payment_method"
                             class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
                             <option value="tunai">Tunai (Cash / Staf)</option>
                             <option value="transfer_bank">Transfer Bank</option>
                             <option value="qris">QRIS Toko / QRIS Halala</option>
                         </select>
                         @error('payment_method')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="account_id" class="block text-xs font-semibold text-brand-espresso mb-1">
+                            Masuk ke Kas/Bank <span class="text-brand-warm-gray text-[10px]">(Buku Kas)</span>
+                        </label>
+                        <select id="account_id" wire:model="account_id"
+                            class="w-full px-3.5 py-2 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary">
+                            @foreach ($accounts as $acc)
+                                <option value="{{ $acc->id }}">{{ $acc->name }} (Saldo: Rp {{ number_format($acc->balance, 0, ',', '.') }})</option>
+                            @endforeach
+                        </select>
+                        @error('account_id')
                             <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -374,7 +389,7 @@
                         @enderror
                     </div>
 
-                    <div class="sm:col-span-2 md:col-span-3">
+                    <div class="sm:col-span-2">
                         <label for="payment_notes" class="block text-xs font-semibold text-brand-espresso mb-1">
                             Catatan Pembayaran (Opsional)
                         </label>

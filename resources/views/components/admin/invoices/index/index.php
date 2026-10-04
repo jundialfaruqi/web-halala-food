@@ -3,6 +3,7 @@
 use App\Models\Invoice;
 use App\Models\JournalEntry;
 use App\Models\Store;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
@@ -35,9 +36,7 @@ new #[Layout('components.layouts.admin'), Title('Faktur & Piutang Toko - Halala 
 
         DB::transaction(function () use ($invoice) {
             $invoice->update(['status' => 'dibatalkan']);
-            JournalEntry::where('reference_type', 'invoice_damaged_goods')
-                ->where('reference_id', $invoice->id)
-                ->delete();
+            AccountingService::deleteInvoiceRecords($invoice);
         });
 
         return ['success' => true, 'message' => "Faktur {$invoice->invoice_number} berhasil dibatalkan."];
@@ -64,9 +63,7 @@ new #[Layout('components.layouts.admin'), Title('Faktur & Piutang Toko - Halala 
         $invoiceNumber = $invoice->invoice_number;
 
         DB::transaction(function () use ($invoice) {
-            JournalEntry::where('reference_type', 'invoice_damaged_goods')
-                ->where('reference_id', $invoice->id)
-                ->delete();
+            AccountingService::deleteInvoiceRecords($invoice);
             $invoice->payments()->delete();
             $invoice->items()->delete();
             $invoice->delete();

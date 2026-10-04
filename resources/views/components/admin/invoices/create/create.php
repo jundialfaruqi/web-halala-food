@@ -5,6 +5,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Store;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -250,6 +251,8 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
 
             return $invoice;
         });
+
+        AccountingService::syncInvoiceAccounting($invoice);
 
         session()->flash('toast', [
             'message' => "Faktur tagihan {$invoice->invoice_number} berhasil dibuat.",

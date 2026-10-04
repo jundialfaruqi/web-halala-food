@@ -5,6 +5,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Store;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
@@ -213,6 +214,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
             }
 
             $this->invoice->recalculateStatusAndBalance();
+            AccountingService::syncInvoiceAccounting($this->invoice);
         });
 
         session()->flash('toast', [

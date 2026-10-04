@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Account;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
@@ -40,6 +41,7 @@ new #[Layout('components.layouts.admin')] class extends Component
     public ?float $payment_amount = null;
     public string $payment_date = '';
     public string $payment_method = 'tunai';
+    public ?int $account_id = null;
     public ?string $reference_number = '';
     public ?string $payment_notes = '';
 
@@ -65,8 +67,24 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->payment_amount = (float) $this->invoice->remaining_balance > 0 ? (float) $this->invoice->remaining_balance : null;
         $this->payment_date = now()->toDateString();
         $this->payment_method = 'tunai';
+        $this->account_id = Account::where('name', 'like', '%kas%')->orWhere('name', 'like', '%tunai%')->first()?->id ?? Account::first()?->id;
         $this->reference_number = '';
         $this->payment_notes = '';
+    }
+
+    public function updatedPaymentMethod(string $method): void
+    {
+        if (in_array($method, ['transfer_bank', 'qris'])) {
+            $bankAcc = Account::where('name', 'like', '%bank%')->orWhere('name', 'like', '%bca%')->orWhere('name', 'like', '%mandiri%')->orWhere('name', 'like', '%bri%')->first();
+            if ($bankAcc) {
+                $this->account_id = $bankAcc->id;
+            }
+        } else {
+            $cashAcc = Account::where('name', 'like', '%kas%')->orWhere('name', 'like', '%tunai%')->first();
+            if ($cashAcc) {
+                $this->account_id = $cashAcc->id;
+            }
+        }
     }
 
     public function title(): string
@@ -228,6 +246,7 @@ new #[Layout('components.layouts.admin')] class extends Component
                 'status' => $newStatus,
             ]);
 
+            AccountingService::recordInvoiceSale($this->invoice);
             AccountingService::recordInvoiceDamagedGoods($this->invoice, $this->reconciliationItems);
         });
 
@@ -260,6 +279,7 @@ new #[Layout('components.layouts.admin')] class extends Component
             'payment_amount' => ['required', 'numeric', 'min:1', 'max:' . $remaining],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'in:tunai,transfer_bank,qris'],
+            'account_id' => ['nullable', 'exists:accounts,id'],
             'reference_number' => ['nullable', 'string', 'max:100'],
             'payment_notes' => ['nullable', 'string', 'max:500'],
         ], [
@@ -268,12 +288,13 @@ new #[Layout('components.layouts.admin')] class extends Component
             'payment_amount.max' => 'Nominal pembayaran tidak boleh melebihi sisa piutang (Rp ' . number_format($remaining, 0, ',', '.') . ').',
             'payment_date.required' => 'Tanggal pembayaran wajib diisi.',
             'payment_method.required' => 'Pilih metode pembayaran.',
+            'account_id.exists' => 'Akun kas/bank tidak valid.',
         ]);
 
         $amount = (float) $this->payment_amount;
 
         DB::transaction(function () use ($amount) {
-            InvoicePayment::create([
+            $payment = InvoicePayment::create([
                 'invoice_id' => $this->invoice->id,
                 'payment_number' => InvoicePayment::generatePaymentNumber(),
                 'user_id' => Auth::id(),
@@ -285,6 +306,8 @@ new #[Layout('components.layouts.admin')] class extends Component
             ]);
 
             $this->invoice->recalculateStatusAndBalance();
+
+            AccountingService::recordInvoicePayment($payment, $this->account_id);
         });
 
         $this->invoice->refresh();
@@ -306,6 +329,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         }
 
         DB::transaction(function () use ($payment) {
+            AccountingService::deleteInvoicePaymentRecords($payment);
             $payment->delete();
             $this->invoice->recalculateStatusAndBalance();
         });
@@ -330,9 +354,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         DB::transaction(function () {
             $this->invoice->update(['status' => 'dibatalkan']);
-            JournalEntry::where('reference_type', 'invoice_damaged_goods')
-                ->where('reference_id', $this->invoice->id)
-                ->delete();
+            AccountingService::deleteInvoiceRecords($this->invoice);
         });
         $this->invoice->refresh();
 
@@ -401,6 +423,7 @@ new #[Layout('components.layouts.admin')] class extends Component
     {
         return [
             'businessSetting' => \App\Models\BusinessSetting::getSettings(),
+            'accounts' => Account::orderBy('name')->get(),
         ];
     }
 

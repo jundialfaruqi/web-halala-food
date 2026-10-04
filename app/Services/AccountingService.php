@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CashTransaction;
 use App\Models\ChartOfAccount;
 use App\Models\Invoice;
+use App\Models\InvoicePayment;
 use App\Models\JournalEntry;
 use App\Models\ProductionBatch;
 use App\Models\RawMaterialPurchase;
@@ -21,9 +22,22 @@ class AccountingService
     public static function generateEntryNumber(string $date): string
     {
         $ym = Carbon::parse($date)->format('Ym');
-        $count = JournalEntry::where('entry_number', 'like', "JU-{$ym}-%")->count() + 1;
+        $prefix = "JU-{$ym}-";
 
-        return 'JU-'.$ym.'-'.str_pad((string) $count, 3, '0', STR_PAD_LEFT);
+        $latest = JournalEntry::where('entry_number', 'like', "{$prefix}%")
+            ->orderByDesc('entry_number')
+            ->first();
+
+        $nextSeq = 1;
+        if ($latest && preg_match('/JU-\d{6}-(\d+)/', $latest->entry_number, $matches)) {
+            $nextSeq = ((int) $matches[1]) + 1;
+        }
+
+        while (JournalEntry::where('entry_number', $prefix . str_pad((string) $nextSeq, 3, '0', STR_PAD_LEFT))->exists()) {
+            $nextSeq++;
+        }
+
+        return $prefix . str_pad((string) $nextSeq, 3, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -102,8 +116,8 @@ class AccountingService
      */
     public static function recordCashTransaction(CashTransaction $transaction): ?JournalEntry
     {
-        if ($transaction->reference_type === 'purchase') {
-            return null; // Handled directly by recordPurchase() to avoid duplicate journals
+        if ($transaction->reference_type === 'purchase' || $transaction->reference_type === 'invoice_payment') {
+            return null; // Handled directly by recordPurchase() and recordInvoicePayment() to avoid duplicate journals
         }
 
         $amount = (float) $transaction->amount;
@@ -308,69 +322,260 @@ class AccountingService
     }
 
     /**
-     * Auto journal for Invoices / Titip Jual Penagihan Selesai
+     * Auto journal for Invoice Sale (Penjualan, Piutang, HPP, & Pengurangan Persediaan Produk Jadi)
      */
-    public static function recordInvoiceSettlement(Invoice $invoice, float $amountPaid, float $cogsCost = 0): ?JournalEntry
+    public static function recordInvoiceSale(Invoice $invoice): ?JournalEntry
     {
+        self::ensureChartOfAccountsExist();
+
         $totalAmount = (float) $invoice->total_amount;
         if ($totalAmount <= 0) {
+            JournalEntry::where('reference_type', 'invoice_sale')
+                ->where('reference_id', $invoice->id)
+                ->delete();
+
             return null;
         }
 
         $date = Carbon::parse($invoice->invoice_date)->format('Y-m-d');
         $storeName = $invoice->store?->name ?? 'Toko Mitra';
-        $items = [];
 
-        // 1. Kas / Piutang vs Pendapatan Penjualan
-        if ($amountPaid > 0) {
-            $items[] = [
-                'account_code' => '1-1001', // Kas Tunai Usaha
-                'debit' => min($amountPaid, $totalAmount),
-                'credit' => 0,
-                'memo' => "Penerimaan Kas Pembayaran dari {$storeName}",
-            ];
+        $invoice->loadMissing(['items.product', 'store']);
+
+        $totalCOGS = 0.0;
+        foreach ($invoice->items as $item) {
+            $soldQty = (int) $item->quantity;
+            if ($soldQty > 0 && $item->product) {
+                $materialCost = (float) $item->product->material_cost;
+                $costPerUnit = $materialCost > 0 ? $materialCost : (float) $item->product->consignment_price;
+                $totalCOGS += $soldQty * $costPerUnit;
+            }
         }
+        $totalCOGS = round($totalCOGS, 2);
 
-        if ($amountPaid < $totalAmount) {
-            $unpaid = $totalAmount - $amountPaid;
-            $items[] = [
-                'account_code' => '1-1200', // Piutang Toko Konsinyasi
-                'debit' => $unpaid,
+        $items = [
+            [
+                'account_code' => '1-1200', // Piutang Toko Konsinyasi (+)
+                'debit' => $totalAmount,
                 'credit' => 0,
-                'memo' => "Sisa Piutang Toko {$storeName}",
-            ];
-        }
-
-        $items[] = [
-            'account_code' => '4-1000', // Pendapatan Penjualan Konsinyasi
-            'debit' => 0,
-            'credit' => $totalAmount,
-            'memo' => "Faktur Penjualan {$invoice->invoice_number} ({$storeName})",
+                'memo' => "Piutang Penjualan Faktur {$invoice->invoice_number} ({$storeName})",
+            ],
+            [
+                'account_code' => '4-1000', // Pendapatan Penjualan Konsinyasi (+)
+                'debit' => 0,
+                'credit' => $totalAmount,
+                'memo' => "Pendapatan Faktur {$invoice->invoice_number} ({$storeName})",
+            ],
         ];
 
-        // 2. HPP & Pengurangan Produk Jadi jika ada
-        if ($cogsCost > 0) {
+        if ($totalCOGS > 0) {
             $items[] = [
-                'account_code' => '5-1000', // HPP
-                'debit' => $cogsCost,
+                'account_code' => '5-1000', // Beban Pokok Penjualan (HPP) (+)
+                'debit' => $totalCOGS,
                 'credit' => 0,
                 'memo' => "HPP Produk Terjual Faktur {$invoice->invoice_number}",
             ];
             $items[] = [
-                'account_code' => '1-1400', // Persediaan Produk Jadi
+                'account_code' => '1-1400', // Persediaan Produk Jadi (-)
                 'debit' => 0,
-                'credit' => $cogsCost,
-                'memo' => "Pengurangan Stok Produk Jadi Faktur {$invoice->invoice_number}",
+                'credit' => $totalCOGS,
+                'memo' => "Pengurangan Stok Terjual Faktur {$invoice->invoice_number}",
             ];
         }
 
         return self::postEntry(
             $date,
-            "Penagihan Faktur {$invoice->invoice_number} ({$storeName})",
+            "Penjualan Faktur {$invoice->invoice_number} ({$storeName})",
             $items,
-            'invoice',
+            'invoice_sale',
             $invoice->id
         );
+    }
+
+    /**
+     * Auto journal & Cash Book record for Invoice Payment (Penerimaan Kas & Pelunasan Piutang)
+     */
+    public static function recordInvoicePayment(InvoicePayment $payment, ?int $accountId = null): ?JournalEntry
+    {
+        self::ensureChartOfAccountsExist();
+
+        $amount = (float) $payment->amount;
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $payment->loadMissing(['invoice.store']);
+        $invoice = $payment->invoice;
+        if (! $invoice) {
+            return null;
+        }
+
+        $storeName = $invoice->store?->name ?? 'Toko Mitra';
+        $isBank = in_array(strtolower($payment->payment_method), ['transfer_bank', 'transfer', 'qris', 'bank']);
+
+        // 1. Resolve Cash Account for Cash Book (Buku Kas)
+        $account = null;
+        if ($accountId) {
+            $account = \App\Models\Account::find($accountId);
+        }
+
+        if (! $account) {
+            if ($isBank) {
+                $account = \App\Models\Account::where('name', 'like', '%bank%')
+                    ->orWhere('name', 'like', '%bca%')
+                    ->orWhere('name', 'like', '%mandiri%')
+                    ->orWhere('name', 'like', '%bri%')
+                    ->first();
+            }
+
+            if (! $account) {
+                $account = \App\Models\Account::where('name', 'like', '%kas%')
+                    ->orWhere('name', 'like', '%tunai%')
+                    ->first() ?? \App\Models\Account::first() ?? \App\Models\Account::firstOrCreate(
+                        ['name' => 'Kas Tunai'],
+                        [
+                            'type' => 'business',
+                            'balance' => 0.00,
+                            'description' => 'Kas Tunai Usaha Utama',
+                        ]
+                    );
+            }
+        }
+
+        if ($account) {
+            $existingTx = CashTransaction::where('reference_type', 'invoice_payment')
+                ->where('reference_id', $payment->id)
+                ->first();
+
+            $description = "Pelunasan Faktur {$invoice->invoice_number} ({$storeName}) - Ref: {$payment->payment_number}";
+
+            if ($existingTx) {
+                if ($existingTx->account_id === $account->id) {
+                    $diff = $amount - (float) $existingTx->amount;
+                    if ($diff !== 0.0) {
+                        $account->increment('balance', $diff);
+                    }
+                } else {
+                    $existingTx->account?->decrement('balance', $existingTx->amount);
+                    $account->increment('balance', $amount);
+                }
+
+                $existingTx->update([
+                    'transaction_date' => $payment->payment_date,
+                    'account_id' => $account->id,
+                    'type' => 'income',
+                    'category' => 'Pelunasan Piutang Toko',
+                    'amount' => $amount,
+                    'description' => $description,
+                ]);
+            } else {
+                CashTransaction::create([
+                    'transaction_date' => $payment->payment_date,
+                    'account_id' => $account->id,
+                    'type' => 'income',
+                    'category' => 'Pelunasan Piutang Toko',
+                    'amount' => $amount,
+                    'reference_type' => 'invoice_payment',
+                    'reference_id' => $payment->id,
+                    'description' => $description,
+                ]);
+
+                $account->increment('balance', $amount);
+            }
+        }
+
+        // 2. Post Journal Entry (Debet Kas/Bank vs Kredit Piutang)
+        $cashCode = $isBank ? '1-1002' : '1-1001';
+        $paymentDate = Carbon::parse($payment->payment_date)->format('Y-m-d');
+
+        $items = [
+            [
+                'account_code' => $cashCode, // Kas Tunai / Bank Usaha (+)
+                'debit' => $amount,
+                'credit' => 0,
+                'memo' => "Penerimaan Pembayaran Faktur {$invoice->invoice_number} ({$payment->payment_method})",
+            ],
+            [
+                'account_code' => '1-1200', // Piutang Toko Konsinyasi (-)
+                'debit' => 0,
+                'credit' => $amount,
+                'memo' => "Pelunasan Piutang {$storeName} Faktur {$invoice->invoice_number}",
+            ],
+        ];
+
+        return self::postEntry(
+            $paymentDate,
+            "Pembayaran Faktur {$invoice->invoice_number} ({$storeName})",
+            $items,
+            'invoice_payment',
+            $payment->id
+        );
+    }
+
+    /**
+     * Delete payment records from Cash Book and General Ledger
+     */
+    public static function deleteInvoicePaymentRecords(InvoicePayment $payment): void
+    {
+        $cashTx = CashTransaction::where('reference_type', 'invoice_payment')
+            ->where('reference_id', $payment->id)
+            ->first();
+
+        if ($cashTx) {
+            $account = $cashTx->account;
+            if ($account) {
+                $account->decrement('balance', $cashTx->amount);
+            }
+            $cashTx->delete();
+        }
+
+        JournalEntry::where('reference_type', 'invoice_payment')
+            ->where('reference_id', $payment->id)
+            ->delete();
+    }
+
+    /**
+     * Delete all accounting entries and cash transactions for an invoice
+     */
+    public static function deleteInvoiceRecords(Invoice $invoice): void
+    {
+        $invoice->loadMissing(['payments', 'items']);
+
+        foreach ($invoice->payments as $payment) {
+            self::deleteInvoicePaymentRecords($payment);
+        }
+
+        JournalEntry::where('reference_type', 'invoice_sale')
+            ->where('reference_id', $invoice->id)
+            ->delete();
+
+        JournalEntry::where('reference_type', 'invoice_damaged_goods')
+            ->where('reference_id', $invoice->id)
+            ->delete();
+    }
+
+    /**
+     * Synchronize all accounting & cash transactions for an invoice
+     */
+    public static function syncInvoiceAccounting(Invoice $invoice): void
+    {
+        $invoice->loadMissing(['items.product.recipes.rawMaterial', 'payments', 'store']);
+
+        if ($invoice->status === 'dibatalkan') {
+            self::deleteInvoiceRecords($invoice);
+
+            return;
+        }
+
+        self::recordInvoiceSale($invoice);
+
+        foreach ($invoice->payments as $payment) {
+            self::recordInvoicePayment($payment);
+        }
+
+        if ($invoice->items->sum('damaged_quantity') > 0) {
+            self::recordInvoiceDamagedGoods($invoice, $invoice->items->toArray());
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\CashTransaction;
 use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -181,7 +182,9 @@ test('recording a payment updates paid_amount, remaining_balance, and status to 
 
     $invoice->refresh();
     expect((float) $invoice->remaining_balance)->toBe($initialBalance - $payAmount)
-        ->and($invoice->status)->toBe('sebagian');
+        ->and($invoice->status)->toBe('sebagian')
+        ->and(CashTransaction::where('reference_type', 'invoice_payment')->exists())->toBeTrue()
+        ->and(JournalEntry::where('reference_type', 'invoice_payment')->exists())->toBeTrue();
 });
 
 test('full payment settles invoice and updates status to lunas', function () {
@@ -218,7 +221,9 @@ test('deleting a payment recalculates balance and reverts status', function () {
         ->call('deletePayment', $payment->id);
 
     $invoice->refresh();
-    expect((float) $invoice->remaining_balance)->toBe($balanceBefore + $paymentAmount);
+    expect((float) $invoice->remaining_balance)->toBe($balanceBefore + $paymentAmount)
+        ->and(CashTransaction::where('reference_type', 'invoice_payment')->where('reference_id', $payment->id)->exists())->toBeFalse()
+        ->and(JournalEntry::where('reference_type', 'invoice_payment')->where('reference_id', $payment->id)->exists())->toBeFalse();
 });
 
 test('deleting a fully paid invoice is prevented', function () {
