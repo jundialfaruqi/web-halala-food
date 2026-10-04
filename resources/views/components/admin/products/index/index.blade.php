@@ -367,6 +367,8 @@
                 </div>
             </div>
         </div>
+    </div>
+
     <!-- Modal Stock Opname Produk Jadi -->
     <div x-cloak x-show="showOpnameModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
         <div class="flex items-center justify-center min-h-screen px-4 text-center">
