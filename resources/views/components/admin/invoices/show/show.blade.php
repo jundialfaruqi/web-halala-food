@@ -1,41 +1,4 @@
-<div class="space-y-6 max-w-5xl print:max-w-none print:w-full print:space-y-4" x-data="{
-    // Toast State
-    toastMessage: '',
-    toastType: 'success',
-    showToast: false,
-
-    triggerToast(message, type = 'success') {
-        this.toastMessage = message;
-        this.toastType = type;
-        this.showToast = true;
-        setTimeout(() => { this.showToast = false; }, 3500);
-    },
-
-    init() {
-        @if(
-            $flashToast =
-                session('toast') ?? (session('success') ? ['message' => session('success'), 'type' => 'success'] : null))
-        const toastData = {{ \Illuminate\Support\Js::from($flashToast) }};
-        this.$nextTick(() => {
-            if (typeof toastData === 'object' && toastData.message) {
-                this.triggerToast(toastData.message, toastData.type || 'success');
-            } else {
-                this.triggerToast(toastData, 'success');
-            }
-        });
-        @endif
-    }
-}">
-
-    <!-- Toast Notification (Minimalist) -->
-    <div x-show="showToast" x-transition.opacity.duration.200ms
-        class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 bg-brand-espresso text-white rounded-xl shadow-lg border border-brand-warm-gray/20 text-sm font-medium print:hidden"
-        style="display: none;">
-        <span x-text="toastMessage"></span>
-        <button type="button" @click="showToast = false" class="text-white/60 hover:text-white ml-2 text-base">
-            <i class="ti ti-x"></i>
-        </button>
-    </div>
+<div class="space-y-6 max-w-5xl print:max-w-none print:w-full print:space-y-4">
 
     <!-- Header Section with Breadcrumbs -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1 print:hidden">

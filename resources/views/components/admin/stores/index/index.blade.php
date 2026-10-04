@@ -11,29 +11,12 @@
     deleteTarget: null,
     isDeleting: false,
 
-    // Toast State
-    toastMessage: '',
-    toastType: 'success',
-    showToast: false,
-
     triggerToast(message, type = 'success') {
-        this.toastMessage = message;
-        this.toastType = type;
-        this.showToast = true;
-        setTimeout(() => { this.showToast = false; }, 3500);
-    },
-
-    init() {
-        @if ($flashToast = session('toast') ?? (session('success') ? ['message' => session('success'), 'type' => 'success'] : null))
-            const toastData = {{ \Illuminate\Support\Js::from($flashToast) }};
-            this.$nextTick(() => {
-                if (typeof toastData === 'object' && toastData.message) {
-                    this.triggerToast(toastData.message, toastData.type || 'success');
-                } else {
-                    this.triggerToast(toastData, 'success');
-                }
-            });
-        @endif
+        if (typeof window.toast === 'function') {
+            window.toast(message, type);
+        } else {
+            window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: message, type: type } }));
+        }
     },
 
     get filteredStores() {
@@ -243,19 +226,6 @@
     }
 }" class="space-y-6">
 
-    <!-- Toast Notification -->
-    <div x-cloak x-show="showToast"
-        x-transition:enter="transition ease-out duration-300 transform"
-        x-transition:enter-start="opacity-0 translate-y-2"
-        x-transition:enter-end="opacity-100 translate-y-0"
-        x-transition:leave="transition ease-in duration-200 transform"
-        x-transition:leave-start="opacity-100 translate-y-0"
-        x-transition:leave-end="opacity-0 translate-y-2"
-        class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border"
-        :class="toastType === 'success' ? 'bg-emerald-800 text-white border-emerald-700' : 'bg-red-800 text-white border-red-700'">
-        <i class="text-xl" :class="toastType === 'success' ? 'ti ti-circle-check' : 'ti ti-alert-triangle'"></i>
-        <span class="text-sm font-semibold" x-text="toastMessage"></span>
-    </div>
 
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
