@@ -34,6 +34,7 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
                     'stock_ready' => (int) $prod->stock_ready,
                     'description' => $prod->description ?? '-',
                     'is_active' => (bool) $prod->is_active,
+                    'photo_url' => $prod->photo_url,
                     'edit_url' => route('admin.products.edit', $prod->id),
                 ];
             });

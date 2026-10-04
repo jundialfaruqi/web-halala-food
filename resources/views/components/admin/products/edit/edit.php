@@ -17,6 +17,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Produk Jadi - Halala Food'
     public int $stock_ready = 0;
     public ?string $description = '';
     public bool $is_active = true;
+    public ?string $photo_data = null;
 
     public function mount(Product $product)
     {
@@ -48,6 +49,18 @@ new #[Layout('components.layouts.admin'), Title('Edit Produk Jadi - Halala Food'
             'stock_ready' => ['required', 'integer', 'min:0'],
             'description' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
+            'photo_data' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (! empty($value)) {
+                        $error = Product::validatePhotoBase64($value);
+                        if ($error) {
+                            $fail($error);
+                        }
+                    }
+                },
+            ],
         ], [
             'name.required' => 'Nama produk kemasan wajib diisi.',
             'name.unique' => 'Nama produk ini sudah terdaftar sebelumnya.',
@@ -69,6 +82,10 @@ new #[Layout('components.layouts.admin'), Title('Edit Produk Jadi - Halala Food'
             'description' => $this->description,
             'is_active' => $this->is_active,
         ]);
+
+        if (! empty($this->photo_data)) {
+            $this->product->updatePhotoFromBase64($this->photo_data);
+        }
 
         session()->flash('toast', [
             'message' => "Data produk '{$this->product->name}' berhasil diperbarui.",

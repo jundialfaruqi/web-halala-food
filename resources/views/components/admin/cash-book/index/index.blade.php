@@ -832,105 +832,302 @@
                         </div>
                     </div>
 
-                    <!-- Rincian Bahan Baku (Jika Transaksi Pembelian atau Pelunasan Hutang Supplier) -->
-                    @if ($selectedTransaction->purchase && $selectedTransaction->purchase->items->isNotEmpty())
-                        <div class="space-y-3 pt-1">
-                            <div class="flex items-center justify-between">
-                                <h4 class="text-base font-bold text-neutral-900">
-                                    Rincian Bahan Baku yang Dibeli
+                    <!-- Rincian Bahan Baku (Khusus Transaksi Pembelian Bahan Baku / Pelunasan Hutang Supplier) -->
+                    @if (in_array($selectedTransaction->reference_type, ['purchase', 'purchase_payment']) && $selectedTransaction->resolved_purchase)
+                        @php $purchase = $selectedTransaction->resolved_purchase; @endphp
+                        <div class="space-y-4 pt-2 border-t border-neutral-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                <h4 class="text-base sm:text-lg font-bold text-neutral-900">
+                                    Rincian Pembelian Bahan Baku
                                 </h4>
-                                <span class="text-xs text-neutral-500 font-mono">
-                                    {{ $selectedTransaction->purchase->purchase_number }}
+                                <span class="text-xs sm:text-sm font-mono text-neutral-600 font-semibold">
+                                    {{ $purchase->purchase_number }}
                                 </span>
                             </div>
-                            <p class="text-sm text-neutral-600">
-                                Supplier: <strong class="text-neutral-900">{{ $selectedTransaction->purchase->supplier_name }}</strong>
-                            </p>
-                            <div class="border border-neutral-200 rounded-xl overflow-hidden">
-                                <table class="w-full text-left text-sm sm:text-base">
-                                    <thead class="bg-neutral-100 text-neutral-700 font-semibold border-b border-neutral-200">
-                                        <tr>
-                                            <th class="py-3 px-4">Bahan Baku</th>
-                                            <th class="py-3 px-4 text-right">Jumlah</th>
-                                            <th class="py-3 px-4 text-right">Harga Satuan</th>
-                                            <th class="py-3 px-4 text-right">Subtotal</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-neutral-200">
-                                        @foreach ($selectedTransaction->purchase->items as $pItem)
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm sm:text-base bg-neutral-50 p-4 rounded-xl border border-neutral-200">
+                                <div>
+                                    <span class="text-neutral-500 block text-xs">Supplier / Toko:</span>
+                                    <span class="font-bold text-neutral-900">{{ $purchase->supplier_name }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-neutral-500 block text-xs">Metode Pembelian:</span>
+                                    <span class="font-bold text-neutral-900 capitalize">{{ $purchase->payment_method }} ({{ $purchase->payment_status }})</span>
+                                </div>
+                                <div>
+                                    <span class="text-neutral-500 block text-xs">Dicatat Oleh:</span>
+                                    <span class="font-bold text-neutral-900">{{ $purchase->creator?->name ?: '-' }}</span>
+                                </div>
+                            </div>
+
+                            @if ($purchase->items->isNotEmpty())
+                                <div class="border border-neutral-200 rounded-xl overflow-hidden">
+                                    <table class="w-full text-left text-sm sm:text-base">
+                                        <thead class="bg-neutral-100 text-neutral-700 font-semibold border-b border-neutral-200">
                                             <tr>
-                                                <td class="py-3 px-4 font-medium text-neutral-900">
-                                                    {{ $pItem->rawMaterial?->name }}
-                                                </td>
-                                                <td class="py-3 px-4 text-right font-mono text-neutral-800">
-                                                    {{ number_format($pItem->quantity, (floor($pItem->quantity) == $pItem->quantity ? 0 : 2), ',', '.') }}
-                                                    {{ $pItem->rawMaterial?->display_unit }}
-                                                </td>
-                                                <td class="py-3 px-4 text-right font-mono text-neutral-800">
-                                                    Rp {{ number_format($pItem->cost_per_unit, 0, ',', '.') }}
-                                                </td>
-                                                <td class="py-3 px-4 text-right font-mono font-bold text-neutral-900">
-                                                    Rp {{ number_format($pItem->subtotal, 0, ',', '.') }}
+                                                <th class="py-3 px-4">Bahan Baku</th>
+                                                <th class="py-3 px-4 text-right">Jumlah</th>
+                                                <th class="py-3 px-4 text-right">Harga Satuan</th>
+                                                <th class="py-3 px-4 text-right">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-neutral-200">
+                                            @foreach ($purchase->items as $pItem)
+                                                <tr>
+                                                    <td class="py-3 px-4 font-medium text-neutral-900">
+                                                        {{ $pItem->rawMaterial?->name }}
+                                                    </td>
+                                                    <td class="py-3 px-4 text-right font-mono text-neutral-800">
+                                                        {{ number_format($pItem->quantity, (floor($pItem->quantity) == $pItem->quantity ? 0 : 2), ',', '.') }}
+                                                        {{ $pItem->rawMaterial?->display_unit }}
+                                                    </td>
+                                                    <td class="py-3 px-4 text-right font-mono text-neutral-800">
+                                                        Rp {{ number_format($pItem->cost_per_unit, 0, ',', '.') }}
+                                                    </td>
+                                                    <td class="py-3 px-4 text-right font-mono font-bold text-neutral-900">
+                                                        Rp {{ number_format($pItem->subtotal, 0, ',', '.') }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                        <tfoot class="bg-neutral-50 border-t border-neutral-200 font-bold text-sm sm:text-base">
+                                            <tr>
+                                                <td colspan="3" class="py-3 px-4 text-right text-neutral-700">Total Pembelian:</td>
+                                                <td class="py-3 px-4 text-right font-mono text-neutral-900">
+                                                    Rp {{ number_format($purchase->total_amount, 0, ',', '.') }}
                                                 </td>
                                             </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            @endif
                         </div>
                     @endif
 
-                    <!-- Rincian Pelunasan Faktur Toko -->
-                    @if ($selectedTransaction->invoicePayment && $selectedTransaction->invoicePayment->invoice)
-                        <div class="space-y-3 pt-1 border-t border-neutral-200">
-                            <h4 class="text-base font-bold text-neutral-900">
-                                Rincian Faktur Toko Mitra
-                            </h4>
-                            <div class="grid grid-cols-2 gap-3 text-sm sm:text-base">
+                    <!-- Rincian Pelunasan Faktur Toko & Rekonsiliasi Konsinyasi (Khusus Transaksi Penjualan / Tagihan Toko) -->
+                    @if ($selectedTransaction->reference_type === 'invoice_payment' && $selectedTransaction->resolved_invoice_payment)
+                        @php
+                            $invPayment = $selectedTransaction->resolved_invoice_payment;
+                            $invoice = $invPayment->invoice;
+                            $delivery = $invoice?->delivery;
+                        @endphp
+                        <div class="space-y-4 pt-2 border-t border-neutral-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                <h4 class="text-base sm:text-lg font-bold text-neutral-900">
+                                    Rincian Faktur &amp; Penagihan Konsinyasi
+                                </h4>
+                                <span class="text-xs sm:text-sm font-mono text-neutral-600 font-semibold">
+                                    {{ $invoice?->invoice_number }}
+                                </span>
+                            </div>
+
+                            <!-- Identitas Faktur & Toko Mitra -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-sm sm:text-base bg-neutral-50 p-4 sm:p-5 rounded-xl border border-neutral-200">
                                 <div>
                                     <span class="text-neutral-500 block text-xs">Toko Mitra:</span>
-                                    <span class="font-bold text-neutral-900">{{ $selectedTransaction->invoicePayment->invoice->store?->name }}</span>
+                                    <span class="font-bold text-neutral-900">{{ $invoice?->store?->name }}</span>
+                                    @if ($invoice?->store?->address)
+                                        <span class="text-xs text-neutral-500 block mt-0.5">{{ $invoice->store->address }}</span>
+                                    @endif
                                 </div>
                                 <div>
-                                    <span class="text-neutral-500 block text-xs">Nomor Faktur:</span>
-                                    <span class="font-bold text-neutral-900 font-mono">{{ $selectedTransaction->invoicePayment->invoice->invoice_number }}</span>
+                                    <span class="text-neutral-500 block text-xs">No. Bukti Pembayaran:</span>
+                                    <span class="font-bold text-neutral-900 font-mono">{{ $invPayment->payment_number }}</span>
+                                    <span class="text-xs text-neutral-500 block mt-0.5">Metode: {{ $invPayment->method_label }}</span>
                                 </div>
                                 <div>
-                                    <span class="text-neutral-500 block text-xs">No. Pembayaran:</span>
-                                    <span class="font-bold text-neutral-900 font-mono">{{ $selectedTransaction->invoicePayment->payment_number }}</span>
+                                    <span class="text-neutral-500 block text-xs">Total Tagihan Faktur:</span>
+                                    <span class="font-extrabold font-mono text-neutral-900 text-base sm:text-lg">
+                                        Rp {{ number_format($invoice?->total_amount, 0, ',', '.') }}
+                                    </span>
                                 </div>
                                 <div>
-                                    <span class="text-neutral-500 block text-xs">Metode Pembayaran:</span>
-                                    <span class="font-bold text-neutral-900">{{ strtoupper(str_replace('_', ' ', $selectedTransaction->invoicePayment->payment_method)) }}</span>
+                                    <span class="text-neutral-500 block text-xs">Jumlah Dibayar (Kas Masuk):</span>
+                                    <span class="font-extrabold font-mono text-neutral-900 text-base sm:text-lg">
+                                        Rp {{ number_format($invPayment->amount, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="text-neutral-500 block text-xs">Diterima / Dicatat Oleh:</span>
+                                    <span class="font-bold text-neutral-900">{{ $invPayment->user?->name ?: 'Admin / Kasir' }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-neutral-500 block text-xs">Status Faktur Saat Ini:</span>
+                                    <span class="font-bold text-neutral-900">{{ $invoice?->status_label }}</span>
                                 </div>
                             </div>
+
+                            <!-- Informasi Pengiriman & Kurir (Jika ada Delivery / Surat Jalan) -->
+                            @if ($delivery)
+                                <div class="p-4 rounded-xl border border-neutral-200 bg-white space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <h5 class="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                                            Informasi Pengiriman Konsinyasi
+                                        </h5>
+                                        <span class="text-xs font-mono font-bold text-neutral-800">
+                                            SJ: {{ $delivery->delivery_number }}
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                                        <div>
+                                            <span class="text-neutral-500 block text-xs">Tanggal Kirim:</span>
+                                            <span class="font-bold text-neutral-900">{{ $delivery->delivery_date->translatedFormat('d M Y') }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-neutral-500 block text-xs">Kurir Pengantar:</span>
+                                            <span class="font-bold text-neutral-900">{{ $delivery->courier?->name ?: '-' }}</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-neutral-500 block text-xs">Penerima di Toko:</span>
+                                            <span class="font-bold text-neutral-900">{{ $delivery->recipient_name ?: '-' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <!-- Tabel Rekonsiliasi Titip Jual Produk -->
+                            @if ($invoice && $invoice->items->isNotEmpty())
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <h5 class="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                                            Rekonsiliasi Titip Jual Produk
+                                        </h5>
+                                        <span class="text-xs text-neutral-500">
+                                            {{ $invoice->items->count() }} Produk
+                                        </span>
+                                    </div>
+
+                                    <div class="border border-neutral-200 rounded-xl overflow-x-auto">
+                                        <table class="w-full text-left text-sm sm:text-base">
+                                            <thead class="bg-neutral-100 text-neutral-700 font-semibold border-b border-neutral-200 whitespace-nowrap">
+                                                <tr>
+                                                    <th class="py-3 px-4">Produk Dititip</th>
+                                                    <th class="py-3 px-3 text-right">Titip Awal</th>
+                                                    <th class="py-3 px-3 text-right">Laku Terjual</th>
+                                                    <th class="py-3 px-3 text-right">Sisa di Rak</th>
+                                                    <th class="py-3 px-3 text-right">Rusak / BS</th>
+                                                    <th class="py-3 px-3 text-right">Harga Satuan</th>
+                                                    <th class="py-3 px-4 text-right">Subtotal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-neutral-200">
+                                                @foreach ($invoice->items as $iItem)
+                                                    @php
+                                                        $itemSubtotal = (float) ($iItem->subtotal ?: ((float) $iItem->quantity * (float) $iItem->unit_price));
+                                                    @endphp
+                                                    <tr>
+                                                        <td class="py-3 px-4 font-medium text-neutral-900">
+                                                            {{ $iItem->product?->name }}
+                                                        </td>
+                                                        <td class="py-3 px-3 text-right font-mono text-neutral-800">
+                                                            {{ number_format($iItem->delivered_quantity, 0, ',', '.') }} bks
+                                                        </td>
+                                                        <td class="py-3 px-3 text-right font-mono font-bold text-neutral-900">
+                                                            {{ number_format($iItem->quantity, 0, ',', '.') }} bks
+                                                        </td>
+                                                        <td class="py-3 px-3 text-right font-mono text-neutral-600">
+                                                            {{ number_format($iItem->remaining_quantity, 0, ',', '.') }} bks
+                                                        </td>
+                                                        <td class="py-3 px-3 text-right font-mono text-neutral-600">
+                                                            {{ number_format($iItem->damaged_quantity, 0, ',', '.') }} bks
+                                                        </td>
+                                                        <td class="py-3 px-3 text-right font-mono text-neutral-800">
+                                                            Rp {{ number_format($iItem->unit_price, 0, ',', '.') }}
+                                                        </td>
+                                                        <td class="py-3 px-4 text-right font-mono font-bold text-neutral-900">
+                                                            Rp {{ number_format($itemSubtotal, 0, ',', '.') }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Ringkasan Tagihan & Pembayaran Faktur (Jelas, Besar & Pasti Terlihat Tanpa Terpotong) -->
+                                    <div class="bg-neutral-50 border border-neutral-300 rounded-xl p-4 sm:p-5 space-y-2.5">
+                                        <div class="flex justify-between items-center text-sm sm:text-base border-b border-neutral-200 pb-2">
+                                            <span class="text-neutral-600 font-medium">Total Tagihan Faktur:</span>
+                                            <span class="font-extrabold font-mono text-neutral-900 text-base sm:text-lg">
+                                                Rp {{ number_format($invoice->total_amount, 0, ',', '.') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm sm:text-base border-b border-neutral-200 pb-2">
+                                            <span class="text-neutral-600 font-medium">Jumlah Dibayar (Pembayaran Ini):</span>
+                                            <span class="font-extrabold font-mono text-neutral-900 text-base sm:text-lg">
+                                                Rp {{ number_format($invPayment->amount, 0, ',', '.') }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm sm:text-base">
+                                            <span class="text-neutral-600 font-medium">Sisa Piutang Toko:</span>
+                                            <span class="font-extrabold font-mono {{ $invoice->remaining_balance > 0 ? 'text-neutral-900' : 'text-neutral-500' }} text-base sm:text-lg">
+                                                Rp {{ number_format($invoice->remaining_balance, 0, ',', '.') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     @endif
 
-                    <!-- Rincian Aset Tetap -->
-                    @if ($selectedTransaction->fixedAsset)
-                        <div class="space-y-3 pt-1 border-t border-neutral-200">
-                            <h4 class="text-base font-bold text-neutral-900">
-                                Rincian Aset Tetap
-                            </h4>
-                            <div class="grid grid-cols-2 gap-3 text-sm sm:text-base">
+                    <!-- Rincian Pembelian Aset Tetap Usaha (Khusus Transaksi Perolehan Aset Tetap) -->
+                    @if ($selectedTransaction->reference_type === 'fixed_asset_purchase' && $selectedTransaction->resolved_fixed_asset)
+                        @php $asset = $selectedTransaction->resolved_fixed_asset; @endphp
+                        <div class="space-y-4 pt-2 border-t border-neutral-200">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                <h4 class="text-base sm:text-lg font-bold text-neutral-900">
+                                    Rincian Pembelian Aset Tetap
+                                </h4>
+                                <span class="text-xs sm:text-sm font-mono text-neutral-600 font-semibold">
+                                    {{ $asset->asset_code }}
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm sm:text-base bg-neutral-50 p-4 rounded-xl border border-neutral-200">
                                 <div>
-                                    <span class="text-neutral-500 block text-xs">Nama Aset:</span>
-                                    <span class="font-bold text-neutral-900">{{ $selectedTransaction->fixedAsset->name }}</span>
+                                    <span class="text-neutral-500 block text-xs">Nama Aset Tetap:</span>
+                                    <span class="font-bold text-neutral-900 text-base">{{ $asset->name }}</span>
+                                    <span class="text-xs text-neutral-500 block mt-0.5">Kategori: {{ $asset->category }}</span>
                                 </div>
                                 <div>
-                                    <span class="text-neutral-500 block text-xs">Kode Aset:</span>
-                                    <span class="font-bold text-neutral-900 font-mono">{{ $selectedTransaction->fixedAsset->asset_code }}</span>
+                                    <span class="text-neutral-500 block text-xs">Harga Perolehan Aset:</span>
+                                    <span class="font-bold font-mono text-neutral-900 text-base">
+                                        Rp {{ number_format($asset->purchase_price, 0, ',', '.') }}
+                                    </span>
                                 </div>
                                 <div>
-                                    <span class="text-neutral-500 block text-xs">Lokasi:</span>
-                                    <span class="font-bold text-neutral-900">{{ $selectedTransaction->fixedAsset->location ?: '-' }}</span>
+                                    <span class="text-neutral-500 block text-xs">Lokasi Penempatan:</span>
+                                    <span class="font-bold text-neutral-900">{{ $asset->location ?: 'Dapur Produksi Utama' }}</span>
                                 </div>
                                 <div>
-                                    <span class="text-neutral-500 block text-xs">Kondisi:</span>
-                                    <span class="font-bold text-neutral-900 capitalize">{{ str_replace('_', ' ', $selectedTransaction->fixedAsset->condition) }}</span>
+                                    <span class="text-neutral-500 block text-xs">Kondisi Fisik:</span>
+                                    <span class="font-bold text-neutral-900 capitalize">{{ str_replace('_', ' ', $asset->condition) }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-neutral-500 block text-xs">Masa Manfaat:</span>
+                                    <span class="font-bold text-neutral-900">{{ $asset->useful_life_months }} Bulan</span>
+                                </div>
+                                <div>
+                                    <span class="text-neutral-500 block text-xs">Penyusutan per Bulan:</span>
+                                    <span class="font-bold font-mono text-neutral-900">
+                                        Rp {{ number_format($asset->monthly_depreciation, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                                <div class="sm:col-span-2 pt-2 border-t border-neutral-200">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-neutral-600 font-medium">Nilai Buku Saat Ini:</span>
+                                        <span class="font-extrabold font-mono text-neutral-900 text-lg">
+                                            Rp {{ number_format($asset->book_value, 0, ',', '.') }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
+
+                            @if ($asset->notes)
+                                <div class="text-sm p-3 bg-white rounded-lg border border-neutral-200">
+                                    <span class="text-neutral-500 block text-xs font-semibold mb-0.5">Catatan Tambahan:</span>
+                                    <span class="text-neutral-800">{{ $asset->notes }}</span>
+                                </div>
+                            @endif
                         </div>
                     @endif
                 </div>

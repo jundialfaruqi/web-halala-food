@@ -222,11 +222,23 @@
                     <template x-for="product in filteredProducts" :key="product.id">
                         <tr class="hover:bg-neutral-50/50 transition">
 
-                            <!-- Product Name (Bare icon / Text, NO icon bg) -->
-                            <td class="py-4 px-6 font-semibold text-brand-espresso">
-                                <div>
-                                    <div class="font-bold text-brand-espresso text-base" x-text="product.name"></div>
-                                    <div class="text-xs text-brand-warm-gray mt-0.5" x-text="product.description"></div>
+                            <!-- Product Name with Photo Thumbnail -->
+                            <td class="py-3 px-6 font-semibold text-brand-espresso">
+                                <div class="flex items-center gap-3">
+                                    <!-- Foto Thumbnail -->
+                                    <div class="w-10 h-10 rounded-full border border-brand-border bg-neutral-50 flex items-center justify-center shrink-0 overflow-hidden">
+                                        <template x-if="product.photo_url">
+                                            <img :src="product.photo_url" :alt="product.name" class="w-full h-full object-cover">
+                                        </template>
+                                        <template x-if="!product.photo_url">
+                                            <i class="ti ti-package text-xl text-neutral-300"></i>
+                                        </template>
+                                    </div>
+                                    <!-- Nama & Deskripsi -->
+                                    <div>
+                                        <div class="font-bold text-brand-espresso text-base" x-text="product.name"></div>
+                                        <div class="text-xs text-brand-warm-gray mt-0.5" x-text="product.description"></div>
+                                    </div>
                                 </div>
                             </td>
 

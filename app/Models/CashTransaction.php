@@ -49,6 +49,33 @@ class CashTransaction extends Model
         return $this->belongsTo(FixedAsset::class, 'reference_id');
     }
 
+    public function getResolvedPurchaseAttribute(): ?RawMaterialPurchase
+    {
+        if (! in_array($this->reference_type, ['purchase', 'purchase_payment'])) {
+            return null;
+        }
+
+        return $this->purchase;
+    }
+
+    public function getResolvedInvoicePaymentAttribute(): ?InvoicePayment
+    {
+        if ($this->reference_type !== 'invoice_payment') {
+            return null;
+        }
+
+        return $this->invoicePayment;
+    }
+
+    public function getResolvedFixedAssetAttribute(): ?FixedAsset
+    {
+        if ($this->reference_type !== 'fixed_asset_purchase') {
+            return null;
+        }
+
+        return $this->fixedAsset;
+    }
+
     /**
      * Get a formatted string listing all raw material names and quantities for purchase-related cash transactions.
      */

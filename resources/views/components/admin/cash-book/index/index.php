@@ -346,8 +346,11 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
                 $q->where(function ($sub) {
                     $sub->where('category', 'like', '%'.$this->search.'%')
                         ->orWhere('description', 'like', '%'.$this->search.'%')
-                        ->orWhereHas('purchase.items.rawMaterial', function ($mq) {
-                            $mq->where('name', 'like', '%'.$this->search.'%');
+                        ->orWhere(function ($pq) {
+                            $pq->whereIn('reference_type', ['purchase', 'purchase_payment'])
+                               ->whereHas('purchase.items.rawMaterial', function ($mq) {
+                                   $mq->where('name', 'like', '%'.$this->search.'%');
+                               });
                         });
                 });
             })
@@ -382,7 +385,11 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
             $selectedTransaction = CashTransaction::with([
                 'account',
                 'purchase.items.rawMaterial.unitModel',
+                'purchase.creator',
+                'invoicePayment.user',
                 'invoicePayment.invoice.store',
+                'invoicePayment.invoice.delivery.courier',
+                'invoicePayment.invoice.items.product',
                 'fixedAsset',
             ])->find($this->selectedTransactionId);
         }
