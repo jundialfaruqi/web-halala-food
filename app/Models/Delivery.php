@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Delivery extends Model
 {
@@ -59,6 +60,63 @@ class Delivery extends Model
     public function items(): HasMany
     {
         return $this->hasMany(DeliveryItem::class);
+    }
+
+    public function invoice(): HasOne
+    {
+        return $this->hasOne(Invoice::class);
+    }
+
+    /**
+     * Generate an invoice for this delivery if not already exists.
+     */
+    public function generateInvoice(?int $userId = null): ?Invoice
+    {
+        $existingInvoice = $this->invoice()->first();
+        if ($existingInvoice) {
+            return $existingInvoice;
+        }
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($userId) {
+            $this->loadMissing(['items', 'store']);
+
+            $subtotal = (float) ($this->total_amount ?: $this->items->sum('subtotal'));
+            $discount = 0.00;
+            $totalAmount = max(0.0, $subtotal - $discount);
+
+            $invoice = Invoice::create([
+                'invoice_number' => Invoice::generateInvoiceNumber(),
+                'delivery_id' => $this->id,
+                'store_id' => $this->store_id,
+                'created_by' => $userId ?: (\Illuminate\Support\Facades\Auth::id() ?: $this->created_by),
+                'invoice_date' => now()->toDateString(),
+                'due_date' => now()->addDays(14)->toDateString(),
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'total_amount' => $totalAmount,
+                'paid_amount' => 0.00,
+                'remaining_balance' => $totalAmount,
+                'status' => 'belum_dibayar',
+                'notes' => "Faktur otomatis dari Surat Jalan {$this->delivery_number}",
+            ]);
+
+            foreach ($this->items as $item) {
+                InvoiceItem::create([
+                    'invoice_id' => $invoice->id,
+                    'product_id' => $item->product_id,
+                    'delivered_quantity' => $item->quantity,
+                    'remaining_quantity' => 0,
+                    'damaged_quantity' => 0,
+                    'returned_quantity' => 0,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'subtotal' => $item->subtotal,
+                    'notes' => $item->notes,
+                ]);
+            }
+
+            return $invoice;
+        });
     }
 
     public function getStatusLabelAttribute(): string

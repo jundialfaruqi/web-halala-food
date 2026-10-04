@@ -310,11 +310,23 @@ test('courier can complete delivery with proof photo and digital signature', fun
 
     expect(Storage::disk('public')->exists($delivery->proof_image))->toBeTrue();
 
+    // Verify invoice is automatically generated
+    $invoice = \App\Models\Invoice::with('items')->where('delivery_id', $delivery->id)->first();
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->store_id)->toBe($delivery->store_id)
+        ->and($invoice->status)->toBe('belum_dibayar')
+        ->and((float) $invoice->total_amount)->toBe((float) $delivery->total_amount)
+        ->and((float) $invoice->remaining_balance)->toBe((float) $delivery->total_amount)
+        ->and($invoice->items->count())->toBe($delivery->items->count());
+
     // Verify rendered in view
     get(route('admin.deliveries.show', $delivery))
         ->assertOk()
         ->assertSee('Foto Bukti Serah Terima')
-        ->assertSee('Tanda Tangan Digital Penerima');
+        ->assertSee('Tanda Tangan Digital Penerima')
+        ->assertSee('Faktur Piutang Toko')
+        ->assertSee($invoice->invoice_number)
+        ->assertSee('Lihat Faktur');
 });
 
 test('courier can complete delivery handover with client-compressed photo_data base64', function () {

@@ -31,7 +31,7 @@ new #[Layout('components.layouts.admin')] class extends Component
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data pengantaran.');
         }
 
-        $this->delivery = $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
+        $this->delivery = $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel', 'invoice']);
 
         $this->recipient_name = $delivery->recipient_name ?? $delivery->store?->owner_name ?? '';
         $this->recipient_role = $delivery->recipient_role ?? '';
@@ -114,21 +114,28 @@ new #[Layout('components.layouts.admin')] class extends Component
             $updatedNotes = $existingNotes ? "{$existingNotes}\n[Serah Terima]: {$this->handover_notes}" : "[Serah Terima]: {$this->handover_notes}";
         }
 
-        $this->delivery->update([
-            'status' => 'selesai',
-            'delivered_at' => now(),
-            'recipient_name' => $this->recipient_name,
-            'recipient_role' => $this->recipient_role ?: null,
-            'recipient_phone' => $this->recipient_phone ?: null,
-            'proof_image' => $proofPath,
-            'signature_data' => $this->signature_data ?: $this->delivery->signature_data,
-            'notes' => $updatedNotes,
-        ]);
+        $invoice = DB::transaction(function () use ($proofPath, $updatedNotes) {
+            $this->delivery->update([
+                'status' => 'selesai',
+                'delivered_at' => now(),
+                'recipient_name' => $this->recipient_name,
+                'recipient_role' => $this->recipient_role ?: null,
+                'recipient_phone' => $this->recipient_phone ?: null,
+                'proof_image' => $proofPath,
+                'signature_data' => $this->signature_data ?: $this->delivery->signature_data,
+                'notes' => $updatedNotes,
+            ]);
+
+            return $this->delivery->generateInvoice();
+        });
 
         $this->delivery->refresh();
+        $this->delivery->load('invoice');
+
+        $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : "";
 
         session()->flash('toast', [
-            'message' => "Pengantaran selesai! Barang telah diterima oleh {$this->recipient_name}.",
+            'message' => "Pengantaran selesai! Barang telah diterima oleh {$this->recipient_name}.{$invoiceMsg}",
             'type' => 'success',
         ]);
     }

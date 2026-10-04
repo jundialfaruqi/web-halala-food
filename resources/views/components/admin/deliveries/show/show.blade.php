@@ -35,6 +35,14 @@
 
         <!-- Action Buttons -->
         <div class="flex items-center gap-2.5 shrink-0">
+            @if ($delivery->invoice)
+                <a href="{{ route('admin.invoices.show', $delivery->invoice) }}" wire:navigate
+                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white rounded-xl text-sm font-semibold transition shadow-xs">
+                    <i class="ti ti-receipt text-base"></i>
+                    <span>Lihat Faktur</span>
+                </a>
+            @endif
+
             <button type="button" onclick="window.print()"
                 class="inline-flex items-center gap-1.5 px-4 py-2 border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso hover:bg-neutral-50 transition cursor-pointer">
                 <i class="ti ti-printer text-base"></i>
@@ -396,6 +404,33 @@
                     </button>
                 </div>
             </form>
+        </div>
+    @endif
+
+    <!-- Auto-Generated Invoice Notice Banner (Active when completed & invoice exists) -->
+    @if ($delivery->invoice)
+        <div class="bg-white border border-brand-border rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+            <div class="flex items-start sm:items-center gap-3.5">
+                <div class="size-10 rounded-xl bg-neutral-100 flex items-center justify-center text-brand-espresso shrink-0">
+                    <i class="ti ti-file-invoice text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-brand-warm-gray">Faktur Piutang Toko</span>
+                        <span class="text-xs font-mono font-bold text-brand-primary">{{ $delivery->invoice->invoice_number }}</span>
+                        <span class="text-xs text-neutral-300">&bull;</span>
+                        <span class="text-xs font-medium text-brand-warm-gray">{{ $delivery->invoice->status_label }}</span>
+                    </div>
+                    <p class="text-xs text-brand-warm-gray mt-0.5">
+                        Faktur konsinyasi senilai <strong class="text-brand-espresso font-mono">Rp {{ number_format($delivery->invoice->total_amount, 0, ',', '.') }}</strong> otomatis diterbitkan untuk <strong class="text-brand-espresso">{{ $delivery->store?->name }}</strong>.
+                    </p>
+                </div>
+            </div>
+            <a href="{{ route('admin.invoices.show', $delivery->invoice) }}" wire:navigate
+                class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-brand-border rounded-xl text-xs font-semibold text-brand-espresso hover:bg-neutral-50 transition shrink-0">
+                <span>Buka & Rekonsiliasi Faktur</span>
+                <i class="ti ti-arrow-right text-sm"></i>
+            </a>
         </div>
     @endif
 
