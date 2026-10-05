@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,4 +36,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/stores/{store}', [StoreController::class, 'show'])->name('api.stores.show');
     Route::match(['put', 'patch', 'post'], '/stores/{store}', [StoreController::class, 'update'])->name('api.stores.update');
     Route::delete('/stores/{store}', [StoreController::class, 'destroy'])->name('api.stores.destroy');
+
+    // Master Produk Jadi
+    Route::get('/products/units', [ProductController::class, 'units'])->name('api.products.units');
+    Route::get('/products', [ProductController::class, 'index'])->name('api.products.index');
+    Route::get('/products/{product}', [ProductController::class, 'show'])->name('api.products.show');
 });
