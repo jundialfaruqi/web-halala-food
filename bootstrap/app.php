@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Percayai semua proxy (Cloudflare Reverse Proxy) agar IP asli pengunjung & HTTPS terdeteksi
+        $middleware->trustProxies(at: '*');
+
         $middleware->redirectTo(
             guests: '/login',
             users: '/admin/dashboard',
