@@ -42,4 +42,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('api.products.index');
     Route::post('/products', [ProductController::class, 'store'])->name('api.products.store');
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('api.products.show');
+    Route::match(['put', 'patch', 'post'], '/products/{product}', [ProductController::class, 'update'])->name('api.products.update');
+    Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('api.products.destroy');
 });

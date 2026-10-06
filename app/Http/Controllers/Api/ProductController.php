@@ -297,4 +297,193 @@ class ProductController extends Controller
             ],
         ], 201);
     }
+
+    /**
+     * Update existing product (Master Produk Jadi).
+     * Dilindungi dengan autentikasi auth:api dan permission produk-edit (sama persis dengan Web).
+     */
+    public function update(Request $request, Product $product): JsonResponse
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth('api')->user();
+
+        // Pastikan permission sama persis dengan web (produk-edit)
+        if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('produk-edit', 'web') && ! $user->can('produk-edit'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk mengubah data produk.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['required', 'string', 'max:150', 'unique:products,name,' . $product->id],
+            'unit_id' => ['required', 'exists:units,id'],
+            'consignment_price' => ['required', 'numeric', 'min:0'],
+            'retail_price' => ['required', 'numeric', 'min:0'],
+            'stock_ready' => ['required', 'integer', 'min:0'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'is_active' => ['nullable', 'boolean'],
+            'photo' => ['nullable'],
+            'photo_data' => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (! empty($value) && $value !== 'DELETE') {
+                        $error = Product::validatePhotoBase64($value);
+                        if ($error) {
+                            $fail($error);
+                        }
+                    }
+                },
+            ],
+            'remove_photo' => ['nullable', 'boolean'],
+        ], [
+            'name.required' => 'Nama produk kemasan wajib diisi.',
+            'name.max' => 'Nama produk kemasan maksimal 150 karakter.',
+            'name.unique' => 'Nama produk ini sudah terdaftar sebelumnya.',
+            'unit_id.required' => 'Pilih satuan kemasan produk.',
+            'unit_id.exists' => 'Satuan kemasan produk tidak valid.',
+            'consignment_price.required' => 'Harga setor konsinyasi wajib diisi.',
+            'consignment_price.numeric' => 'Harga setor konsinyasi harus berupa angka.',
+            'consignment_price.min' => 'Harga setor konsinyasi tidak boleh bernilai negatif.',
+            'retail_price.required' => 'Harga eceran toko rekomendasi wajib diisi.',
+            'retail_price.numeric' => 'Harga eceran toko rekomendasi harus berupa angka.',
+            'retail_price.min' => 'Harga eceran toko rekomendasi tidak boleh bernilai negatif.',
+            'stock_ready.required' => 'Stok barang jadi wajib diisi.',
+            'stock_ready.integer' => 'Stok barang jadi harus berupa bilangan bulat.',
+            'stock_ready.min' => 'Stok barang jadi tidak boleh bernilai negatif.',
+            'description.max' => 'Deskripsi produk maksimal 500 karakter.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi data produk gagal.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        $unit = Unit::find($validated['unit_id']);
+
+        $isActive = $product->is_active;
+        if ($request->has('is_active')) {
+            $isActive = filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN);
+        }
+
+        $product->update([
+            'name' => trim($validated['name']),
+            'unit_id' => $validated['unit_id'],
+            'unit' => $unit?->short_name ?? $product->unit,
+            'consignment_price' => $validated['consignment_price'],
+            'retail_price' => $validated['retail_price'],
+            'stock_ready' => $validated['stock_ready'],
+            'description' => ! empty($validated['description']) ? trim($validated['description']) : null,
+            'is_active' => $isActive,
+        ]);
+
+        // Penanganan Foto Produk: Hapus, Ganti Base64, atau Multipart
+        $photoData = $request->input('photo_data');
+        if (empty($photoData) && is_string($request->input('photo'))) {
+            $photoData = $request->input('photo');
+        }
+
+        $shouldRemovePhoto = filter_var($request->input('remove_photo'), FILTER_VALIDATE_BOOLEAN) || $photoData === 'DELETE';
+
+        if ($shouldRemovePhoto) {
+            if ($product->photo && Storage::disk('public')->exists($product->photo)) {
+                Storage::disk('public')->delete($product->photo);
+            }
+            $product->photo = null;
+            $product->save();
+        } elseif (! empty($photoData) && str_starts_with($photoData, 'data:image/')) {
+            $product->updatePhotoFromBase64($photoData);
+        } elseif ($request->hasFile('photo')) {
+            $file = $request->file('photo');
+            if ($file->isValid()) {
+                if ($product->photo && Storage::disk('public')->exists($product->photo)) {
+                    Storage::disk('public')->delete($product->photo);
+                }
+
+                $date = now()->format('Y-m-d');
+                $productSlug = Str::slug($product->name ?: 'produk');
+                $randomCode = Str::lower(Str::random(8));
+                $ext = $file->getClientOriginalExtension() ?: 'jpg';
+                $filename = "{$date}_{$productSlug}_{$randomCode}.{$ext}";
+                $path = 'foto-produk/' . $filename;
+
+                Storage::disk('public')->putFileAs('foto-produk', $file, $filename);
+
+                $product->photo = $path;
+                $product->save();
+            }
+        }
+
+        $product->refresh();
+        $product->load(['unitModel']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Data produk '{$product->name}' berhasil diperbarui.",
+            'data' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'unit_id' => $product->unit_id,
+                'unit_name' => $product->unitModel?->name ?? $product->unit,
+                'unit_short' => $product->unitModel?->short_name ?? $product->unit,
+                'consignment_price' => (float) $product->consignment_price,
+                'consignment_price_formatted' => 'Rp ' . number_format($product->consignment_price, 0, ',', '.'),
+                'retail_price' => (float) $product->retail_price,
+                'retail_price_formatted' => 'Rp ' . number_format($product->retail_price, 0, ',', '.'),
+                'stock_ready' => (int) $product->stock_ready,
+                'description' => $product->description ?? '-',
+                'is_active' => (bool) $product->is_active,
+                'photo_url' => $product->photo_url,
+            ],
+        ]);
+    }
+
+    /**
+     * Delete product by ID.
+     * Dilindungi dengan autentikasi auth:api dan permission produk-delete (sama persis dengan Web).
+     */
+    public function destroy(Product $product): JsonResponse
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth('api')->user();
+
+        // Pastikan permission sama dengan web (produk-delete)
+        if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('produk-delete', 'web') && ! $user->can('produk-delete'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus produk.',
+            ], 403);
+        }
+
+        // Safety check: verifikasi jika produk digunakan pada formula resep, riwayat produksi, surat jalan, atau faktur
+        $hasRecipes = $product->recipes()->exists();
+        $hasBatches = $product->productionBatches()->exists();
+        $hasDeliveries = \App\Models\DeliveryItem::where('product_id', $product->id)->exists();
+        $hasInvoices = \App\Models\InvoiceItem::where('product_id', $product->id)->exists();
+
+        if ($hasRecipes || $hasBatches || $hasDeliveries || $hasInvoices) {
+            return response()->json([
+                'success' => false,
+                'message' => "Produk '{$product->name}' tidak dapat dihapus karena sudah memiliki data formula resep, riwayat produksi, surat jalan, atau faktur tagihan. Silakan nonaktifkan status produk sebagai gantinya.",
+            ], 422);
+        }
+
+        if ($product->photo && Storage::disk('public')->exists($product->photo)) {
+            Storage::disk('public')->delete($product->photo);
+        }
+
+        $productName = $product->name;
+        $product->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Produk '{$productName}' berhasil dihapus.",
+        ]);
+    }
 }

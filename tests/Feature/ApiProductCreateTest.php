@@ -7,6 +7,7 @@ use Database\Seeders\DatabaseSeeder;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\PermissionRegistrar;
 
+use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\seed;
 use function Pest\Laravel\withHeader;
@@ -80,7 +81,7 @@ test('manager user can create new product via api', function () {
         ->and($response->json('data.stock_ready'))->toBe(25)
         ->and($response->json('data.is_active'))->toBeTrue();
 
-    $this->assertDatabaseHas('products', [
+    assertDatabaseHas('products', [
         'name' => 'Stik Balado Spesial Halala 200g',
         'unit_id' => $unit->id,
         'stock_ready' => 25,
