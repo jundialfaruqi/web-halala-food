@@ -33,6 +33,11 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, HasRoles, Notifiable;
 
     /**
+     * Spatie Permission default guard name.
+     */
+    protected string $guard_name = 'web';
+
+    /**
      * Get the identifier that will be stored in the subject claim of the JWT.
      */
     public function getJWTIdentifier(): mixed

@@ -162,7 +162,8 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        $newUser->syncRoles([$validated['role']]);
+        $role = Role::findByName($validated['role'], 'web');
+        $newUser->syncRoles([$role]);
         $newUser->load('roles');
 
         return response()->json([
@@ -208,7 +209,8 @@ class UserController extends Controller
         }
 
         $user->update($updateData);
-        $user->syncRoles([$validated['role']]);
+        $role = Role::findByName($validated['role'], 'web');
+        $user->syncRoles([$role]);
         $user->load('roles');
 
         return response()->json([
