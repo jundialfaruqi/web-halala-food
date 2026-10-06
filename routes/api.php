@@ -40,5 +40,6 @@ Route::middleware(['auth:api'])->group(function () {
     // Master Produk Jadi
     Route::get('/products/units', [ProductController::class, 'units'])->name('api.products.units');
     Route::get('/products', [ProductController::class, 'index'])->name('api.products.index');
+    Route::post('/products', [ProductController::class, 'store'])->name('api.products.store');
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('api.products.show');
 });
