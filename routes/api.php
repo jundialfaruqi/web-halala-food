@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,6 +30,14 @@ Route::prefix('auth')->group(function () {
 
 // Protected Business Routes
 Route::middleware(['auth:api'])->group(function () {
+    // Manajemen Pengguna (Staf & Hak Akses)
+    Route::get('/users/roles', [UserController::class, 'roles'])->name('api.users.roles');
+    Route::get('/users', [UserController::class, 'index'])->name('api.users.index');
+    Route::post('/users', [UserController::class, 'store'])->name('api.users.store');
+    Route::get('/users/{user}', [UserController::class, 'show'])->name('api.users.show');
+    Route::match(['put', 'patch', 'post'], '/users/{user}', [UserController::class, 'update'])->name('api.users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('api.users.destroy');
+
     // Toko Mitra
     Route::get('/stores/routes', [StoreController::class, 'routes'])->name('api.stores.routes');
     Route::get('/stores', [StoreController::class, 'index'])->name('api.stores.index');
