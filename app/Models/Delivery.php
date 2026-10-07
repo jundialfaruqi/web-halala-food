@@ -31,6 +31,14 @@ class Delivery extends Model
         'total_amount',
     ];
 
+    protected $appends = [
+        'proof_image_url',
+        'status_label',
+        'delivery_date_formatted',
+        'dispatched_at_formatted',
+        'delivered_at_formatted',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -40,6 +48,34 @@ class Delivery extends Model
             'total_items' => 'integer',
             'total_amount' => 'decimal:2',
         ];
+    }
+
+    public function getDeliveryDateFormattedAttribute(): ?string
+    {
+        return $this->delivery_date?->translatedFormat('d M Y');
+    }
+
+    public function getDispatchedAtFormattedAttribute(): ?string
+    {
+        return $this->dispatched_at?->translatedFormat('d M Y H:i');
+    }
+
+    public function getDeliveredAtFormattedAttribute(): ?string
+    {
+        return $this->delivered_at?->translatedFormat('d M Y H:i');
+    }
+
+    public function getProofImageUrlAttribute(): ?string
+    {
+        if (! $this->proof_image) {
+            return null;
+        }
+
+        if (str_starts_with($this->proof_image, 'http://') || str_starts_with($this->proof_image, 'https://')) {
+            return $this->proof_image;
+        }
+
+        return asset('storage/' . $this->proof_image);
     }
 
     public function store(): BelongsTo

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
@@ -53,4 +54,15 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('api.products.show');
     Route::match(['put', 'patch', 'post'], '/products/{product}', [ProductController::class, 'update'])->name('api.products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('api.products.destroy');
+
+    // Surat Jalan & Pengantaran
+    Route::get('/deliveries/options', [DeliveryController::class, 'options'])->name('api.deliveries.options');
+    Route::get('/deliveries', [DeliveryController::class, 'index'])->name('api.deliveries.index');
+    Route::post('/deliveries', [DeliveryController::class, 'store'])->name('api.deliveries.store');
+    Route::get('/deliveries/{delivery}', [DeliveryController::class, 'show'])->name('api.deliveries.show');
+    Route::match(['put', 'patch', 'post'], '/deliveries/{delivery}', [DeliveryController::class, 'update'])->name('api.deliveries.update');
+    Route::delete('/deliveries/{delivery}', [DeliveryController::class, 'destroy'])->name('api.deliveries.destroy');
+    Route::post('/deliveries/{delivery}/dispatch', [DeliveryController::class, 'dispatchDelivery'])->name('api.deliveries.dispatch');
+    Route::post('/deliveries/{delivery}/complete', [DeliveryController::class, 'completeDelivery'])->name('api.deliveries.complete');
+    Route::post('/deliveries/{delivery}/cancel', [DeliveryController::class, 'cancelDelivery'])->name('api.deliveries.cancel');
 });
