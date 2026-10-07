@@ -262,25 +262,25 @@ class DatabaseSeeder extends Seeder
         // 4. Seed Standard Users for the 3 Roles
         $users = [
             [
-                'email' => 'developer@halala-food.id',
+                'email' => 'dev@hmail.com',
                 'name' => 'Developer Super Admin',
                 'phone' => '081234567890',
                 'role' => $devRole,
             ],
             [
-                'email' => 'admin@halala-food.id',
+                'email' => 'admin@mail.com',
                 'name' => 'Administrator Halala',
                 'phone' => '081288889999',
                 'role' => $devRole,
             ],
             [
-                'email' => 'manager@halala-food.id',
+                'email' => 'manager@mail.com',
                 'name' => 'Ibu Dewi Lestari (Manager)',
                 'phone' => '081299887766',
                 'role' => $managerRole,
             ],
             [
-                'email' => 'kurir@halala-food.id',
+                'email' => 'kurir@mail.com',
                 'name' => 'Budi Pratama (Kurir)',
                 'phone' => '089612348765',
                 'role' => $kurirRole,
@@ -297,7 +297,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'name' => $userData['name'],
                     'phone' => User::normalizePhone($userData['phone']),
-                    'password' => Hash::make('password123'),
+                    'password' => Hash::make('admin123'),
                     'email_verified_at' => now(),
                 ]
             );
