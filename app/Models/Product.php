@@ -25,6 +25,10 @@ class Product extends Model
         'is_active',
     ];
 
+    protected $appends = [
+        'photo_url',
+    ];
+
     protected function casts(): array
     {
         return [
