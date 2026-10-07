@@ -121,6 +121,12 @@ class DeliveryController extends Controller
                 'total' => $deliveries->total(),
             ],
             'status_counts' => $statusCounts,
+            'routes' => Store::whereNotNull('route')
+                ->where('route', '!=', '')
+                ->distinct()
+                ->orderBy('route')
+                ->pluck('route')
+                ->values(),
             'current_user_id' => $user->id,
             'is_courier' => $isCourier,
         ]);
@@ -147,11 +153,11 @@ class DeliveryController extends Controller
         $products = Product::where('is_active', true)
             ->with('unitModel')
             ->orderBy('name')
-            ->get(['id', 'name', 'unit', 'unit_id', 'stock_ready', 'consignment_price', 'deposit_price', 'image']);
+            ->get(['id', 'name', 'unit', 'unit_id', 'stock_ready', 'consignment_price', 'retail_price', 'photo']);
 
-        $couriers = User::role('kurir')->orderBy('name')->get(['id', 'name', 'phone', 'username']);
+        $couriers = User::role('kurir')->orderBy('name')->get(['id', 'name', 'phone', 'email']);
         if ($couriers->isEmpty()) {
-            $couriers = User::orderBy('name')->get(['id', 'name', 'phone', 'username']);
+            $couriers = User::orderBy('name')->get(['id', 'name', 'phone', 'email']);
         }
 
         $routes = Store::whereNotNull('route')
