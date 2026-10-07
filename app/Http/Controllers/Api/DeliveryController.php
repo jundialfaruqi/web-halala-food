@@ -88,13 +88,9 @@ class DeliveryController extends Controller
             $query->whereDate('delivery_date', $request->input('delivery_date'));
         }
 
-        // Courier Filter / Tugas Saya Filter (only for dev/manager, kurir is strictly scoped to their own tasks)
-        if (! $isCourier) {
-            if ($request->boolean('my_tasks') || $request->input('task_filter') === 'my') {
-                $query->where('courier_id', $user->id);
-            } elseif ($request->filled('courier_id')) {
-                $query->where('courier_id', $request->input('courier_id'));
-            }
+        // Courier Filter (only for dev/manager, kurir is strictly scoped to their own tasks)
+        if (! $isCourier && $request->filled('courier_id')) {
+            $query->where('courier_id', $request->input('courier_id'));
         }
 
         // Status counts for badge tabs (scoped to user's accessible deliveries)
