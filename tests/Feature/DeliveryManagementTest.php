@@ -365,3 +365,74 @@ test('courier can complete delivery handover with client-compressed photo_data b
     expect(Storage::disk('public')->exists($delivery->proof_image))->toBeTrue();
 });
 
+test('courier in web interface can only view their own deliveries, and cannot open detail, edit, or delete another couriers delivery', function () {
+    $kurir1 = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+    $kurir2 = User::updateOrCreate(
+        ['email' => 'kurir-b@halala-food.id'],
+        [
+            'name' => 'Kurir B Web',
+            'phone' => '089988776655',
+            'password' => bcrypt('admin123'),
+        ]
+    );
+    $kurir2->syncRoles(['kurir']);
+
+    $store = Store::first();
+
+    $delivery1 = Delivery::create([
+        'delivery_number' => 'SJ-WEB-K1-001',
+        'store_id' => $store->id,
+        'courier_id' => $kurir1->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'diproses',
+        'total_items' => 5,
+        'total_amount' => 50000,
+    ]);
+
+    $delivery2 = Delivery::create([
+        'delivery_number' => 'SJ-WEB-K2-002',
+        'store_id' => $store->id,
+        'courier_id' => $kurir2->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'diproses',
+        'total_items' => 5,
+        'total_amount' => 50000,
+    ]);
+
+    actingAs($kurir1);
+
+    // 1. Livewire index only includes kurir1's deliveries
+    $indexTest = Livewire::test('admin.deliveries.index')
+        ->assertSee($delivery1->delivery_number)
+        ->assertDontSee($delivery2->delivery_number);
+
+    // 2. Courier 1 can view own delivery show page, but is blocked (403) from courier 2's delivery
+    get(route('admin.deliveries.show', $delivery1))
+        ->assertOk();
+
+    get(route('admin.deliveries.show', $delivery2))
+        ->assertForbidden();
+
+    // 3. Courier 1 cannot mount show Livewire component for courier 2
+    Livewire::test('admin.deliveries.show', ['delivery' => $delivery2])
+        ->assertForbidden();
+
+    // 4. Courier 1 cannot mount edit Livewire component for courier 2
+    Livewire::test('admin.deliveries.edit', ['delivery' => $delivery2])
+        ->assertForbidden();
+
+    // 5. Courier 1 cannot delete courier 2's delivery via route
+    delete(route('admin.deliveries.destroy', $delivery2))
+        ->assertForbidden();
+
+    // 6. Courier 1 action on index component for courier 2 is rejected (delivery remains unchanged)
+    $indexTest->call('cancelDelivery', $delivery2->id);
+    expect($delivery2->fresh()->status)->toBe('diproses');
+
+    $indexTest->call('deleteDelivery', $delivery2->id);
+    expect(Delivery::find($delivery2->id))->not->toBeNull();
+
+    $indexTest->call('markAsDispatched', $delivery2->id);
+    expect($delivery2->fresh()->status)->toBe('diproses');
+});
+

@@ -127,7 +127,7 @@ test('manager can create a new store with latitude, longitude, and route on dedi
     $store = Store::where('name', 'Toko Berkah Baru')->first();
     expect($store)->not->toBeNull()
         ->and($store->owner_name)->toBe('Hj. Siti Nurhaliza')
-        ->and($store->phone)->toBe('081234567899')
+        ->and($store->phone)->toBe('6281234567899')
         ->and($store->latitude)->toBe(-7.9723)
         ->and($store->longitude)->toBe(112.6256)
         ->and($store->route)->toBe('Rute Ijen')

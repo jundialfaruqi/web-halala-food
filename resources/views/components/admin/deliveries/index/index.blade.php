@@ -182,8 +182,8 @@
                 </select>
             </div>
 
-            <!-- Penugasan / Courier Filter -->
-            <div class="w-full sm:w-auto">
+            <!-- Penugasan / Courier Filter (Hanya untuk Admin/Manager, Kurir otomatis dibatasi tugasnya sendiri) -->
+            <div class="w-full sm:w-auto" x-show="!isCourier">
                 <select x-model="taskFilter"
                     class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
                     <option value="all">Semua Pengantaran</option>

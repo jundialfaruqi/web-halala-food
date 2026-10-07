@@ -188,3 +188,104 @@ test('cancelling delivery restores stock ready', function () {
     expect($product->fresh()->stock_ready)->toBe(25);
     expect($cancelRes->json('data.status'))->toBe('dibatalkan');
 });
+
+test('courier can only see and access their own deliveries in api, cannot see or access deliveries of other couriers', function () {
+    $kurir1 = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+    $kurir2 = User::updateOrCreate(
+        ['email' => 'kurir2@halala-food.id'],
+        [
+            'name' => 'Kurir Kedua',
+            'phone' => '089912345678',
+            'password' => bcrypt('admin123'),
+        ]
+    );
+    $kurir2->syncRoles(['kurir']);
+
+    $dev = User::where('email', 'developer@halala-food.id')->firstOrFail();
+    $store = Store::firstOrCreate(
+        ['name' => 'Toko Kurir Isolasi'],
+        ['owner_name' => 'Pak Budi', 'phone' => '0812345678', 'address' => 'Jl. Test', 'is_active' => true]
+    );
+
+    $delivery1 = Delivery::create([
+        'delivery_number' => 'SJ-ISO-0001',
+        'store_id' => $store->id,
+        'courier_id' => $kurir1->id,
+        'created_by' => $dev->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'diproses',
+        'total_items' => 1,
+        'total_amount' => 10000,
+    ]);
+
+    $delivery2 = Delivery::create([
+        'delivery_number' => 'SJ-ISO-0002',
+        'store_id' => $store->id,
+        'courier_id' => $kurir2->id,
+        'created_by' => $dev->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'diproses',
+        'total_items' => 1,
+        'total_amount' => 10000,
+    ]);
+
+    $tokenKurir1 = JWTAuth::fromUser($kurir1);
+
+    // 1. In list API: kurir1 only sees delivery1, never delivery2
+    $listRes = withHeader('Authorization', "Bearer {$tokenKurir1}")
+        ->getJson('/api/deliveries?per_page=100');
+    $listRes->assertOk();
+    $ids = collect($listRes->json('data'))->pluck('id')->all();
+    expect($ids)->toContain($delivery1->id)
+        ->and($ids)->not->toContain($delivery2->id);
+
+    // 2. In show API: kurir1 can view delivery1, but receives 403 when trying to view delivery2
+    withHeader('Authorization', "Bearer {$tokenKurir1}")
+        ->getJson("/api/deliveries/{$delivery1->id}")
+        ->assertOk();
+
+    withHeader('Authorization', "Bearer {$tokenKurir1}")
+        ->getJson("/api/deliveries/{$delivery2->id}")
+        ->assertStatus(403);
+
+    // 3. In dispatch API: kurir1 cannot dispatch delivery2
+    withHeader('Authorization', "Bearer {$tokenKurir1}")
+        ->postJson("/api/deliveries/{$delivery2->id}/dispatch")
+        ->assertStatus(403);
+
+    // 4. In complete API: kurir1 cannot complete delivery2
+    withHeader('Authorization', "Bearer {$tokenKurir1}")
+        ->postJson("/api/deliveries/{$delivery2->id}/complete", [
+            'recipient_name' => 'Penerima Toko',
+        ])
+        ->assertStatus(403);
+
+    // 5. In cancel API: kurir1 cannot cancel delivery2
+    withHeader('Authorization', "Bearer {$tokenKurir1}")
+        ->postJson("/api/deliveries/{$delivery2->id}/cancel")
+        ->assertStatus(403);
+
+    // 6. In update API: kurir1 cannot update delivery2
+    withHeader('Authorization', "Bearer {$tokenKurir1}")
+        ->putJson("/api/deliveries/{$delivery2->id}", [
+            'delivery_number' => 'SJ-ISO-0002-MOD',
+            'store_id' => $store->id,
+            'delivery_date' => now()->toDateString(),
+            'items' => [['product_id' => 1, 'quantity' => 1]],
+        ])
+        ->assertStatus(403);
+
+    // 7. Dev CAN see both deliveries in list API and view delivery2
+    auth('api')->setUser($dev);
+    $devToken = JWTAuth::fromUser($dev);
+    $devListRes = withHeader('Authorization', "Bearer {$devToken}")
+        ->getJson('/api/deliveries?per_page=100');
+    $devIds = collect($devListRes->json('data'))->pluck('id')->all();
+    expect($devIds)->toContain($delivery1->id)
+        ->and($devIds)->toContain($delivery2->id);
+
+    withHeader('Authorization', "Bearer {$devToken}")
+        ->getJson("/api/deliveries/{$delivery2->id}")
+        ->assertOk();
+});
+

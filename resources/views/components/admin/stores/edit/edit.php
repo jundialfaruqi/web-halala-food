@@ -98,7 +98,7 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
         $this->store->update([
             'name' => trim($validated['name']),
             'owner_name' => ! empty($validated['owner_name']) ? trim($validated['owner_name']) : null,
-            'phone' => ! empty($validated['phone']) ? '62' . preg_replace('/\D/', '', $validated['phone']) : null,
+            'phone' => Store::normalizePhone($validated['phone'] ?? null),
             'address' => ! empty($validated['address']) ? trim($validated['address']) : null,
             'latitude' => isset($validated['latitude']) && $validated['latitude'] !== '' && $validated['latitude'] !== null ? (float) $validated['latitude'] : null,
             'longitude' => isset($validated['longitude']) && $validated['longitude'] !== '' && $validated['longitude'] !== null ? (float) $validated['longitude'] : null,

@@ -268,6 +268,12 @@ class DatabaseSeeder extends Seeder
                 'role' => $devRole,
             ],
             [
+                'email' => 'developer@halala-food.id',
+                'name' => 'Developer Super Admin',
+                'phone' => '081234567891',
+                'role' => $devRole,
+            ],
+            [
                 'email' => 'admin@mail.com',
                 'name' => 'Administrator Halala',
                 'phone' => '081288889999',
@@ -280,9 +286,21 @@ class DatabaseSeeder extends Seeder
                 'role' => $managerRole,
             ],
             [
+                'email' => 'manager@halala-food.id',
+                'name' => 'Ibu Dewi Lestari (Manager)',
+                'phone' => '081299887767',
+                'role' => $managerRole,
+            ],
+            [
                 'email' => 'kurir@mail.com',
                 'name' => 'Budi Pratama (Kurir)',
                 'phone' => '089612348765',
+                'role' => $kurirRole,
+            ],
+            [
+                'email' => 'kurir@halala-food.id',
+                'name' => 'Budi Pratama (Kurir)',
+                'phone' => '089612348766',
                 'role' => $kurirRole,
             ],
         ];

@@ -5,6 +5,7 @@ use App\Models\DeliveryItem;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
@@ -28,6 +29,10 @@ new #[Layout('components.layouts.admin')] class extends Component
     {
         if (Gate::denies('pengantaran-edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah surat jalan.');
+        }
+
+        if (! $delivery->isAccessibleBy(Auth::user())) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah surat jalan milik kurir lain.');
         }
 
         if (! $delivery->canBeEdited()) {
@@ -148,6 +153,16 @@ new #[Layout('components.layouts.admin')] class extends Component
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah surat jalan.');
         }
 
+        $user = Auth::user();
+        if (! $this->delivery->isAccessibleBy($user)) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah surat jalan milik kurir lain.');
+        }
+
+        $isCourier = ($user instanceof User && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']));
+        if ($isCourier) {
+            $this->courier_id = $this->delivery->courier_id;
+        }
+
         if (! $this->delivery->canBeEdited()) {
             session()->flash('toast', [
                 'message' => 'Surat jalan tidak dapat diedit karena sudah dalam perjalanan atau selesai.',
@@ -240,9 +255,14 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function with(): array
     {
+        $user = Auth::user();
+        $isCourier = ($user instanceof User && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']));
+
         $stores = Store::where('is_active', true)->orderBy('name')->get();
         $products = Product::where('is_active', true)->orderBy('name')->get();
-        $couriers = User::role('kurir')->orderBy('name')->get();
+        $couriers = $isCourier
+            ? User::where('id', $user->id)->get()
+            : User::role('kurir')->orderBy('name')->get();
 
         if ($couriers->isEmpty()) {
             $couriers = User::orderBy('name')->get();
@@ -255,6 +275,7 @@ new #[Layout('components.layouts.admin')] class extends Component
             'products' => $products,
             'couriers' => $couriers,
             'selectedStore' => $selectedStore,
+            'isCourier' => $isCourier,
         ];
     }
 };

@@ -27,6 +27,10 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
             return ['success' => false, 'message' => 'Data surat jalan tidak ditemukan.'];
         }
 
+        if (! $delivery->isAccessibleBy(Auth::user())) {
+            return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk membatalkan surat jalan milik kurir lain.'];
+        }
+
         if ($delivery->status === 'selesai') {
             return ['success' => false, 'message' => 'Surat jalan yang sudah selesai tidak dapat dibatalkan.'];
         }
@@ -59,6 +63,10 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
         $delivery = Delivery::with('items')->find($id);
         if (! $delivery) {
             return ['success' => false, 'message' => 'Data surat jalan tidak ditemukan.'];
+        }
+
+        if (! $delivery->isAccessibleBy(Auth::user())) {
+            return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk menghapus surat jalan milik kurir lain.'];
         }
 
         if ($delivery->status === 'selesai') {
@@ -95,6 +103,10 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
             return ['success' => false, 'message' => 'Data surat jalan tidak ditemukan.'];
         }
 
+        if (! $delivery->isAccessibleBy(Auth::user())) {
+            return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk mengubah status surat jalan milik kurir lain.'];
+        }
+
         if ($delivery->status !== 'diproses') {
             return ['success' => false, 'message' => 'Surat jalan tidak dapat diberangkatkan karena status bukan menunggu pengambilan.'];
         }
@@ -110,9 +122,10 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
     public function with(): array
     {
         $user = Auth::user();
-        $isCourier = ($user instanceof User && $user->hasRole('kurir'));
+        $isCourier = ($user instanceof User && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']));
 
         $deliveries = Delivery::with(['store', 'courier', 'items.product'])
+            ->forUser($user)
             ->orderByDesc('delivery_date')
             ->orderByDesc('id')
             ->get()

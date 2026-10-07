@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class Delivery extends Model
 {
@@ -169,6 +172,44 @@ class Delivery extends Model
     public function canBeEdited(): bool
     {
         return in_array($this->status, ['diproses']);
+    }
+
+    /**
+     * Scope a query to only include deliveries accessible by the specified user.
+     * Kurir is strictly limited to deliveries assigned to them (courier_id == user->id).
+     */
+    public function scopeForUser(Builder $query, ?User $user = null): Builder
+    {
+        /** @var User|null $currentUser */
+        $currentUser = $user ?? Auth::user() ?? auth('api')->user();
+        if (! $currentUser instanceof User) {
+            return $query;
+        }
+
+        if ($currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager'])) {
+            return $query->where('courier_id', $currentUser->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Check if this delivery is accessible by the specified user.
+     * Kurir can only access deliveries assigned to themselves.
+     */
+    public function isAccessibleBy(?User $user = null): bool
+    {
+        /** @var User|null $currentUser */
+        $currentUser = $user ?? Auth::user() ?? auth('api')->user();
+        if (! $currentUser instanceof User) {
+            return false;
+        }
+
+        if ($currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager'])) {
+            return (int) $this->courier_id === (int) $currentUser->id;
+        }
+
+        return true;
     }
 
     public static function generateDeliveryNumber(): string

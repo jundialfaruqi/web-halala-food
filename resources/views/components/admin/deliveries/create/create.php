@@ -36,7 +36,8 @@ new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala 
 
         // Assign courier automatically if current user has courier role
         $user = Auth::user();
-        if ($user instanceof User && $user->hasRole('kurir')) {
+        $isCourier = ($user instanceof User && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']));
+        if ($isCourier) {
             $this->courier_id = $user->id;
         }
 
@@ -154,8 +155,10 @@ new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala 
             }
         }
 
-        if ($hasStockError) {
-            return;
+        $user = Auth::user();
+        $isCourier = ($user instanceof User && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']));
+        if ($isCourier) {
+            $this->courier_id = $user->id;
         }
 
         $delivery = DB::transaction(function () {
@@ -200,9 +203,14 @@ new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala 
 
     public function with(): array
     {
+        $user = Auth::user();
+        $isCourier = ($user instanceof User && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']));
+
         $stores = Store::where('is_active', true)->orderBy('name')->get();
         $products = Product::where('is_active', true)->orderBy('name')->get();
-        $couriers = User::role('kurir')->orderBy('name')->get();
+        $couriers = $isCourier
+            ? User::where('id', $user->id)->get()
+            : User::role('kurir')->orderBy('name')->get();
 
         // If no user has role kurir, fallback to all users
         if ($couriers->isEmpty()) {
@@ -216,6 +224,7 @@ new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala 
             'products' => $products,
             'couriers' => $couriers,
             'selectedStore' => $selectedStore,
+            'isCourier' => $isCourier,
         ];
     }
 };

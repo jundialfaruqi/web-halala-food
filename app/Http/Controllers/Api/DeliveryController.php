@@ -46,9 +46,9 @@ class DeliveryController extends Controller
 
         /** @var \App\Models\User $user */
         $user = auth('api')->user();
-        $isCourier = $user->hasRole('kurir');
+        $isCourier = $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
 
-        $query = Delivery::with(['store', 'courier', 'creator', 'items.product']);
+        $query = Delivery::with(['store', 'courier', 'creator', 'items.product'])->forUser($user);
 
         // Search query across delivery_number, store name, owner name, address, courier name, recipient name, notes
         if ($request->filled('search')) {
@@ -88,20 +88,22 @@ class DeliveryController extends Controller
             $query->whereDate('delivery_date', $request->input('delivery_date'));
         }
 
-        // Courier Filter / Tugas Saya Filter
-        if ($request->boolean('my_tasks') || ($isCourier && $request->input('task_filter') === 'my')) {
-            $query->where('courier_id', $user->id);
-        } elseif ($request->filled('courier_id')) {
-            $query->where('courier_id', $request->input('courier_id'));
+        // Courier Filter / Tugas Saya Filter (only for dev/manager, kurir is strictly scoped to their own tasks)
+        if (! $isCourier) {
+            if ($request->boolean('my_tasks') || $request->input('task_filter') === 'my') {
+                $query->where('courier_id', $user->id);
+            } elseif ($request->filled('courier_id')) {
+                $query->where('courier_id', $request->input('courier_id'));
+            }
         }
 
-        // Status counts for badge tabs
+        // Status counts for badge tabs (scoped to user's accessible deliveries)
         $statusCounts = [
             'all' => (clone $query)->withoutGlobalScopes()->count(),
-            'diproses' => Delivery::where('status', 'diproses')->count(),
-            'dikirim' => Delivery::where('status', 'dikirim')->count(),
-            'selesai' => Delivery::where('status', 'selesai')->count(),
-            'dibatalkan' => Delivery::where('status', 'dibatalkan')->count(),
+            'diproses' => Delivery::forUser($user)->where('status', 'diproses')->count(),
+            'dikirim' => Delivery::forUser($user)->where('status', 'dikirim')->count(),
+            'selesai' => Delivery::forUser($user)->where('status', 'selesai')->count(),
+            'dibatalkan' => Delivery::forUser($user)->where('status', 'dibatalkan')->count(),
         ];
 
         // Ordering: latest delivery_date and id first
@@ -155,7 +157,13 @@ class DeliveryController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'unit', 'unit_id', 'stock_ready', 'consignment_price', 'retail_price', 'photo']);
 
-        $couriers = User::role('kurir')->orderBy('name')->get(['id', 'name', 'phone', 'email']);
+        /** @var \App\Models\User|null $user */
+        $user = auth('api')->user();
+        $isCourier = $user && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
+
+        $couriers = $isCourier
+            ? User::where('id', $user->id)->get(['id', 'name', 'phone', 'email'])
+            : User::role('kurir')->orderBy('name')->get(['id', 'name', 'phone', 'email']);
         if ($couriers->isEmpty()) {
             $couriers = User::orderBy('name')->get(['id', 'name', 'phone', 'email']);
         }
@@ -275,12 +283,10 @@ class DeliveryController extends Controller
 
         /** @var \App\Models\User $currentUser */
         $currentUser = auth('api')->user();
+        $isCourier = $currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager']);
 
-        // Courier assignment default if user is courier
-        $courierId = $request->input('courier_id');
-        if (! $courierId && $currentUser->hasRole('kurir')) {
-            $courierId = $currentUser->id;
-        }
+        // Courier assignment: If user is courier, force courier_id to themselves
+        $courierId = $isCourier ? $currentUser->id : $request->input('courier_id');
 
         $delivery = DB::transaction(function () use ($deliveryNumber, $request, $currentUser, $courierId, $totalItems, $totalAmount, $items) {
             $delivery = Delivery::create([
@@ -333,6 +339,15 @@ class DeliveryController extends Controller
             ], 403);
         }
 
+        /** @var \App\Models\User $user */
+        $user = auth('api')->user();
+        if (! $delivery->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk melihat surat jalan milik kurir lain.',
+            ], 403);
+        }
+
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel', 'invoice.items.product']);
 
         return response()->json([
@@ -352,6 +367,15 @@ class DeliveryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk mengubah surat jalan.',
+            ], 403);
+        }
+
+        /** @var \App\Models\User $user */
+        $user = auth('api')->user();
+        if (! $delivery->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk mengubah surat jalan milik kurir lain.',
             ], 403);
         }
 
@@ -438,7 +462,10 @@ class DeliveryController extends Controller
         }
         unset($item);
 
-        DB::transaction(function () use ($delivery, $request, $items, $totalItems, $totalAmount) {
+        $isCourier = $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
+        $courierId = $isCourier ? $delivery->courier_id : $request->input('courier_id');
+
+        DB::transaction(function () use ($delivery, $request, $items, $totalItems, $totalAmount, $courierId) {
             // 1. Restore previous reserved stock
             foreach ($delivery->items as $oldItem) {
                 Product::where('id', $oldItem->product_id)->increment('stock_ready', $oldItem->quantity);
@@ -464,7 +491,7 @@ class DeliveryController extends Controller
             $delivery->update([
                 'delivery_number' => $request->input('delivery_number'),
                 'store_id' => $request->input('store_id'),
-                'courier_id' => $request->input('courier_id'),
+                'courier_id' => $courierId,
                 'delivery_date' => $request->input('delivery_date'),
                 'notes' => $request->input('notes'),
                 'total_items' => $totalItems,
@@ -493,6 +520,15 @@ class DeliveryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk mengubah status pengantaran.',
+            ], 403);
+        }
+
+        /** @var \App\Models\User $user */
+        $user = auth('api')->user();
+        if (! $delivery->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk memberangkatkan surat jalan milik kurir lain.',
             ], 403);
         }
 
@@ -529,6 +565,15 @@ class DeliveryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk menyelesaikan pengantaran.',
+            ], 403);
+        }
+
+        /** @var \App\Models\User $user */
+        $user = auth('api')->user();
+        if (! $delivery->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menyelesaikan surat jalan milik kurir lain.',
             ], 403);
         }
 
@@ -640,6 +685,15 @@ class DeliveryController extends Controller
             ], 403);
         }
 
+        /** @var \App\Models\User $user */
+        $user = auth('api')->user();
+        if (! $delivery->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk membatalkan surat jalan milik kurir lain.',
+            ], 403);
+        }
+
         if ($delivery->status === 'selesai') {
             return response()->json([
                 'success' => false,
@@ -686,6 +740,15 @@ class DeliveryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk menghapus surat jalan.',
+            ], 403);
+        }
+
+        /** @var \App\Models\User $user */
+        $user = auth('api')->user();
+        if (! $delivery->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus surat jalan milik kurir lain.',
             ], 403);
         }
 

@@ -51,6 +51,25 @@ class Store extends Model
     }
 
     /**
+     * Normalize Indonesian phone number into 62... format
+     */
+    public static function normalizePhone(?string $phone): ?string
+    {
+        if (empty($phone)) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', $phone);
+        if (str_starts_with($digits, '0')) {
+            $digits = substr($digits, 1);
+        } elseif (str_starts_with($digits, '62')) {
+            $digits = substr($digits, 2);
+        }
+
+        return ! empty($digits) ? '62' . $digits : null;
+    }
+
+    /**
      * Get public URL for the store photo.
      */
     public function getPhotoUrlAttribute(): ?string

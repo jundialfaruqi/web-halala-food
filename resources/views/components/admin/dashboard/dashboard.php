@@ -58,18 +58,14 @@ new #[Layout('components.layouts.admin'), Title('Dashboard - Halala Food')] clas
 
         $totalCashBalance = (float) Account::sum('balance');
 
+        $user = Auth::user();
+        $isCourier = $user && method_exists($user, 'hasRole') && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
+
         $activeStoresCount = Store::where('is_active', true)->count();
-        $pendingDeliveriesCount = Delivery::whereIn('status', ['diproses', 'dikirim'])->count();
+        $pendingDeliveriesCount = Delivery::forUser($user)->whereIn('status', ['diproses', 'dikirim'])->count();
         $readyProductsStock = (int) Product::sum('stock_ready');
 
-        $user = Auth::user();
-        $isCourier = $user && method_exists($user, 'hasRole') && $user->hasRole('kurir');
-
-        $completedDeliveriesCount = Delivery::where('status', 'selesai')
-            ->when($isCourier, function ($q) use ($user) {
-                $q->where('courier_id', $user->id);
-            })
-            ->count();
+        $completedDeliveriesCount = Delivery::forUser($user)->where('status', 'selesai')->count();
 
         $canManageUsers = Gate::allows('user-manage');
         $canViewMaterials = Gate::allows('bahan-baku-view');
@@ -79,8 +75,9 @@ new #[Layout('components.layouts.admin'), Title('Dashboard - Halala Food')] clas
             ? RawMaterial::whereColumn('stock', '<=', 'min_stock')->take(5)->get()
             : collect();
 
-        // Recent deliveries
-        $recentDeliveries = Delivery::with(['store', 'courier'])
+        // Recent deliveries (scoped for courier)
+        $recentDeliveries = Delivery::forUser($user)
+            ->with(['store', 'courier'])
             ->latest('id')
             ->take(5)
             ->get();

@@ -102,6 +102,8 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/deliveries/{delivery}', 'admin.deliveries.show')->name('admin.deliveries.show')->middleware('permission:pengantaran-view');
     Route::livewire('/deliveries/{delivery}/edit', 'admin.deliveries.edit')->name('admin.deliveries.edit')->middleware('permission:pengantaran-edit');
     Route::delete('/deliveries/{delivery}', function (\App\Models\Delivery $delivery) {
+        abort_if(! $delivery->isAccessibleBy(Auth::user()), 403, 'Anda tidak memiliki hak akses untuk menghapus surat jalan ini.');
+
         if ($delivery->status === 'selesai') {
             session()->flash('toast', [
                 'message' => 'Surat jalan yang telah selesai serah terima tidak boleh dihapus.',

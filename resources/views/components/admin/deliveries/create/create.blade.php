@@ -91,18 +91,23 @@
                     <label for="courier_id" class="block text-sm font-semibold text-brand-espresso mb-1.5">
                         Kurir yang Ditugaskan
                     </label>
-                    <select id="courier_id" wire:model="courier_id"
-                        class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary transition">
-                        <option value="">-- Belum Ditugaskan / Pilih Kurir --</option>
-                        @foreach ($couriers as $courier)
-                            <option value="{{ $courier->id }}">
-                                {{ $courier->name }} {{ $courier->phone ? "({$courier->phone})" : '' }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('courier_id')
-                        <p class="text-xs text-red-600 font-medium mt-1">{{ $message }}</p>
-                    @enderror
+                    @if ($isCourier)
+                        <input type="text" readonly disabled value="{{ auth()->user()->name }} (Anda)"
+                            class="w-full px-4 py-2.5 bg-neutral-100 border border-brand-border rounded-xl text-sm text-brand-espresso cursor-not-allowed">
+                    @else
+                        <select id="courier_id" wire:model="courier_id"
+                            class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary transition">
+                            <option value="">-- Belum Ditugaskan / Pilih Kurir --</option>
+                            @foreach ($couriers as $courier)
+                                <option value="{{ $courier->id }}">
+                                    {{ $courier->name }} {{ $courier->phone ? "({$courier->phone})" : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('courier_id')
+                            <p class="text-xs text-red-600 font-medium mt-1">{{ $message }}</p>
+                        @enderror
+                    @endif
                     <p class="text-xs text-brand-warm-gray mt-1">Kurir dapat melihat surat jalan ini di dashboard dan aplikasinya.</p>
                 </div>
 

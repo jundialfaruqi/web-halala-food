@@ -31,6 +31,10 @@ new #[Layout('components.layouts.admin')] class extends Component
             abort(403, 'Anda tidak memiliki hak akses untuk melihat data pengantaran.');
         }
 
+        if (! $delivery->isAccessibleBy(Auth::user())) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat surat jalan milik kurir lain.');
+        }
+
         $this->delivery = $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel', 'invoice']);
 
         $this->recipient_name = $delivery->recipient_name ?? $delivery->store?->owner_name ?? '';
@@ -55,6 +59,10 @@ new #[Layout('components.layouts.admin')] class extends Component
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah status pengantaran.');
         }
 
+        if (! $this->delivery->isAccessibleBy(Auth::user())) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengubah status surat jalan milik kurir lain.');
+        }
+
         if ($this->delivery->status !== 'diproses') {
             return;
         }
@@ -73,6 +81,10 @@ new #[Layout('components.layouts.admin')] class extends Component
     {
         if (Gate::denies('pengantaran-edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menyelesaikan pengantaran.');
+        }
+
+        if (! $this->delivery->isAccessibleBy(Auth::user())) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menyelesaikan surat jalan milik kurir lain.');
         }
 
         if ($this->delivery->status !== 'dikirim') {
@@ -143,6 +155,10 @@ new #[Layout('components.layouts.admin')] class extends Component
     {
         if (Gate::denies('pengantaran-edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk membatalkan surat jalan.');
+        }
+
+        if (! $this->delivery->isAccessibleBy(Auth::user())) {
+            abort(403, 'Anda tidak memiliki hak akses untuk membatalkan surat jalan milik kurir lain.');
         }
 
         if ($this->delivery->status === 'selesai' || $this->delivery->status === 'dibatalkan') {
