@@ -27,6 +27,13 @@ class Invoice extends Model
         'notes',
     ];
 
+    protected $appends = [
+        'status_label',
+        'is_overdue',
+        'invoice_date_formatted',
+        'due_date_formatted',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -38,6 +45,16 @@ class Invoice extends Model
             'paid_amount' => 'decimal:2',
             'remaining_balance' => 'decimal:2',
         ];
+    }
+
+    public function getInvoiceDateFormattedAttribute(): ?string
+    {
+        return $this->invoice_date?->translatedFormat('d M Y');
+    }
+
+    public function getDueDateFormattedAttribute(): ?string
+    {
+        return $this->due_date?->translatedFormat('d M Y');
     }
 
     public function store(): BelongsTo

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeliveryController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
@@ -65,4 +66,8 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/deliveries/{delivery}/dispatch', [DeliveryController::class, 'dispatchDelivery'])->name('api.deliveries.dispatch');
     Route::post('/deliveries/{delivery}/complete', [DeliveryController::class, 'completeDelivery'])->name('api.deliveries.complete');
     Route::post('/deliveries/{delivery}/cancel', [DeliveryController::class, 'cancelDelivery'])->name('api.deliveries.cancel');
+
+    // Faktur & Piutang Toko
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('api.invoices.index');
+    Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('api.invoices.show');
 });

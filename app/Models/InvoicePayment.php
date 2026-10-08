@@ -29,6 +29,16 @@ class InvoicePayment extends Model
         ];
     }
 
+    protected $appends = [
+        'method_label',
+        'payment_date_formatted',
+    ];
+
+    public function getPaymentDateFormattedAttribute(): string
+    {
+        return $this->payment_date ? $this->payment_date->translatedFormat('d M Y') : '-';
+    }
+
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
