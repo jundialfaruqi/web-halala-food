@@ -3,8 +3,14 @@
     stores: {{ \Illuminate\Support\Js::from($stores) }},
 
     searchQuery: '',
-    selectedStatus: 'all',
+    selectedStatus: (new URLSearchParams(window.location.search)).get('status') || 'all',
     selectedStore: 'all',
+
+    getStatusCount(status) {
+        if (status === 'all') return this.invoices.length;
+        if (status === 'overdue') return this.invoices.filter(item => item.is_overdue).length;
+        return this.invoices.filter(item => item.status === status).length;
+    },
 
     // Modal Confirmation State
     showCancelModal: false,
@@ -125,6 +131,51 @@
         @endcan
     </div>
 
+    <!-- Status Pelunasan Navigation Tabs (Underline Navigation, Screen Only - Identik dengan Laporan & Pengantaran) -->
+    <div class="border-b border-brand-border flex gap-6 overflow-x-auto print:hidden">
+        <button type="button" @click="selectedStatus = 'all'"
+            :class="selectedStatus === 'all' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Semua</span>
+            <span class="text-xs" :class="selectedStatus === 'all' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('all')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'belum_dibayar'"
+            :class="selectedStatus === 'belum_dibayar' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Belum Dibayar</span>
+            <span class="text-xs" :class="selectedStatus === 'belum_dibayar' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('belum_dibayar')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'sebagian'"
+            :class="selectedStatus === 'sebagian' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Dibayar Sebagian</span>
+            <span class="text-xs" :class="selectedStatus === 'sebagian' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('sebagian')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'lunas'"
+            :class="selectedStatus === 'lunas' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Lunas</span>
+            <span class="text-xs" :class="selectedStatus === 'lunas' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('lunas')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'overdue'"
+            :class="selectedStatus === 'overdue' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Jatuh Tempo</span>
+            <span class="text-xs" :class="selectedStatus === 'overdue' ? 'text-brand-primary font-bold' : (getStatusCount('overdue') > 0 ? 'text-red-600 font-bold' : 'text-brand-warm-gray')">(<span x-text="getStatusCount('overdue')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'dibatalkan'"
+            :class="selectedStatus === 'dibatalkan' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Dibatalkan</span>
+            <span class="text-xs" :class="selectedStatus === 'dibatalkan' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('dibatalkan')"></span>)</span>
+        </button>
+    </div>
+
     <!-- Filter & Search Bar (Identik dengan Toko Mitra & Pengantaran) -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
@@ -144,19 +195,6 @@
                     <template x-for="s in stores" :key="s.id">
                         <option :value="s.id" x-text="s.name"></option>
                     </template>
-                </select>
-            </div>
-
-            <!-- Status Filter -->
-            <div class="w-full sm:w-auto">
-                <select x-model="selectedStatus"
-                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
-                    <option value="all">Semua Status Pelunasan</option>
-                    <option value="belum_dibayar">Belum Dibayar</option>
-                    <option value="sebagian">Dibayar Sebagian</option>
-                    <option value="lunas">Lunas</option>
-                    <option value="overdue">Jatuh Tempo</option>
-                    <option value="dibatalkan">Dibatalkan</option>
                 </select>
             </div>
         </div>
