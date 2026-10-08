@@ -18,8 +18,8 @@ class StoreController extends Controller
         /** @var \App\Models\User|null $user */
         $user = auth('api')->user();
 
-        // Pastikan permission sama dengan web (toko-view)
-        if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('toko-view', 'web') && ! $user->can('toko-view'))) {
+        // Pastikan permission sama dengan web (toko-view) atau memiliki izin transaksi terkait
+        if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('toko-view', 'web') && ! $user->can('toko-view') && ! $user->can('faktur-create') && ! $user->can('pengantaran-create'))) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk melihat data toko mitra.',
@@ -28,10 +28,15 @@ class StoreController extends Controller
 
         $query = Store::query();
 
-        // Filter pencarian berdasarkan nama toko
+        // Filter pencarian berdasarkan nama toko, pemilik, alamat, atau rute
         if ($request->filled('search')) {
             $searchTerm = trim($request->input('search'));
-            $query->where('name', 'like', "%{$searchTerm}%");
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('owner_name', 'like', "%{$searchTerm}%")
+                    ->orWhere('address', 'like', "%{$searchTerm}%")
+                    ->orWhere('route', 'like', "%{$searchTerm}%");
+            });
         }
 
         // Filter rute pengantaran opsional jika diperlukan

@@ -147,3 +147,94 @@ test('user can view invoice detail with relations loaded', function () {
         ->and($res->json('data.invoice_number'))->toBe('INV-TEST-0001')
         ->and($res->json('data.store.name'))->toBe('Toko Mitra Berkah');
 });
+
+test('kurir without faktur-create permission cannot access create-options and cannot create invoice', function () {
+    $kurir = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+    $token = JWTAuth::fromUser($kurir);
+
+    // 1. Check create-options forbidden
+    $optionsRes = withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/invoices/create-options');
+    $optionsRes->assertStatus(403);
+    expect($optionsRes->json('success'))->toBeFalse();
+
+    // 2. Check store forbidden
+    $storeRes = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/invoices', [
+            'store_id' => 1,
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'items' => [],
+        ]);
+    $storeRes->assertStatus(403);
+    expect($storeRes->json('success'))->toBeFalse();
+});
+
+test('manager with faktur-create permission can get create options', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
+    $token = JWTAuth::fromUser($manager);
+
+    $res = withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/invoices/create-options');
+
+    $res->assertOk();
+    expect($res->json('success'))->toBeTrue()
+        ->and($res->json('data'))->toHaveKeys(['stores', 'products', 'deliveries', 'next_invoice_number'])
+        ->and($res->json('data.next_invoice_number'))->toStartWith('INV-');
+});
+
+test('manager with faktur-create permission can create invoice with validation, accounting sync, and returned stock restoration', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
+    $token = JWTAuth::fromUser($manager);
+
+    $store = Store::where('name', 'Toko Mitra Berkah')->firstOrFail();
+    $product = Product::where('name', 'Kue Kering Barokah')->firstOrFail();
+    $initialStock = $product->stock_ready;
+
+    // 1. Validation error test
+    $invalidRes = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/invoices', [
+            'store_id' => null,
+            'items' => [],
+        ]);
+    $invalidRes->assertStatus(422);
+    expect($invalidRes->json('success'))->toBeFalse()
+        ->and($invalidRes->json('errors'))->toHaveKeys(['store_id', 'items']);
+
+    // 2. Successful invoice creation
+    $payload = [
+        'store_id' => $store->id,
+        'invoice_date' => now()->toDateString(),
+        'due_date' => now()->addDays(14)->toDateString(),
+        'discount' => 5000,
+        'notes' => 'Catatan faktur mobile test',
+        'items' => [
+            [
+                'product_id' => $product->id,
+                'delivered_quantity' => 10,
+                'remaining_quantity' => 2,
+                'damaged_quantity' => 1,
+                'returned_quantity' => 3,
+                'quantity' => 5, // terjual/tertagih
+                'unit_price' => 20000,
+            ],
+        ],
+    ];
+
+    $res = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/invoices', $payload);
+
+    $res->assertStatus(201);
+    expect($res->json('success'))->toBeTrue()
+        ->and($res->json('data.store_id'))->toBe($store->id)
+        ->and((float) $res->json('data.subtotal'))->toBe(100000.0)
+        ->and((float) $res->json('data.discount'))->toBe(5000.0)
+        ->and((float) $res->json('data.total_amount'))->toBe(95000.0)
+        ->and((float) $res->json('data.remaining_balance'))->toBe(95000.0)
+        ->and($res->json('data.status'))->toBe('belum_dibayar')
+        ->and(count($res->json('data.items')))->toBe(1);
+
+    // Verify product returned quantity was restored to warehouse
+    $product->refresh();
+    expect($product->stock_ready)->toBe($initialStock + 3);
+});
