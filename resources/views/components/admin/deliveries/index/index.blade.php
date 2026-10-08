@@ -5,9 +5,13 @@
     isCourier: {{ $isCourier ? 'true' : 'false' }},
 
     searchQuery: '',
-    selectedStatus: 'all',
+    selectedStatus: (new URLSearchParams(window.location.search)).get('status') || 'all',
     selectedRoute: 'all',
-    taskFilter: 'all',
+
+    getStatusCount(status) {
+        if (status === 'all') return this.deliveries.length;
+        return this.deliveries.filter(item => item.status === status).length;
+    },
 
     // Modal Confirmation State
     showCancelModal: false,
@@ -27,9 +31,6 @@
     },
 
     init() {
-        if (this.isCourier) {
-            this.taskFilter = 'my';
-        }
     },
 
     get filteredDeliveries() {
@@ -47,10 +48,7 @@
             const matchRoute = this.selectedRoute === 'all' ||
                 (item.store && item.store.route === this.selectedRoute);
 
-            const matchTask = this.taskFilter === 'all' ||
-                (this.taskFilter === 'my' && item.courier && item.courier.id === this.currentUserId);
-
-            return matchSearch && matchStatus && matchRoute && matchTask;
+            return matchSearch && matchStatus && matchRoute;
         });
     },
 
@@ -148,6 +146,44 @@
         @endcan
     </div>
 
+    <!-- Status Navigation Tabs (Underline Navigation, Screen Only - Identik dengan Laporan Bisnis) -->
+    <div class="border-b border-brand-border flex gap-6 overflow-x-auto print:hidden">
+        <button type="button" @click="selectedStatus = 'all'"
+            :class="selectedStatus === 'all' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Semua</span>
+            <span class="text-xs" :class="selectedStatus === 'all' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('all')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'diproses'"
+            :class="selectedStatus === 'diproses' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Menunggu Pengambilan</span>
+            <span class="text-xs" :class="selectedStatus === 'diproses' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('diproses')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'dikirim'"
+            :class="selectedStatus === 'dikirim' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Sedang Dikirim</span>
+            <span class="text-xs" :class="selectedStatus === 'dikirim' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('dikirim')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'selesai'"
+            :class="selectedStatus === 'selesai' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Selesai Serah Terima</span>
+            <span class="text-xs" :class="selectedStatus === 'selesai' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('selesai')"></span>)</span>
+        </button>
+
+        <button type="button" @click="selectedStatus = 'dibatalkan'"
+            :class="selectedStatus === 'dibatalkan' ? 'border-b-2 border-brand-primary text-brand-primary' : 'text-brand-warm-gray hover:text-brand-espresso'"
+            class="pb-3 text-sm sm:text-base font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5">
+            <span>Dibatalkan</span>
+            <span class="text-xs" :class="selectedStatus === 'dibatalkan' ? 'text-brand-primary font-bold' : 'text-brand-warm-gray'">(<span x-text="getStatusCount('dibatalkan')"></span>)</span>
+        </button>
+    </div>
+
     <!-- Filter & Search Bar -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
@@ -167,27 +203,6 @@
                     <template x-for="r in routes" :key="r">
                         <option :value="r" x-text="r"></option>
                     </template>
-                </select>
-            </div>
-
-            <!-- Status Filter -->
-            <div class="w-full sm:w-auto">
-                <select x-model="selectedStatus"
-                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
-                    <option value="all">Semua Status</option>
-                    <option value="diproses">Menunggu Pengambilan</option>
-                    <option value="dikirim">Sedang Dikirim</option>
-                    <option value="selesai">Selesai Serah Terima</option>
-                    <option value="dibatalkan">Dibatalkan</option>
-                </select>
-            </div>
-
-            <!-- Penugasan / Courier Filter (Hanya untuk Admin/Manager, Kurir otomatis dibatasi tugasnya sendiri) -->
-            <div class="w-full sm:w-auto" x-show="!isCourier">
-                <select x-model="taskFilter"
-                    class="select select-lg w-full sm:w-auto bg-white border border-brand-border rounded-xl text-sm text-brand-espresso font-medium focus:outline-none focus:border-brand-primary">
-                    <option value="all">Semua Pengantaran</option>
-                    <option value="my">Tugas Saya Saja</option>
                 </select>
             </div>
         </div>
