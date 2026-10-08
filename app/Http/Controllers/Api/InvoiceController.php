@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Account;
 use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\InvoicePayment;
 use App\Models\Product;
 use App\Models\Store;
 use App\Services\AccountingService;
@@ -345,6 +347,483 @@ class InvoiceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Rincian faktur tagihan berhasil dimuat.',
+            'data' => $invoice,
+        ]);
+    }
+    /**
+     * Update an invoice and its items.
+     * Permission: faktur-edit
+     */
+    public function update(Request $request, Invoice $invoice): JsonResponse
+    {
+        if (! $this->checkPermission('faktur-edit')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk mengubah faktur tagihan.',
+            ], 403);
+        }
+
+        if ($invoice->status === 'lunas' || $invoice->status === 'dibatalkan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faktur yang sudah lunas atau dibatalkan tidak dapat diedit.',
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'store_id' => ['required', 'exists:stores,id'],
+            'invoice_date' => ['required', 'date'],
+            'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id', 'distinct'],
+            'items.*.quantity' => ['required', 'integer', 'min:0'],
+            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'items.*.delivered_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.damaged_quantity' => ['nullable', 'integer', 'min:0'],
+            'items.*.returned_quantity' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $itemsData = $request->input('items', []);
+        $discount = (float) $request->input('discount', 0);
+        $subtotal = 0.0;
+        foreach ($itemsData as $item) {
+            $subtotal += ((int) $item['quantity']) * ((float) $item['unit_price']);
+        }
+        $totalAmount = max(0.0, $subtotal - $discount);
+
+        if ((float) $invoice->paid_amount > $totalAmount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Total tagihan baru tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp ' . number_format((float) $invoice->paid_amount, 0, ',', '.') . ').',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($invoice, $request, $itemsData, $subtotal, $discount, $totalAmount) {
+            $invoice->update([
+                'store_id' => $request->input('store_id'),
+                'invoice_date' => $request->input('invoice_date'),
+                'due_date' => $request->input('due_date'),
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'total_amount' => $totalAmount,
+                'notes' => $request->input('notes'),
+            ]);
+
+            // Revert previously returned items from warehouse inventory before deleting
+            foreach ($invoice->items as $oldItem) {
+                if ($oldItem->returned_quantity > 0) {
+                    Product::where('id', $oldItem->product_id)->decrement('stock_ready', $oldItem->returned_quantity);
+                }
+            }
+
+            // Replace line items
+            $invoice->items()->delete();
+            foreach ($itemsData as $item) {
+                $qty = (int) $item['quantity'];
+                $price = (float) $item['unit_price'];
+                $delivered = isset($item['delivered_quantity']) && $item['delivered_quantity'] !== '' ? (int) $item['delivered_quantity'] : $qty;
+                $remaining = (int) ($item['remaining_quantity'] ?? 0);
+                $damaged = (int) ($item['damaged_quantity'] ?? 0);
+                $returned = (int) ($item['returned_quantity'] ?? 0);
+
+                InvoiceItem::create([
+                    'invoice_id' => $invoice->id,
+                    'product_id' => $item['product_id'],
+                    'delivered_quantity' => $delivered,
+                    'remaining_quantity' => $remaining,
+                    'damaged_quantity' => $damaged,
+                    'returned_quantity' => $returned,
+                    'quantity' => $qty,
+                    'unit_price' => $price,
+                    'subtotal' => $qty * $price,
+                ]);
+
+                // Increment warehouse stock for newly returned items
+                if ($returned > 0) {
+                    Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
+                }
+            }
+
+            $invoice->recalculateStatusAndBalance();
+            AccountingService::syncInvoiceAccounting($invoice);
+        });
+
+        $invoice->load(['store', 'delivery', 'creator', 'items.product.unitModel', 'payments.user']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Faktur tagihan {$invoice->invoice_number} berhasil diperbarui.",
+            'data' => $invoice,
+        ]);
+    }
+
+    /**
+     * Cancel an unpaid or partially paid invoice.
+     * Permission: faktur-edit
+     */
+    public function cancel(Invoice $invoice): JsonResponse
+    {
+        if (! $this->checkPermission('faktur-edit')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk membatalkan faktur ini.',
+            ], 403);
+        }
+
+        if ($invoice->status === 'lunas') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faktur yang sudah lunas tidak dapat dibatalkan.',
+            ], 422);
+        }
+
+        if ($invoice->status === 'dibatalkan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faktur ini sudah dalam status dibatalkan.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($invoice) {
+            $invoice->update(['status' => 'dibatalkan']);
+            AccountingService::deleteInvoiceRecords($invoice);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Faktur {$invoice->invoice_number} berhasil dibatalkan.",
+        ]);
+    }
+
+    /**
+     * Delete an invoice and restore any affected data.
+     * Permission: faktur-delete
+     */
+    public function destroy(Invoice $invoice): JsonResponse
+    {
+        if (! $this->checkPermission('faktur-delete')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus faktur.',
+            ], 403);
+        }
+
+        if ($invoice->status === 'lunas') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faktur yang telah lunas tidak boleh dihapus demi integritas data keuangan.',
+            ], 422);
+        }
+
+        $invoiceNumber = $invoice->invoice_number;
+
+        DB::transaction(function () use ($invoice) {
+            AccountingService::deleteInvoiceRecords($invoice);
+            $invoice->payments()->delete();
+            $invoice->items()->delete();
+            $invoice->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Faktur {$invoiceNumber} berhasil dihapus.",
+        ]);
+    }
+
+    /**
+     * Record a new payment for an invoice.
+     * Permission: faktur-edit
+     */
+    public function recordPayment(Request $request, Invoice $invoice): JsonResponse
+    {
+        if (! $this->checkPermission('faktur-edit')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk mencatat pembayaran faktur.',
+            ], 403);
+        }
+
+        if ($invoice->status === 'dibatalkan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faktur yang telah dibatalkan tidak dapat dicatat pembayarannya.',
+            ], 422);
+        }
+
+        $remaining = (float) $invoice->remaining_balance;
+        if ($remaining <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faktur ini sudah lunas.',
+            ], 422);
+        }
+
+        // Normalisasi payload jika client mengirim 'amount' atau variasi payment_method
+        if ($request->has('amount') && ! $request->filled('payment_amount')) {
+            $request->merge(['payment_amount' => $request->input('amount')]);
+        }
+        if ($request->input('payment_method') === 'transfer') {
+            $request->merge(['payment_method' => 'transfer_bank']);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'payment_amount' => ['required', 'numeric', 'min:1', 'max:' . $remaining],
+            'payment_date' => ['required', 'date'],
+            'payment_method' => ['required', 'in:tunai,transfer,transfer_bank,qris,giro'],
+            'account_id' => ['nullable', 'integer', 'exists:accounts,id'],
+            'reference_number' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ], [
+            'payment_amount.required' => 'Nominal pembayaran wajib diisi.',
+            'payment_amount.min' => 'Nominal pembayaran minimal Rp 1.',
+            'payment_amount.max' => 'Nominal pembayaran tidak boleh melebihi sisa piutang (Rp ' . number_format($remaining, 0, ',', '.') . ').',
+            'payment_date.required' => 'Tanggal pembayaran wajib diisi.',
+            'payment_method.required' => 'Pilih metode pembayaran.',
+            'payment_method.in' => 'Metode pembayaran harus berupa tunai, transfer, transfer_bank, qris, atau giro.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi pembayaran gagal.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $method = $request->input('payment_method');
+        if ($method === 'transfer') {
+            $method = 'transfer_bank';
+        }
+
+        $accountId = $request->input('account_id');
+        if (! $accountId) {
+            if (in_array($method, ['transfer_bank', 'transfer', 'qris'])) {
+                $bankAcc = Account::where('name', 'like', '%bank%')->orWhere('name', 'like', '%bca%')->orWhere('name', 'like', '%mandiri%')->orWhere('name', 'like', '%bri%')->first();
+                $accountId = $bankAcc?->id ?? Account::first()?->id;
+            } else {
+                $cashAcc = Account::where('name', 'like', '%kas%')->orWhere('name', 'like', '%tunai%')->first();
+                $accountId = $cashAcc?->id ?? Account::first()?->id;
+            }
+        }
+
+        $amount = (float) $request->input('payment_amount');
+
+        $payment = DB::transaction(function () use ($invoice, $request, $amount, $accountId, $method) {
+            $payment = InvoicePayment::create([
+                'invoice_id' => $invoice->id,
+                'user_id' => auth('api')->id(),
+                'payment_number' => InvoicePayment::generatePaymentNumber(),
+                'payment_date' => $request->input('payment_date'),
+                'payment_method' => $method,
+                'amount' => $amount,
+                'reference_number' => $request->input('reference_number'),
+                'notes' => $request->input('notes'),
+            ]);
+
+            AccountingService::recordInvoicePayment($payment, $accountId);
+
+            $invoice->recalculateStatusAndBalance();
+
+            return $payment;
+        });
+
+        $invoice->load(['payments.user', 'items.product.unitModel', 'store']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pembayaran sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dicatat.',
+            'data' => [
+                'payment' => $payment,
+                'invoice' => $invoice,
+            ],
+        ], 201);
+    }
+
+    /**
+     * Delete a payment record.
+     * Permission: faktur-edit
+     */
+    public function deletePayment(Invoice $invoice, InvoicePayment $payment): JsonResponse
+    {
+        if (! $this->checkPermission('faktur-edit')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus pembayaran.',
+            ], 403);
+        }
+
+        if ($payment->invoice_id !== $invoice->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pembayaran tidak terdaftar pada faktur ini.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($payment, $invoice) {
+            AccountingService::deleteInvoicePaymentRecords($payment);
+            $payment->delete();
+            $invoice->recalculateStatusAndBalance();
+        });
+
+        $invoice->load(['payments.user', 'items.product.unitModel', 'store']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data pembayaran berhasil dihapus.',
+            'data' => $invoice,
+        ]);
+    }
+
+    /**
+     * Reconcile consignment invoice items (sold, remaining, damaged, returned).
+     * Permission: faktur-edit
+     */
+    public function reconcile(Request $request, Invoice $invoice): JsonResponse
+    {
+        if (! $this->checkPermission('faktur-edit')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk merekonsiliasi faktur.',
+            ], 403);
+        }
+
+        if ($invoice->status === 'dibatalkan') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Faktur yang telah dibatalkan tidak dapat direkonsiliasi.',
+            ], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.id' => ['required', 'integer'],
+            'items.*.remaining_quantity' => ['required', 'integer', 'min:0'],
+            'items.*.damaged_quantity' => ['required', 'integer', 'min:0'],
+            'items.*.returned_quantity' => ['required', 'integer', 'min:0'],
+        ], [
+            'items.required' => 'Daftar barang rekonsiliasi wajib diisi.',
+            'items.min' => 'Daftar barang rekonsiliasi minimal 1 produk.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi rekonsiliasi gagal.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $itemsInput = $request->input('items', []);
+
+        // Validate each item against delivered_quantity
+        $newSubtotalCalc = 0;
+        foreach ($itemsInput as $rItem) {
+            $itemModel = InvoiceItem::where('invoice_id', $invoice->id)->find($rItem['id']);
+            if (! $itemModel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Item dengan ID {$rItem['id']} tidak ditemukan pada faktur ini.",
+                ], 422);
+            }
+
+            $delivered = $itemModel->delivered_quantity !== null && $itemModel->delivered_quantity > 0
+                ? (int) $itemModel->delivered_quantity
+                : (int) $itemModel->quantity;
+
+            $remaining = (int) $rItem['remaining_quantity'];
+            $damaged = (int) $rItem['damaged_quantity'];
+            $returned = (int) $rItem['returned_quantity'];
+            $totalOut = $remaining + $damaged + $returned;
+
+            if ($totalOut > $delivered) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Total sisa, rusak, dan retur ({$totalOut}) melebihi jumlah terkirim ({$delivered}) untuk produk {$itemModel->product?->name}.",
+                ], 422);
+            }
+
+            $sold = max(0, $delivered - $remaining - $damaged - $returned);
+            $newSubtotalCalc += $sold * (float) $itemModel->unit_price;
+        }
+
+        $newTotalCalc = max(0.0, $newSubtotalCalc - (float) $invoice->discount);
+        if ((float) $invoice->paid_amount > $newTotalCalc) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Total tagihan hasil rekonsiliasi (Rp ' . number_format($newTotalCalc, 0, ',', '.') . ') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp ' . number_format((float) $invoice->paid_amount, 0, ',', '.') . ').',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($invoice, $itemsInput, $newSubtotalCalc, $newTotalCalc) {
+            foreach ($itemsInput as $rItem) {
+                $itemModel = InvoiceItem::where('invoice_id', $invoice->id)->find($rItem['id']);
+                if ($itemModel) {
+                    $oldReturned = (int) ($itemModel->returned_quantity ?? 0);
+                    $newReturned = (int) $rItem['returned_quantity'];
+                    $deltaReturned = $newReturned - $oldReturned;
+
+                    if ($deltaReturned != 0) {
+                        Product::where('id', $itemModel->product_id)->increment('stock_ready', $deltaReturned);
+                    }
+
+                    $delivered = $itemModel->delivered_quantity !== null && $itemModel->delivered_quantity > 0
+                        ? (int) $itemModel->delivered_quantity
+                        : (int) $itemModel->quantity;
+
+                    $remaining = (int) $rItem['remaining_quantity'];
+                    $damaged = (int) $rItem['damaged_quantity'];
+                    $sold = max(0, $delivered - $remaining - $damaged - $newReturned);
+
+                    $itemModel->update([
+                        'delivered_quantity' => $delivered,
+                        'remaining_quantity' => $remaining,
+                        'damaged_quantity' => $damaged,
+                        'returned_quantity' => $newReturned,
+                        'quantity' => $sold,
+                        'subtotal' => $sold * (float) $itemModel->unit_price,
+                    ]);
+                }
+            }
+
+            $paid = (float) $invoice->paid_amount;
+            $newRemaining = max(0.0, $newTotalCalc - $paid);
+            $newStatus = $invoice->status;
+            if ($newStatus !== 'dibatalkan') {
+                if ($newRemaining <= 0 && $newTotalCalc > 0) {
+                    $newStatus = 'lunas';
+                } elseif ($paid > 0) {
+                    $newStatus = 'sebagian';
+                } else {
+                    $newStatus = 'belum_dibayar';
+                }
+            }
+
+            $invoice->update([
+                'subtotal' => $newSubtotalCalc,
+                'total_amount' => $newTotalCalc,
+                'remaining_balance' => $newRemaining,
+                'status' => $newStatus,
+            ]);
+
+            AccountingService::syncInvoiceAccounting($invoice);
+        });
+
+        $invoice->load(['payments.user', 'items.product.unitModel', 'store']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rekonsiliasi produk dan penyesuaian tagihan berhasil disimpan.',
             'data' => $invoice,
         ]);
     }

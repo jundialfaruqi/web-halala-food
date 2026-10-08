@@ -72,4 +72,10 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('api.invoices.index');
     Route::post('/invoices', [InvoiceController::class, 'store'])->name('api.invoices.store');
     Route::get('/invoices/{invoice}', [InvoiceController::class, 'show'])->name('api.invoices.show');
+    Route::put('/invoices/{invoice}', [InvoiceController::class, 'update'])->name('api.invoices.update');
+    Route::post('/invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('api.invoices.cancel');
+    Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('api.invoices.destroy');
+    Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('api.invoices.record-payment');
+    Route::delete('/invoices/{invoice}/payments/{payment}', [InvoiceController::class, 'deletePayment'])->name('api.invoices.delete-payment');
+    Route::post('/invoices/{invoice}/reconcile', [InvoiceController::class, 'reconcile'])->name('api.invoices.reconcile');
 });
