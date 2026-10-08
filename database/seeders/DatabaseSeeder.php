@@ -91,7 +91,8 @@ class DatabaseSeeder extends Seeder
                 'permissions' => [
                     'pengantaran-view' => 'Melihat daftar surat jalan dan tugas pengantaran.',
                     'pengantaran-create' => 'Membuat surat jalan pengantaran baru.',
-                    'pengantaran-edit' => 'Mengubah surat jalan atau memperbarui status pengantaran.',
+                    'pengantaran-edit' => 'Mengubah data dan rincian muatan surat jalan.',
+                    'pengantaran-status' => 'Memberangkatkan dan menyelesaikan serah terima pengantaran.',
                     'pengantaran-delete' => 'Membatalkan atau menghapus surat jalan.',
                 ],
             ],
@@ -224,6 +225,7 @@ class DatabaseSeeder extends Seeder
             'pengantaran-view',
             'pengantaran-create',
             'pengantaran-edit',
+            'pengantaran-status',
             'pengantaran-delete',
             'faktur-view',
             'faktur-create',
@@ -250,12 +252,12 @@ class DatabaseSeeder extends Seeder
             'aset-delete',
         ]);
 
-        // Kurir gets dashboard access, toko view, pengantaran, and faktur view
+        // Kurir gets dashboard access, toko view, pengantaran view & status, and faktur view
         $kurirRole->syncPermissions([
             'dashboard-view',
             'toko-view',
             'pengantaran-view',
-            'pengantaran-edit',
+            'pengantaran-status',
             'faktur-view',
         ]);
 

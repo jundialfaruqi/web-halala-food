@@ -55,7 +55,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function startDelivery(): void
     {
-        if (Gate::denies('pengantaran-edit')) {
+        if (Gate::denies('pengantaran-status') && Gate::denies('pengantaran-edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengubah status pengantaran.');
         }
 
@@ -79,7 +79,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function completeDelivery(): void
     {
-        if (Gate::denies('pengantaran-edit')) {
+        if (Gate::denies('pengantaran-status') && Gate::denies('pengantaran-edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk menyelesaikan pengantaran.');
         }
 
@@ -153,7 +153,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function cancelDelivery(): void
     {
-        if (Gate::denies('pengantaran-edit')) {
+        if (Gate::denies('pengantaran-delete') && Gate::denies('pengantaran-edit')) {
             abort(403, 'Anda tidak memiliki hak akses untuk membatalkan surat jalan.');
         }
 

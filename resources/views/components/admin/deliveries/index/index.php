@@ -18,7 +18,7 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
      */
     public function cancelDelivery(int $id): array
     {
-        if (Gate::denies('pengantaran-edit')) {
+        if (Gate::denies('pengantaran-delete') && Gate::denies('pengantaran-edit')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk membatalkan surat jalan ini.'];
         }
 
@@ -94,7 +94,7 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
      */
     public function markAsDispatched(int $id): array
     {
-        if (Gate::denies('pengantaran-edit')) {
+        if (Gate::denies('pengantaran-status') && Gate::denies('pengantaran-edit')) {
             return ['success' => false, 'message' => 'Anda tidak memiliki hak akses untuk mengubah status pengantaran.'];
         }
 

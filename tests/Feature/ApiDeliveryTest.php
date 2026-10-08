@@ -75,6 +75,33 @@ test('kurir can view deliveries, get options, dispatch, and complete, but cannot
     $deleteRes = withHeader('Authorization', "Bearer {$kurirToken}")
         ->deleteJson("/api/deliveries/{$existingDelivery->id}");
     $deleteRes->assertStatus(403);
+
+    // 5. Kurir CANNOT edit/update delivery data (denied: pengantaran-edit)
+    $updateRes = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->putJson("/api/deliveries/{$existingDelivery->id}", [
+            'delivery_number' => $existingDelivery->delivery_number,
+            'store_id' => $store->id,
+            'delivery_date' => now()->toDateString(),
+            'items' => [['product_id' => 1, 'quantity' => 2]],
+        ]);
+    $updateRes->assertStatus(403);
+
+    // 6. Kurir CANNOT cancel delivery (denied: pengantaran-delete / pengantaran-edit)
+    $cancelRes = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->postJson("/api/deliveries/{$existingDelivery->id}/cancel");
+    $cancelRes->assertStatus(403);
+
+    // 7. Kurir CAN dispatch their own delivery (allowed: pengantaran-status)
+    $dispatchRes = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->postJson("/api/deliveries/{$existingDelivery->id}/dispatch");
+    $dispatchRes->assertOk();
+
+    // 8. Kurir CAN complete their own delivery (allowed: pengantaran-status)
+    $completeRes = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->postJson("/api/deliveries/{$existingDelivery->id}/complete", [
+            'recipient_name' => 'Bapak Budi Toko',
+        ]);
+    $completeRes->assertOk();
 });
 
 test('dev/manager can create delivery, stock decrements, then dispatch and complete generates invoice', function () {

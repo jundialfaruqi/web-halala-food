@@ -57,7 +57,9 @@
                         <span>Edit</span>
                     </a>
                 @endif
+            @endcan
 
+            @canany(['pengantaran-status', 'pengantaran-edit'])
                 @if ($delivery->status === 'diproses')
                     <button type="button" wire:click="startDelivery" wire:confirm="Mulai pengantaran surat jalan ini sekarang?"
                         class="inline-flex items-center gap-2 px-5 py-2 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-bold rounded-xl shadow-xs transition cursor-pointer">
@@ -65,7 +67,7 @@
                         <span>Mulai Pengantaran</span>
                     </button>
                 @endif
-            @endcan
+            @endcanany
         </div>
     </div>
 
@@ -670,7 +672,7 @@
     </div>
 
     <!-- Bottom Cancel Option (If not completed) -->
-    @can('pengantaran-edit')
+    @canany(['pengantaran-delete', 'pengantaran-edit'])
         @if ($delivery->status !== 'selesai' && $delivery->status !== 'dibatalkan')
             <div class="flex items-center justify-between p-4 bg-neutral-50 rounded-2xl border border-brand-border text-xs print:hidden">
                 <span class="text-brand-warm-gray">Perlu membatalkan surat jalan dan mengembalikan stok ke gudang?</span>
@@ -680,7 +682,7 @@
                 </button>
             </div>
         @endif
-    @endcan
+    @endcanany
 
     <!-- Client-side Photo Compression Script -->
     <x-admin.photo-compressor-script />

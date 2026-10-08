@@ -508,11 +508,11 @@ class DeliveryController extends Controller
     /**
      * Dispatch delivery (Change status from 'diproses' to 'dikirim').
      * Quick action for couriers / managers when leaving the warehouse.
-     * Permission: pengantaran-edit
+     * Permission: pengantaran-status / pengantaran-edit
      */
     public function dispatchDelivery(Delivery $delivery): JsonResponse
     {
-        if (! $this->checkPermission('pengantaran-edit')) {
+        if (! $this->checkPermission('pengantaran-status') && ! $this->checkPermission('pengantaran-edit')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk mengubah status pengantaran.',
@@ -553,11 +553,11 @@ class DeliveryController extends Controller
     /**
      * Complete delivery handover at store (Change status from 'dikirim' to 'selesai').
      * Generates invoice automatically.
-     * Permission: pengantaran-edit
+     * Permission: pengantaran-status / pengantaran-edit
      */
     public function completeDelivery(Request $request, Delivery $delivery): JsonResponse
     {
-        if (! $this->checkPermission('pengantaran-edit')) {
+        if (! $this->checkPermission('pengantaran-status') && ! $this->checkPermission('pengantaran-edit')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk menyelesaikan pengantaran.',
@@ -670,11 +670,11 @@ class DeliveryController extends Controller
 
     /**
      * Cancel delivery and restore stock to warehouse.
-     * Permission: pengantaran-edit
+     * Permission: pengantaran-delete / pengantaran-edit
      */
     public function cancelDelivery(Delivery $delivery): JsonResponse
     {
-        if (! $this->checkPermission('pengantaran-edit')) {
+        if (! $this->checkPermission('pengantaran-delete') && ! $this->checkPermission('pengantaran-edit')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk membatalkan surat jalan.',

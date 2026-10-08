@@ -80,7 +80,7 @@ test('unauthenticated users are redirected from deliveries page to login', funct
         ->assertRedirect(route('login'));
 });
 
-test('role dev and manager have all pengantaran permissions while kurir has view and edit', function () {
+test('role dev and manager have all pengantaran permissions while kurir has view and status', function () {
     $devRole = Role::findByName('dev', 'web');
     $managerRole = Role::findByName('manager', 'web');
     $kurirRole = Role::findByName('kurir', 'web');
@@ -89,6 +89,7 @@ test('role dev and manager have all pengantaran permissions while kurir has view
         'pengantaran-view',
         'pengantaran-create',
         'pengantaran-edit',
+        'pengantaran-status',
         'pengantaran-delete',
     ];
 
@@ -98,7 +99,8 @@ test('role dev and manager have all pengantaran permissions while kurir has view
     }
 
     expect($kurirRole->hasPermissionTo('pengantaran-view'))->toBeTrue()
-        ->and($kurirRole->hasPermissionTo('pengantaran-edit'))->toBeTrue()
+        ->and($kurirRole->hasPermissionTo('pengantaran-status'))->toBeTrue()
+        ->and($kurirRole->hasPermissionTo('pengantaran-edit'))->toBeFalse()
         ->and($kurirRole->hasPermissionTo('pengantaran-create'))->toBeFalse()
         ->and($kurirRole->hasPermissionTo('pengantaran-delete'))->toBeFalse();
 });

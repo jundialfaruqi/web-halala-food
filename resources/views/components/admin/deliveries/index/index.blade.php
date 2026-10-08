@@ -317,7 +317,7 @@
                                     @endcan
 
                                     <!-- Cancel Action -->
-                                    @can('pengantaran-edit')
+                                    @canany(['pengantaran-delete', 'pengantaran-edit'])
                                         <template x-if="item.status === 'diproses' || item.status === 'dikirim'">
                                             <button type="button" @click="confirmCancel(item)"
                                                 class="size-8 rounded-lg flex items-center justify-center text-brand-warm-gray hover:text-amber-700 hover:bg-amber-50 transition cursor-pointer"
@@ -325,7 +325,7 @@
                                                 <i class="ti ti-ban text-base"></i>
                                             </button>
                                         </template>
-                                    @endcan
+                                    @endcanany
 
                                     <!-- Delete Action -->
                                     @can('pengantaran-delete')
