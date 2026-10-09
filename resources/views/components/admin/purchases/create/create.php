@@ -6,6 +6,7 @@ use App\Models\RawMaterial;
 use App\Models\RawMaterialPurchase;
 use App\Models\RawMaterialPurchaseItem;
 use App\Models\StockMutation;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -333,7 +334,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                     'stock_before' => $stockBefore,
                     'stock_after' => $stockAfter,
                     'cost_per_unit' => $cost,
-                    'notes' => 'Pembelian dari ' . $purchase->supplier_name,
+                    'notes' => 'Pembelian dari '.$purchase->supplier_name,
                     'user_id' => Auth::id(),
                 ]);
 
@@ -352,7 +353,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
                     $account->decrement('balance', $total);
 
                     $itemsString = implode(', ', $itemDetails);
-                    $description = "Pembelian Bahan Baku ({$purchase->purchase_number}): " . ($itemsString ?: 'Item bahan') . " - Supplier: {$purchase->supplier_name}";
+                    $description = "Pembelian Bahan Baku ({$purchase->purchase_number}): ".($itemsString ?: 'Item bahan')." - Supplier: {$purchase->supplier_name}";
 
                     CashTransaction::create([
                         'transaction_date' => $this->purchase_date,
@@ -368,7 +369,7 @@ new #[Layout('components.layouts.admin')] #[Title('Catat Pembelian Bahan Baku - 
             }
 
             // Catat ke Jurnal Akuntansi otomatis
-            \App\Services\AccountingService::recordPurchase($purchase);
+            AccountingService::recordPurchase($purchase);
         });
 
         session()->flash('success', "Transaksi pembelian {$this->purchase_number} berhasil dicatat dan stok bahan otomatis diperbarui.");

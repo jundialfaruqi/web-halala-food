@@ -316,7 +316,7 @@ test('backend validates max upload size and allowed formats', function () {
     // 2. Maksimal upload 10MB (buat string base64 palsu > 10MB)
     // 11MB dummy data
     $largeRawData = str_repeat('A', (10 * 1024 * 1024) + 1024);
-    $oversizedBase64 = 'data:image/jpeg;base64,' . base64_encode($largeRawData);
+    $oversizedBase64 = 'data:image/jpeg;base64,'.base64_encode($largeRawData);
     $sizeError = Store::validatePhotoBase64($oversizedBase64);
     expect($sizeError)->toContain('Ukuran file foto melebihi batas maksimal 10MB');
 
@@ -391,4 +391,3 @@ test('deleting a store model cleans up associated photo file from storage disk',
     $store->delete();
     expect(Storage::disk('public')->exists($photoPath))->toBeFalse();
 });
-

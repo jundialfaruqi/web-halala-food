@@ -5,11 +5,13 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 
 beforeEach(function () {
-    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    app()[PermissionRegistrar::class]->forgetCachedPermissions();
 });
 
 it('redirects unauthenticated user from users page to login', function () {

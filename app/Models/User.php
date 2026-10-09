@@ -24,7 +24,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @mixin \Spatie\Permission\Traits\HasRoles
+ *
+ * @mixin HasRoles
+ *
  * @method bool hasRole(string|array|\Spatie\Permission\Contracts\Role $roles, ?string $guard = null)
  * @method bool hasAnyRole(string|array ...$roles)
  * @method bool hasAllRoles(string|array ...$roles)

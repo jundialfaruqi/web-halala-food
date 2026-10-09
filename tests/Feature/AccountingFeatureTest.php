@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\ChartOfAccount;
+use App\Models\RawMaterial;
 use App\Models\User;
 use App\Services\AccountingService;
+use Database\Seeders\AccountingSeeder;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -14,7 +16,7 @@ use function Pest\Laravel\seed;
 
 beforeEach(function () {
     seed(DatabaseSeeder::class);
-    seed(\Database\Seeders\AccountingSeeder::class);
+    seed(AccountingSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
 });
 
@@ -143,7 +145,7 @@ test('manager can view financial statements with income statement and balance sh
 });
 
 test('each raw material has a dedicated account in chart of accounts and ledger', function () {
-    \App\Models\RawMaterial::firstOrCreate(
+    RawMaterial::firstOrCreate(
         ['name' => 'Wijen Putih Sangrai'],
         [
             'unit' => 'g',
@@ -153,7 +155,7 @@ test('each raw material has a dedicated account in chart of accounts and ledger'
         ]
     );
 
-    $materials = \App\Models\RawMaterial::all();
+    $materials = RawMaterial::all();
     expect($materials->count())->toBeGreaterThan(0);
 
     foreach ($materials as $material) {
@@ -161,7 +163,7 @@ test('each raw material has a dedicated account in chart of accounts and ledger'
         $account = ChartOfAccount::where('code', $expectedCode)->first();
 
         expect($account)->not->toBeNull()
-            ->and($account->name)->toBe('Persediaan Bahan - ' . $material->name)
+            ->and($account->name)->toBe('Persediaan Bahan - '.$material->name)
             ->and($account->type)->toBe('asset')
             ->and($account->normal_balance)->toBe('debit');
     }
@@ -169,7 +171,7 @@ test('each raw material has a dedicated account in chart of accounts and ledger'
     $manager = User::where('email', 'manager@halala-food.id')->first();
     actingAs($manager);
 
-    $wijen = \App\Models\RawMaterial::where('name', 'Wijen Putih Sangrai')->first();
+    $wijen = RawMaterial::where('name', 'Wijen Putih Sangrai')->first();
     $wijenAccount = ChartOfAccount::where('code', AccountingService::getAccountCodeForRawMaterial($wijen->id))->first();
 
     get(route('admin.accounting.ledger', ['selectedAccountId' => $wijenAccount->id]))
@@ -179,7 +181,7 @@ test('each raw material has a dedicated account in chart of accounts and ledger'
 });
 
 test('creating new raw material automatically creates corresponding chart of account', function () {
-    $newMaterial = \App\Models\RawMaterial::create([
+    $newMaterial = RawMaterial::create([
         'name' => 'Tepung Terigu Segitiga',
         'unit' => 'gram',
         'stock' => 10000,
@@ -194,4 +196,3 @@ test('creating new raw material automatically creates corresponding chart of acc
         ->and($account->name)->toBe('Persediaan Bahan - Tepung Terigu Segitiga')
         ->and($account->type)->toBe('asset');
 });
-

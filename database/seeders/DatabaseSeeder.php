@@ -144,9 +144,9 @@ class DatabaseSeeder extends Seeder
             'Aset Tetap Usaha' => [
                 'description' => 'Kelola inventaris aset tetap usaha: mesin produksi, peralatan dapur, kendaraan, dan inventaris lainnya.',
                 'permissions' => [
-                    'aset-view'   => 'Melihat daftar inventaris aset tetap usaha.',
+                    'aset-view' => 'Melihat daftar inventaris aset tetap usaha.',
                     'aset-create' => 'Mencatat aset tetap baru dan menjurnal ke buku besar.',
-                    'aset-edit'   => 'Mengubah data dan kondisi aset tetap.',
+                    'aset-edit' => 'Mengubah data dan kondisi aset tetap.',
                     'aset-delete' => 'Menghapus catatan aset tetap dari inventaris.',
                 ],
             ],

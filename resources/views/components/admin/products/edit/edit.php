@@ -7,16 +7,24 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.admin'), Title('Edit Produk Jadi - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Edit Produk Jadi - Halala Food')] class extends Component
+{
     public Product $product;
 
     public string $name = '';
+
     public ?int $unit_id = null;
+
     public float $consignment_price = 0;
+
     public float $retail_price = 0;
+
     public int $stock_ready = 0;
+
     public ?string $description = '';
+
     public bool $is_active = true;
+
     public ?string $photo_data = null;
 
     public function mount(Product $product)
@@ -42,7 +50,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Produk Jadi - Halala Food'
         }
 
         $this->validate([
-            'name' => ['required', 'string', 'max:150', 'unique:products,name,' . $this->product->id],
+            'name' => ['required', 'string', 'max:150', 'unique:products,name,'.$this->product->id],
             'unit_id' => ['required', 'exists:units,id'],
             'consignment_price' => ['required', 'numeric', 'min:0'],
             'retail_price' => ['required', 'numeric', 'min:0'],

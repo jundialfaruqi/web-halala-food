@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\InvoiceCreated;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Delivery;
@@ -10,10 +11,12 @@ use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\User;
 use App\Services\AccountingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class InvoiceController extends Controller
@@ -23,7 +26,7 @@ class InvoiceController extends Controller
      */
     private function checkPermission(string $permission): bool
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
         if (! $user) {
             return false;
@@ -54,7 +57,7 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'unit', 'unit_id', 'stock_ready', 'consignment_price', 'retail_price', 'photo']);
 
-        $deliveriesQuery = Delivery::with(['store', 'items.product.unitModel'])
+        $deliveriesQuery = Delivery::with(['store', 'courier', 'items.product.unitModel'])
             ->where('status', '!=', 'dibatalkan')
             ->whereDoesntHave('invoice', function ($q) {
                 $q->where('status', '!=', 'dibatalkan');
@@ -69,6 +72,17 @@ class InvoiceController extends Controller
             ->take(50)
             ->get();
 
+        /** @var User|null $user */
+        $user = auth('api')->user();
+        $isCourier = $user && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
+
+        $couriers = $isCourier
+            ? User::where('id', $user->id)->get(['id', 'name', 'phone', 'email'])
+            : User::role('kurir')->orderBy('name')->get(['id', 'name', 'phone', 'email']);
+        if ($couriers->isEmpty()) {
+            $couriers = User::orderBy('name')->get(['id', 'name', 'phone', 'email']);
+        }
+
         $nextInvoiceNumber = Invoice::generateInvoiceNumber();
 
         return response()->json([
@@ -76,6 +90,7 @@ class InvoiceController extends Controller
             'message' => 'Opsi formulir pembuatan faktur tagihan berhasil dimuat.',
             'data' => [
                 'stores' => $stores,
+                'couriers' => $couriers,
                 'products' => $products,
                 'deliveries' => $deliveries,
                 'next_invoice_number' => $nextInvoiceNumber,
@@ -101,6 +116,7 @@ class InvoiceController extends Controller
         $validator = Validator::make($request->all(), [
             'invoice_number' => ['nullable', 'string', 'max:50', 'unique:invoices,invoice_number'],
             'store_id' => ['required', 'exists:stores,id'],
+            'courier_id' => ['nullable', 'exists:users,id'],
             'delivery_id' => [
                 'nullable',
                 'exists:deliveries,id',
@@ -130,6 +146,7 @@ class InvoiceController extends Controller
         ], [
             'store_id.required' => 'Pilih toko mitra tujuan penagihan.',
             'store_id.exists' => 'Toko mitra yang dipilih tidak valid.',
+            'courier_id.exists' => 'Kurir yang dipilih tidak valid.',
             'delivery_id.exists' => 'Surat jalan yang dipilih tidak valid.',
             'invoice_date.required' => 'Tanggal faktur wajib diisi.',
             'due_date.required' => 'Tanggal jatuh tempo wajib diisi.',
@@ -170,11 +187,22 @@ class InvoiceController extends Controller
             ? trim((string) $request->input('invoice_number'))
             : Invoice::generateInvoiceNumber();
 
-        $invoice = DB::transaction(function () use ($request, $invoiceNumber, $subtotal, $discount, $totalAmount, $itemsData) {
+        /** @var User|null $currentUser */
+        $currentUser = auth('api')->user();
+        $isCourier = $currentUser && $currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager']);
+
+        $courierId = $isCourier ? $currentUser->id : $request->input('courier_id');
+        if (! $courierId && $request->filled('delivery_id')) {
+            $delivery = Delivery::find($request->input('delivery_id'));
+            $courierId = $delivery?->courier_id;
+        }
+
+        $invoice = DB::transaction(function () use ($request, $invoiceNumber, $courierId, $subtotal, $discount, $totalAmount, $itemsData) {
             $invoice = Invoice::create([
                 'invoice_number' => $invoiceNumber,
                 'delivery_id' => $request->input('delivery_id'),
                 'store_id' => $request->input('store_id'),
+                'courier_id' => $courierId,
                 'created_by' => auth('api')->id(),
                 'invoice_date' => $request->input('invoice_date'),
                 'due_date' => $request->input('due_date'),
@@ -222,10 +250,18 @@ class InvoiceController extends Controller
         $invoice->load([
             'store',
             'delivery',
+            'courier',
             'creator',
             'items.product.unitModel',
             'payments.user',
         ]);
+
+        // Broadcast event ke kurir yang ditugaskan & manajemen secara real-time via WebSocket Reverb
+        try {
+            event(new InvoiceCreated($invoice));
+        } catch (\Throwable $e) {
+            Log::warning('Broadcast InvoiceCreated error: '.$e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -247,9 +283,9 @@ class InvoiceController extends Controller
             ], 403);
         }
 
-        $query = Invoice::with(['store', 'creator', 'items.product', 'payments']);
+        $query = Invoice::with(['store', 'courier', 'creator', 'items.product', 'payments']);
 
-        // Search Filter (Nomor faktur, catatan, nama toko mitra, nama pemilik, alamat)
+        // Search Filter (Nomor faktur, catatan, nama toko mitra, nama pemilik, alamat, nama kurir)
         if ($request->filled('search')) {
             $searchTerm = trim($request->input('search'));
             $query->where(function ($q) use ($searchTerm) {
@@ -259,6 +295,9 @@ class InvoiceController extends Controller
                         $sq->where('name', 'like', "%{$searchTerm}%")
                             ->orWhere('owner_name', 'like', "%{$searchTerm}%")
                             ->orWhere('address', 'like', "%{$searchTerm}%");
+                    })
+                    ->orWhereHas('courier', function ($cq) use ($searchTerm) {
+                        $cq->where('name', 'like', "%{$searchTerm}%");
                     });
             });
         }
@@ -277,6 +316,11 @@ class InvoiceController extends Controller
         // Store Filter
         if ($request->filled('store_id') && $request->input('store_id') !== 'all') {
             $query->where('store_id', $request->input('store_id'));
+        }
+
+        // Courier Filter
+        if ($request->filled('courier_id') && $request->input('courier_id') !== 'all') {
+            $query->where('courier_id', $request->input('courier_id'));
         }
 
         // Date Filter
@@ -339,6 +383,7 @@ class InvoiceController extends Controller
         $invoice->load([
             'store',
             'delivery',
+            'courier',
             'creator',
             'items.product.unitModel',
             'payments.user',
@@ -350,6 +395,7 @@ class InvoiceController extends Controller
             'data' => $invoice,
         ]);
     }
+
     /**
      * Update an invoice and its items.
      * Permission: faktur-edit
@@ -372,6 +418,7 @@ class InvoiceController extends Controller
 
         $validator = Validator::make($request->all(), [
             'store_id' => ['required', 'exists:stores,id'],
+            'courier_id' => ['nullable', 'exists:users,id'],
             'invoice_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
             'discount' => ['nullable', 'numeric', 'min:0'],
@@ -405,12 +452,12 @@ class InvoiceController extends Controller
         if ((float) $invoice->paid_amount > $totalAmount) {
             return response()->json([
                 'success' => false,
-                'message' => 'Total tagihan baru tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp ' . number_format((float) $invoice->paid_amount, 0, ',', '.') . ').',
+                'message' => 'Total tagihan baru tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp '.number_format((float) $invoice->paid_amount, 0, ',', '.').').',
             ], 422);
         }
 
         DB::transaction(function () use ($invoice, $request, $itemsData, $subtotal, $discount, $totalAmount) {
-            $invoice->update([
+            $updatePayload = [
                 'store_id' => $request->input('store_id'),
                 'invoice_date' => $request->input('invoice_date'),
                 'due_date' => $request->input('due_date'),
@@ -418,7 +465,13 @@ class InvoiceController extends Controller
                 'discount' => $discount,
                 'total_amount' => $totalAmount,
                 'notes' => $request->input('notes'),
-            ]);
+            ];
+
+            if ($request->has('courier_id')) {
+                $updatePayload['courier_id'] = $request->input('courier_id');
+            }
+
+            $invoice->update($updatePayload);
 
             // Revert previously returned items from warehouse inventory before deleting
             foreach ($invoice->items as $oldItem) {
@@ -459,7 +512,7 @@ class InvoiceController extends Controller
             AccountingService::syncInvoiceAccounting($invoice);
         });
 
-        $invoice->load(['store', 'delivery', 'creator', 'items.product.unitModel', 'payments.user']);
+        $invoice->load(['store', 'delivery', 'courier', 'creator', 'items.product.unitModel', 'payments.user']);
 
         return response()->json([
             'success' => true,
@@ -578,7 +631,7 @@ class InvoiceController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'payment_amount' => ['required', 'numeric', 'min:1', 'max:' . $remaining],
+            'payment_amount' => ['required', 'numeric', 'min:1', 'max:'.$remaining],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'in:tunai,transfer,transfer_bank,qris,giro'],
             'account_id' => ['nullable', 'integer', 'exists:accounts,id'],
@@ -587,7 +640,7 @@ class InvoiceController extends Controller
         ], [
             'payment_amount.required' => 'Nominal pembayaran wajib diisi.',
             'payment_amount.min' => 'Nominal pembayaran minimal Rp 1.',
-            'payment_amount.max' => 'Nominal pembayaran tidak boleh melebihi sisa piutang (Rp ' . number_format($remaining, 0, ',', '.') . ').',
+            'payment_amount.max' => 'Nominal pembayaran tidak boleh melebihi sisa piutang (Rp '.number_format($remaining, 0, ',', '.').').',
             'payment_date.required' => 'Tanggal pembayaran wajib diisi.',
             'payment_method.required' => 'Pilih metode pembayaran.',
             'payment_method.in' => 'Metode pembayaran harus berupa tunai, transfer, transfer_bank, qris, atau giro.',
@@ -642,7 +695,7 @@ class InvoiceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Pembayaran sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dicatat.',
+            'message' => 'Pembayaran sebesar Rp '.number_format($amount, 0, ',', '.').' berhasil dicatat.',
             'data' => [
                 'payment' => $payment,
                 'invoice' => $invoice,
@@ -761,7 +814,7 @@ class InvoiceController extends Controller
         if ((float) $invoice->paid_amount > $newTotalCalc) {
             return response()->json([
                 'success' => false,
-                'message' => 'Total tagihan hasil rekonsiliasi (Rp ' . number_format($newTotalCalc, 0, ',', '.') . ') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp ' . number_format((float) $invoice->paid_amount, 0, ',', '.') . ').',
+                'message' => 'Total tagihan hasil rekonsiliasi (Rp '.number_format($newTotalCalc, 0, ',', '.').') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp '.number_format((float) $invoice->paid_amount, 0, ',', '.').').',
             ], 422);
         }
 
@@ -819,7 +872,7 @@ class InvoiceController extends Controller
             AccountingService::syncInvoiceAccounting($invoice);
         });
 
-        $invoice->load(['payments.user', 'items.product.unitModel', 'store']);
+        $invoice->load(['payments.user', 'items.product.unitModel', 'store', 'courier']);
 
         return response()->json([
             'success' => true,

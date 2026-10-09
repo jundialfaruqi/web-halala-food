@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Invoice;
-use App\Models\JournalEntry;
 use App\Models\Store;
 use App\Services\AccountingService;
 use Illuminate\Support\Facades\DB;

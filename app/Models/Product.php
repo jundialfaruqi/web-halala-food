@@ -61,6 +61,7 @@ class Product extends Model
     {
         return (float) $this->recipes->sum(function ($r) {
             $costPerUnit = $r->rawMaterial?->cost_per_unit ?? 0;
+
             return (float) $r->quantity_needed * (float) $costPerUnit;
         });
     }
@@ -72,6 +73,7 @@ class Product extends Model
     {
         $cost = $this->material_cost;
         $price = (float) $this->consignment_price;
+
         return $price > 0 ? round((($price - $cost) / $price) * 100, 1) : 0.0;
     }
 
@@ -88,13 +90,12 @@ class Product extends Model
             return $this->photo;
         }
 
-        return asset('storage/' . $this->photo);
+        return asset('storage/'.$this->photo);
     }
 
     /**
      * Validate photo base64 data for maximum upload size and allowed formats.
      *
-     * @param string|null $photoData
      * @return string|null Error message if invalid, null if valid
      */
     public static function validatePhotoBase64(?string $photoData): ?string
@@ -157,7 +158,7 @@ class Product extends Model
                 $productSlug = Str::slug($this->name ?: 'produk');
                 $randomCode = Str::lower(Str::random(8));
                 $filename = "{$date}_{$productSlug}_{$randomCode}.{$ext}";
-                $path = 'foto-produk/' . $filename;
+                $path = 'foto-produk/'.$filename;
 
                 Storage::disk('public')->put($path, $decoded);
 

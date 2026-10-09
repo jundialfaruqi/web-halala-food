@@ -159,7 +159,7 @@ new #[Layout('components.layouts.admin'), Title('Surat Jalan & Pengantaran - Hal
                     'delivered_at' => $d->delivered_at?->translatedFormat('d M Y H:i'),
                     'total_items' => $d->total_items,
                     'total_amount' => (float) $d->total_amount,
-                    'items_summary' => $d->items->map(fn ($i) => ($i->product?->name ?? 'Produk') . ' (' . $i->quantity . ')')->join(', '),
+                    'items_summary' => $d->items->map(fn ($i) => ($i->product?->name ?? 'Produk').' ('.$i->quantity.')')->join(', '),
                     'can_edit' => $d->canBeEdited(),
                 ];
             });

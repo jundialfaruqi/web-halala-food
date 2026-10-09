@@ -12,7 +12,6 @@ new #[Layout('components.layouts.admin'), Title('Mitra Toko & Distribusi - Halal
     /**
      * Delete a partner store.
      *
-     * @param int $id
      * @return array{success: bool, message: string}
      */
     public function deleteStore(int $id): array
@@ -35,7 +34,6 @@ new #[Layout('components.layouts.admin'), Title('Mitra Toko & Distribusi - Halal
     /**
      * Toggle store active status.
      *
-     * @param int $id
      * @return array{success: bool, message: string}
      */
     public function toggleStatus(int $id): array
@@ -60,8 +58,6 @@ new #[Layout('components.layouts.admin'), Title('Mitra Toko & Distribusi - Halal
     /**
      * Update photo for a store from base64 DataURL (WebP or JPEG <= 50KB).
      *
-     * @param int $id
-     * @param string $photoData
      * @return array{success: bool, message: string, photo_url?: ?string}
      */
     public function updateStorePhoto(int $id, string $photoData): array
@@ -95,7 +91,6 @@ new #[Layout('components.layouts.admin'), Title('Mitra Toko & Distribusi - Halal
     /**
      * Delete photo for a store.
      *
-     * @param int $id
      * @return array{success: bool, message: string}
      */
     public function deleteStorePhoto(int $id): array

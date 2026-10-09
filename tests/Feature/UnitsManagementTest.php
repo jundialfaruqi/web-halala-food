@@ -1,11 +1,11 @@
 <?php
 
-use App\Models\Permission;
 use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
@@ -13,7 +13,7 @@ use function Pest\Laravel\seed;
 
 beforeEach(function () {
     seed(DatabaseSeeder::class);
-    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    app()[PermissionRegistrar::class]->forgetCachedPermissions();
 });
 
 test('unauthenticated users are redirected to login', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AccountingService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,11 +33,11 @@ class RawMaterial extends Model
     protected static function booted(): void
     {
         static::saved(function ($material) {
-            \App\Services\AccountingService::syncMaterialAccount($material);
+            AccountingService::syncMaterialAccount($material);
         });
 
         static::deleted(function ($material) {
-            \App\Services\AccountingService::removeMaterialAccount($material);
+            AccountingService::removeMaterialAccount($material);
         });
     }
 

@@ -14,10 +14,15 @@ use Livewire\Component;
 new #[Layout('components.layouts.admin')] class extends Component
 {
     public Delivery $delivery;
+
     public string $delivery_number = '';
+
     public ?int $store_id = null;
+
     public ?int $courier_id = null;
+
     public string $delivery_date = '';
+
     public ?string $notes = '';
 
     /**
@@ -40,6 +45,7 @@ new #[Layout('components.layouts.admin')] class extends Component
                 'message' => 'Surat jalan yang sedang dikirim atau telah selesai tidak dapat diedit.',
                 'type' => 'error',
             ]);
+
             return redirect()->route('admin.deliveries.show', $delivery);
         }
 
@@ -168,11 +174,12 @@ new #[Layout('components.layouts.admin')] class extends Component
                 'message' => 'Surat jalan tidak dapat diedit karena sudah dalam perjalanan atau selesai.',
                 'type' => 'error',
             ]);
+
             return redirect()->route('admin.deliveries.show', $this->delivery);
         }
 
         $this->validate([
-            'delivery_number' => ['required', 'string', 'max:50', 'unique:deliveries,delivery_number,' . $this->delivery->id],
+            'delivery_number' => ['required', 'string', 'max:50', 'unique:deliveries,delivery_number,'.$this->delivery->id],
             'store_id' => ['required', 'exists:stores,id'],
             'courier_id' => ['nullable', 'exists:users,id'],
             'delivery_date' => ['required', 'date'],

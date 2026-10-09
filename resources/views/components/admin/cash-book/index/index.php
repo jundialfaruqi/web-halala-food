@@ -348,9 +348,9 @@ new #[Layout('components.layouts.admin')] #[Title('Buku Kas & Keuangan - Halala 
                         ->orWhere('description', 'like', '%'.$this->search.'%')
                         ->orWhere(function ($pq) {
                             $pq->whereIn('reference_type', ['purchase', 'purchase_payment'])
-                               ->whereHas('purchase.items.rawMaterial', function ($mq) {
-                                   $mq->where('name', 'like', '%'.$this->search.'%');
-                               });
+                                ->whereHas('purchase.items.rawMaterial', function ($mq) {
+                                    $mq->where('name', 'like', '%'.$this->search.'%');
+                                });
                         });
                 });
             })

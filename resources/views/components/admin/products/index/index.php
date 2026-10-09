@@ -1,13 +1,18 @@
 <?php
 
+use App\Models\DeliveryItem;
+use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Unit;
+use App\Services\AccountingService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Halala Food')] class extends Component
+{
     public function mount()
     {
         if (Gate::denies('produk-view')) {
@@ -28,9 +33,9 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
                     'unit_name' => $prod->unitModel?->name ?? $prod->unit,
                     'unit_short' => $prod->unitModel?->short_name ?? $prod->unit,
                     'consignment_price' => (float) $prod->consignment_price,
-                    'consignment_price_formatted' => 'Rp ' . number_format($prod->consignment_price, 0, ',', '.'),
+                    'consignment_price_formatted' => 'Rp '.number_format($prod->consignment_price, 0, ',', '.'),
                     'retail_price' => (float) $prod->retail_price,
-                    'retail_price_formatted' => 'Rp ' . number_format($prod->retail_price, 0, ',', '.'),
+                    'retail_price_formatted' => 'Rp '.number_format($prod->retail_price, 0, ',', '.'),
                     'stock_ready' => (int) $prod->stock_ready,
                     'description' => $prod->description ?? '-',
                     'is_active' => (bool) $prod->is_active,
@@ -66,7 +71,7 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
 
         return [
             'success' => true,
-            'message' => 'Status produk ' . $product->name . ' berhasil diubah menjadi ' . ($product->is_active ? 'Aktif' : 'Nonaktif') . '.',
+            'message' => 'Status produk '.$product->name.' berhasil diubah menjadi '.($product->is_active ? 'Aktif' : 'Nonaktif').'.',
         ];
     }
 
@@ -87,8 +92,8 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
         // Safety check: verify if product is used in production, recipes, delivery, or invoice
         $hasRecipes = $product->recipes()->exists();
         $hasBatches = $product->productionBatches()->exists();
-        $hasDeliveries = \App\Models\DeliveryItem::where('product_id', $product->id)->exists();
-        $hasInvoices = \App\Models\InvoiceItem::where('product_id', $product->id)->exists();
+        $hasDeliveries = DeliveryItem::where('product_id', $product->id)->exists();
+        $hasInvoices = InvoiceItem::where('product_id', $product->id)->exists();
 
         if ($hasRecipes || $hasBatches || $hasDeliveries || $hasInvoices) {
             return [
@@ -127,7 +132,7 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
             return ['success' => false, 'message' => 'Stok fisik sama dengan stok sistem (tidak ada selisih).'];
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($product, $physicalStock, $currentStock, $diff, $reason, $date) {
+        DB::transaction(function () use ($product, $physicalStock, $diff, $reason, $date) {
             $cost = (float) $product->material_cost;
             if ($cost <= 0) {
                 $cost = (float) $product->consignment_price;
@@ -138,7 +143,7 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
             $product->save();
 
             // 2. Record accounting journal
-            \App\Services\AccountingService::recordStockAdjustment(
+            AccountingService::recordStockAdjustment(
                 $product,
                 (float) $diff,
                 $cost,
@@ -147,7 +152,8 @@ new #[Layout('components.layouts.admin'), Title('Master Produk Jadi & Harga - Ha
             );
         });
 
-        $diffStr = ($diff > 0 ? '+' : '') . $diff . ' ' . ($product->unitModel?->short_name ?? $product->unit ?? 'pcs');
+        $diffStr = ($diff > 0 ? '+' : '').$diff.' '.($product->unitModel?->short_name ?? $product->unit ?? 'pcs');
+
         return [
             'success' => true,
             'message' => "Stok produk '{$product->name}' berhasil disesuaikan ({$diffStr}) dan diposting ke Jurnal Akuntansi.",

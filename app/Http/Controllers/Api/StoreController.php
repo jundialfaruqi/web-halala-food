@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Store;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class StoreController extends Controller
 {
@@ -15,7 +19,7 @@ class StoreController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama dengan web (toko-view) atau memiliki izin transaksi terkait
@@ -75,7 +79,7 @@ class StoreController extends Controller
      */
     public function routes(): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('toko-view', 'web') && ! $user->can('toko-view'))) {
@@ -118,7 +122,7 @@ class StoreController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama dengan web (toko-create)
@@ -129,7 +133,7 @@ class StoreController extends Controller
             ], 403);
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'owner_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
@@ -181,7 +185,7 @@ class StoreController extends Controller
             } elseif (str_starts_with($digits, '62')) {
                 $digits = substr($digits, 2);
             }
-            $normalizedPhone = ! empty($digits) ? '62' . $digits : null;
+            $normalizedPhone = ! empty($digits) ? '62'.$digits : null;
         }
 
         $isActive = true;
@@ -213,13 +217,13 @@ class StoreController extends Controller
             $file = $request->file('photo');
             if ($file->isValid()) {
                 $date = now()->format('Y-m-d');
-                $storeSlug = \Illuminate\Support\Str::slug($newStore->name ?: 'toko');
-                $randomCode = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $storeSlug = Str::slug($newStore->name ?: 'toko');
+                $randomCode = Str::lower(Str::random(8));
                 $ext = $file->getClientOriginalExtension() ?: 'jpg';
                 $filename = "{$date}_{$storeSlug}_{$randomCode}.{$ext}";
-                $path = 'foto-toko/' . $filename;
+                $path = 'foto-toko/'.$filename;
 
-                \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('foto-toko', $file, $filename);
+                Storage::disk('public')->putFileAs('foto-toko', $file, $filename);
 
                 $newStore->photo = $path;
                 $newStore->save();
@@ -241,7 +245,7 @@ class StoreController extends Controller
      */
     public function update(Request $request, Store $store): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama dengan web (toko-edit)
@@ -252,7 +256,7 @@ class StoreController extends Controller
             ], 403);
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'owner_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
@@ -304,7 +308,7 @@ class StoreController extends Controller
             } elseif (str_starts_with($digits, '62')) {
                 $digits = substr($digits, 2);
             }
-            $normalizedPhone = ! empty($digits) ? '62' . $digits : null;
+            $normalizedPhone = ! empty($digits) ? '62'.$digits : null;
         }
 
         // Tentukan nilai status is_active (default tetap seperti semula jika tidak dikirim)
@@ -332,8 +336,8 @@ class StoreController extends Controller
         }
 
         if ($photoData === 'DELETE') {
-            if ($store->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($store->photo)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($store->photo);
+            if ($store->photo && Storage::disk('public')->exists($store->photo)) {
+                Storage::disk('public')->delete($store->photo);
             }
             $store->photo = null;
             $store->save();
@@ -342,18 +346,18 @@ class StoreController extends Controller
         } elseif ($request->hasFile('photo')) {
             $file = $request->file('photo');
             if ($file->isValid()) {
-                if ($store->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($store->photo)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($store->photo);
+                if ($store->photo && Storage::disk('public')->exists($store->photo)) {
+                    Storage::disk('public')->delete($store->photo);
                 }
 
                 $date = now()->format('Y-m-d');
-                $storeSlug = \Illuminate\Support\Str::slug($store->name ?: 'toko');
-                $randomCode = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $storeSlug = Str::slug($store->name ?: 'toko');
+                $randomCode = Str::lower(Str::random(8));
                 $ext = $file->getClientOriginalExtension() ?: 'jpg';
                 $filename = "{$date}_{$storeSlug}_{$randomCode}.{$ext}";
-                $path = 'foto-toko/' . $filename;
+                $path = 'foto-toko/'.$filename;
 
-                \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('foto-toko', $file, $filename);
+                Storage::disk('public')->putFileAs('foto-toko', $file, $filename);
 
                 $store->photo = $path;
                 $store->save();
@@ -375,7 +379,7 @@ class StoreController extends Controller
      */
     public function destroy(Store $store): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama dengan web (toko-delete)

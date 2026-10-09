@@ -17,7 +17,7 @@ class UserController extends Controller
      */
     private function authorizeUserManage(): ?JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('user-manage', 'web') && ! $user->can('user-manage'))) {
@@ -277,10 +277,11 @@ class UserController extends Controller
         $cleanName = trim(preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $u->name));
         $words = array_values(array_filter(preg_split('/\s+/', $cleanName)));
         if (count($words) >= 2) {
-            return mb_strtoupper(mb_substr($words[0], 0, 1) . mb_substr($words[1], 0, 1));
+            return mb_strtoupper(mb_substr($words[0], 0, 1).mb_substr($words[1], 0, 1));
         } elseif (count($words) === 1) {
             return mb_strtoupper(mb_substr($words[0], 0, min(2, mb_strlen($words[0]))));
         }
+
         return 'US';
     }
 

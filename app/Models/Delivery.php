@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Delivery extends Model
 {
@@ -78,7 +80,7 @@ class Delivery extends Model
             return $this->proof_image;
         }
 
-        return asset('storage/' . $this->proof_image);
+        return asset('storage/'.$this->proof_image);
     }
 
     public function store(): BelongsTo
@@ -116,7 +118,7 @@ class Delivery extends Model
             return $existingInvoice;
         }
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($userId) {
+        return DB::transaction(function () use ($userId) {
             $this->loadMissing(['items', 'store']);
 
             $subtotal = (float) ($this->total_amount ?: $this->items->sum('subtotal'));
@@ -127,7 +129,8 @@ class Delivery extends Model
                 'invoice_number' => Invoice::generateInvoiceNumber(),
                 'delivery_id' => $this->id,
                 'store_id' => $this->store_id,
-                'created_by' => $userId ?: (\Illuminate\Support\Facades\Auth::id() ?: $this->created_by),
+                'courier_id' => $this->courier_id,
+                'created_by' => $userId ?: (Auth::id() ?: $this->created_by),
                 'invoice_date' => now()->toDateString(),
                 'due_date' => now()->addDays(14)->toDateString(),
                 'subtotal' => $subtotal,
@@ -214,8 +217,8 @@ class Delivery extends Model
 
     public static function generateDeliveryNumber(): string
     {
-        $prefix = 'SJ-' . now()->format('Ymd') . '-';
-        $latest = static::where('delivery_number', 'like', $prefix . '%')
+        $prefix = 'SJ-'.now()->format('Ymd').'-';
+        $latest = static::where('delivery_number', 'like', $prefix.'%')
             ->orderByDesc('id')
             ->value('delivery_number');
 
@@ -226,7 +229,7 @@ class Delivery extends Model
             $nextSequence = '0001';
         }
 
-        return $prefix . $nextSequence;
+        return $prefix.$nextSequence;
     }
 
     /**
@@ -282,17 +285,17 @@ class Delivery extends Model
             $decoded = base64_decode($base64, true);
 
             if ($decoded !== false) {
-                if ($this->proof_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->proof_image)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($this->proof_image);
+                if ($this->proof_image && Storage::disk('public')->exists($this->proof_image)) {
+                    Storage::disk('public')->delete($this->proof_image);
                 }
 
                 $date = now()->format('Y-m-d');
-                $deliverySlug = \Illuminate\Support\Str::slug($this->delivery_number ?: 'sj');
-                $randomCode = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $deliverySlug = Str::slug($this->delivery_number ?: 'sj');
+                $randomCode = Str::lower(Str::random(8));
                 $filename = "{$date}_{$deliverySlug}_{$randomCode}.{$ext}";
-                $path = 'delivery-proofs/' . $filename;
+                $path = 'delivery-proofs/'.$filename;
 
-                \Illuminate\Support\Facades\Storage::disk('public')->put($path, $decoded);
+                Storage::disk('public')->put($path, $decoded);
 
                 $this->proof_image = $path;
                 $this->save();

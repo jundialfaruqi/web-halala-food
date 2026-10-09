@@ -39,6 +39,7 @@ class ProductRecipe extends Model
     public function getSubtotalCostAttribute(): float
     {
         $cost = $this->rawMaterial?->cost_per_unit ?? 0;
+
         return round((float) $this->quantity_needed * (float) $cost, 2);
     }
 }

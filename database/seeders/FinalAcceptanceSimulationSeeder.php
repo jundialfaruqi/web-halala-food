@@ -8,24 +8,21 @@ use App\Models\ChartOfAccount;
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
 use App\Models\FixedAsset;
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchMaterial;
+use App\Models\ProductRecipe;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialPurchase;
 use App\Models\RawMaterialPurchaseItem;
-use App\Models\StockMutation;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\AccountingService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 class FinalAcceptanceSimulationSeeder extends Seeder
@@ -48,7 +45,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
             'Users (Pengguna)' => User::count(),
             'Bahan Baku (Raw Materials)' => RawMaterial::count(),
             'Produk (Products)' => Product::count(),
-            'Resep (Recipes)' => \App\Models\ProductRecipe::count(),
+            'Resep (Recipes)' => ProductRecipe::count(),
             'Toko Mitra (Stores)' => Store::count(),
             'Bagan Akun (Chart of Accounts)' => ChartOfAccount::count(),
         ];
@@ -71,7 +68,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
                 echo "  ✗ PERINGATAN: Kurir memiliki izin terlarang {$p}!\n";
             }
         }
-        if (!$hasViolation) {
+        if (! $hasViolation) {
             echo "  ✓ RBAC Kurir AMAN: Tidak memiliki akses ke pembukuan, jurnal, aset, dan pembelian.\n";
         }
         echo "  ✓ RBAC Manager & Developer AMAN: Memiliki hak kelola operasional dan akuntansi penuh.\n\n";
@@ -81,7 +78,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         // =====================================================================
         echo "[TAHAP 2: MANAGER] Konfigurasi Akun Keuangan Baru di Buku Kas...\n";
         $kasTunai = Account::where('name', 'like', '%Kas Tunai%')->firstOrFail();
-        echo "  - Akun Kas Tunai aktif: Saldo Rp " . number_format($kasTunai->balance, 0, ',', '.') . "\n";
+        echo '  - Akun Kas Tunai aktif: Saldo Rp '.number_format($kasTunai->balance, 0, ',', '.')."\n";
 
         $bankBca = Account::firstOrCreate(
             ['name' => 'Rekening Bank BCA Usaha'],
@@ -91,7 +88,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
                 'description' => 'Rekening operasional penerimaan transfer mitra & transaksi non-tunai',
             ]
         );
-        echo "  ✓ Akun Bank BCA dikonfigurasi: Saldo Awal Rp " . number_format($bankBca->balance, 0, ',', '.') . "\n\n";
+        echo '  ✓ Akun Bank BCA dikonfigurasi: Saldo Awal Rp '.number_format($bankBca->balance, 0, ',', '.')."\n\n";
 
         // =====================================================================
         // TAHAP 3: MANAGER - PENGADAAN BAHAN BAKU (TUNAI & TEMPO)
@@ -99,9 +96,9 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         echo "[TAHAP 3: MANAGER] Input Pengadaan Bahan Baku Masak Dapur...\n";
 
         // 3A. Pembelian Tunai via Kas Tunai (CV Berkah Jaya Abadi)
-        $beliTunaiNumber = 'BELI-' . date('Ymd') . '-0001';
+        $beliTunaiNumber = 'BELI-'.date('Ymd').'-0001';
         $existingBeliTunai = RawMaterialPurchase::where('purchase_number', $beliTunaiNumber)->first();
-        if (!$existingBeliTunai) {
+        if (! $existingBeliTunai) {
             $purchaseTunai = RawMaterialPurchase::create([
                 'purchase_number' => $beliTunaiNumber,
                 'supplier_name' => 'CV Berkah Jaya Abadi',
@@ -140,7 +137,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
             $kasTunai->decrement('balance', 1040000.00);
 
             $purchaseTunai->loadMissing('items.rawMaterial.unitModel');
-            $itemsTunaiStr = $purchaseTunai->items->map(fn ($it) => "{$it->rawMaterial?->name} (" . number_format($it->quantity, (floor($it->quantity) == $it->quantity ? 0 : 2), ',', '.') . " {$it->rawMaterial?->display_unit})")->implode(', ');
+            $itemsTunaiStr = $purchaseTunai->items->map(fn ($it) => "{$it->rawMaterial?->name} (".number_format($it->quantity, (floor($it->quantity) == $it->quantity ? 0 : 2), ',', '.')." {$it->rawMaterial?->display_unit})")->implode(', ');
 
             CashTransaction::create([
                 'transaction_date' => $today,
@@ -150,7 +147,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
                 'amount' => 1040000.00,
                 'reference_type' => 'purchase',
                 'reference_id' => $purchaseTunai->id,
-                'description' => "Pembelian Bahan Baku ({$purchaseTunai->purchase_number}): " . ($itemsTunaiStr ? "{$itemsTunaiStr} - " : "") . "Supplier: {$purchaseTunai->supplier_name}",
+                'description' => "Pembelian Bahan Baku ({$purchaseTunai->purchase_number}): ".($itemsTunaiStr ? "{$itemsTunaiStr} - " : '')."Supplier: {$purchaseTunai->supplier_name}",
             ]);
 
             // Auto Journal
@@ -162,9 +159,9 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         }
 
         // 3B. Pembelian Tempo (Hutang Supplier PT Riau Sukses Pangan)
-        $beliTempoNumber = 'BELI-' . date('Ymd') . '-0002';
+        $beliTempoNumber = 'BELI-'.date('Ymd').'-0002';
         $existingBeliTempo = RawMaterialPurchase::where('purchase_number', $beliTempoNumber)->first();
-        if (!$existingBeliTempo) {
+        if (! $existingBeliTempo) {
             $purchaseTempo = RawMaterialPurchase::create([
                 'purchase_number' => $beliTempoNumber,
                 'supplier_name' => 'PT Riau Sukses Pangan',
@@ -209,10 +206,10 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         // =====================================================================
         echo "[TAHAP 4: MANAGER] Eksekusi Batch Masak Dapur (Produksi Kerupuk Peyek 500gr)...\n";
         $productPeyek = Product::find(2); // Kerupuk Peyek (500gr)
-        $batchCode = 'BATCH-' . date('Ymd') . '-0001';
+        $batchCode = 'BATCH-'.date('Ymd').'-0001';
         $existingBatch = ProductionBatch::where('batch_code', $batchCode)->first();
 
-        if (!$existingBatch) {
+        if (! $existingBatch) {
             $plannedQty = 25; // 25 bungkus
             $batchMaterials = [
                 ['material_id' => 1, 'used' => 6250.0, 'unit' => 'gr', 'cost' => 17.0, 'subtotal' => 106250.0],  // Tepung Beras
@@ -260,7 +257,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
             $productPeyek->increment('stock_ready', $plannedQty);
             AccountingService::recordProduction($batch);
 
-            echo "  ✓ Batch {$batchCode} selesai: 25 bungkus Kerupuk Peyek siap jual bertambah (Biaya Bahan: Rp " . number_format($totalBatchCost, 0, ',', '.') . ").\n";
+            echo "  ✓ Batch {$batchCode} selesai: 25 bungkus Kerupuk Peyek siap jual bertambah (Biaya Bahan: Rp ".number_format($totalBatchCost, 0, ',', '.').").\n";
             echo "  ✓ Jurnal Produksi diposting: Debit Persediaan Produk Jadi (1-1400) vs Kredit Akun Bahan Baku Spesifik.\n\n";
         } else {
             $batch = $existingBatch;
@@ -271,10 +268,10 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         // TAHAP 5 & 6: PENGANTARAN (SURAT JALAN) & SERAH TERIMA KURIR
         // =====================================================================
         echo "[TAHAP 5 & 6: MANAGER & KURIR] Pengiriman Surat Jalan & Serah Terima Toko...\n";
-        $sjNumber = 'SJ-' . date('Ymd') . '-0005';
+        $sjNumber = 'SJ-'.date('Ymd').'-0005';
         $existingDelivery = Delivery::where('delivery_number', $sjNumber)->first();
 
-        if (!$existingDelivery) {
+        if (! $existingDelivery) {
             $store = Store::firstOrFail(); // Budiman Swalayan Panam
             $deliveryQty = 20; // Kirim 20 bungkus
             $unitPrice = (float) $productPeyek->consignment_price; // 70.000
@@ -382,14 +379,14 @@ class FinalAcceptanceSimulationSeeder extends Seeder
                 'payment_date' => $today,
                 'amount' => $payAmount,
                 'payment_method' => 'transfer_bank',
-                'reference_number' => 'TRF-BCA-' . rand(100000, 999999),
+                'reference_number' => 'TRF-BCA-'.rand(100000, 999999),
                 'notes' => "Pelunasan penuh titip jual {$invoice->invoice_number}",
             ]);
 
             $invoice->recalculateStatusAndBalance();
             AccountingService::recordInvoicePayment($payment, $bankBca->id);
 
-            echo "  ✓ Pelunasan Faktur {$invoice->invoice_number} Rp " . number_format($payAmount, 0, ',', '.') . " diterima via Transfer Bank BCA.\n";
+            echo "  ✓ Pelunasan Faktur {$invoice->invoice_number} Rp ".number_format($payAmount, 0, ',', '.')." diterima via Transfer Bank BCA.\n";
             echo "  ✓ Kas Bank BCA bertambah, Buku Kas tercatat, Jurnal Debet Bank BCA (1-1002) vs Kredit Piutang (1-1200) diposting.\n\n";
         } else {
             echo "  - Faktur sudah lunas.\n\n";
@@ -408,7 +405,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
                 $today,
                 "Pelunasan hutang supplier {$purchaseTempo->supplier_name} via Transfer Bank BCA"
             );
-            echo "  ✓ Hutang Pembelian {$purchaseTempo->purchase_number} sebesar Rp " . number_format($debtAmount, 0, ',', '.') . " lunas dibayar via Bank BCA.\n";
+            echo "  ✓ Hutang Pembelian {$purchaseTempo->purchase_number} sebesar Rp ".number_format($debtAmount, 0, ',', '.')." lunas dibayar via Bank BCA.\n";
             echo "  ✓ Saldo Hutang Usaha (2-1000) berkurang dan dicatat di Buku Kas serta Jurnal Akuntansi.\n\n";
         } else {
             echo "  - Hutang pembelian sudah berstatus lunas.\n\n";
@@ -421,7 +418,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         $assetName = 'Mesin Continuous Band Sealer FRB-770';
         $existingAsset = FixedAsset::where('name', $assetName)->first();
 
-        if (!$existingAsset) {
+        if (! $existingAsset) {
             $assetPrice = 3600000.00;
             $usefulLife = 36; // 36 bulan (3 tahun)
             $monthlyDep = 100000.00;
@@ -479,8 +476,8 @@ class FinalAcceptanceSimulationSeeder extends Seeder
             // Eksekusi Depresiasi Bulan ke-1: Rp 100.000
             AccountingService::recordFixedAssetDepreciation($asset, $monthlyDep, $today, "Penyusutan Aset Bulan Pertama ({$asset->name})");
 
-            echo "  ✓ Aset Tetap {$assetName} Rp " . number_format($assetPrice, 0, ',', '.') . " berhasil dicatat & dibeli via Bank BCA.\n";
-            echo "  ✓ Depresiasi Bulan Pertama Rp " . number_format($monthlyDep, 0, ',', '.') . " berhasil dihitung: Nilai Buku Rp " . number_format($asset->fresh()->book_value, 0, ',', '.') . ".\n";
+            echo "  ✓ Aset Tetap {$assetName} Rp ".number_format($assetPrice, 0, ',', '.')." berhasil dicatat & dibeli via Bank BCA.\n";
+            echo '  ✓ Depresiasi Bulan Pertama Rp '.number_format($monthlyDep, 0, ',', '.').' berhasil dihitung: Nilai Buku Rp '.number_format($asset->fresh()->book_value, 0, ',', '.').".\n";
             echo "  ✓ Jurnal Depresiasi: Debet Beban Penyusutan (6-1005) vs Kredit Akumulasi Penyusutan (1-2100).\n\n";
         } else {
             echo "  - Aset Tetap {$assetName} sudah ada di database.\n\n";
@@ -492,7 +489,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         echo "[TAHAP 11: MANAGER] Pencatatan Pengeluaran Operasional Rutin di Buku Kas...\n";
 
         // Gaji Kurir Rp 1.500.000 via Bank BCA (Beban 6-1007)
-        if (!CashTransaction::where('description', 'like', '%Gaji & Upah Kurir Budi Pratama%')->exists()) {
+        if (! CashTransaction::where('description', 'like', '%Gaji & Upah Kurir Budi Pratama%')->exists()) {
             $bankBca->decrement('balance', 1500000.00);
             $txGaji = CashTransaction::create([
                 'transaction_date' => $today,
@@ -507,7 +504,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         }
 
         // Biaya Bensin Pengantaran Rp 50.000 via Kas Tunai (Beban 6-1001)
-        if (!CashTransaction::where('description', 'like', '%Bensin Operasional Motor Kurir%')->exists()) {
+        if (! CashTransaction::where('description', 'like', '%Bensin Operasional Motor Kurir%')->exists()) {
             $kasTunai->decrement('balance', 50000.00);
             $txBensin = CashTransaction::create([
                 'transaction_date' => $today,
@@ -522,7 +519,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         }
 
         // Biaya Listrik Produksi Rp 150.000 via Kas Tunai (Beban 6-1002)
-        if (!CashTransaction::where('description', 'like', '%Token Listrik Dapur Produksi%')->exists()) {
+        if (! CashTransaction::where('description', 'like', '%Token Listrik Dapur Produksi%')->exists()) {
             $kasTunai->decrement('balance', 150000.00);
             $txListrik = CashTransaction::create([
                 'transaction_date' => $today,
@@ -543,7 +540,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         $matMinyak = RawMaterial::find(9); // Minyak Goreng
         $prodPeyek = Product::find(2);     // Kerupuk Peyek
 
-        if (!JournalEntry::where('reference_type', 'stock_opname_material')->exists()) {
+        if (! JournalEntry::where('reference_type', 'stock_opname_material')->exists()) {
             // Selisih Kurang Minyak Goreng -0.5L (tumpah saat masak)
             $diffMinyak = -0.5;
             $matMinyak->decrement('stock', abs($diffMinyak));
@@ -556,7 +553,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
             echo "  ✓ Stock Opname Minyak Goreng: Selisih -0.5 Liter (Debet Beban Selisih 6-1006 vs Kredit Bahan Baku 1-1109).\n";
         }
 
-        if (!JournalEntry::where('reference_type', 'stock_opname_product')->exists()) {
+        if (! JournalEntry::where('reference_type', 'stock_opname_product')->exists()) {
             // Selisih Kurang Kerupuk Peyek -1 pcs (kemasan sobek di rak gudang)
             $diffPeyek = -1.0;
             $prodPeyek->decrement('stock_ready', 1);
@@ -594,13 +591,13 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         }
 
         echo "1. Jurnal Umum (General Journal):\n";
-        echo "   - Total Entri Jurnal: " . $entries->count() . " transaksi.\n";
-        echo "   - Grand Total Debet : Rp " . number_format($totalDebitAll, 2, ',', '.') . "\n";
-        echo "   - Grand Total Kredit: Rp " . number_format($totalCreditAll, 2, ',', '.') . "\n";
+        echo '   - Total Entri Jurnal: '.$entries->count()." transaksi.\n";
+        echo '   - Grand Total Debet : Rp '.number_format($totalDebitAll, 2, ',', '.')."\n";
+        echo '   - Grand Total Kredit: Rp '.number_format($totalCreditAll, 2, ',', '.')."\n";
         if (empty($imbalancedJournals) && $totalDebitAll === $totalCreditAll) {
             echo "   ✓ KESEIMBANGAN: 100% BALANCE (Debit === Credit untuk seluruh transaksi).\n";
         } else {
-            echo "   ✗ KETIDAKSEIMBANGAN DITEMUKAN: " . implode(', ', $imbalancedJournals) . "\n";
+            echo '   ✗ KETIDAKSEIMBANGAN DITEMUKAN: '.implode(', ', $imbalancedJournals)."\n";
         }
 
         // 2. Audit Saldo Rekening Buku Kas
@@ -609,7 +606,7 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         foreach ($accounts as $acc) {
             $inflows = (float) $acc->transactions()->where('type', 'income')->sum('amount');
             $outflows = (float) $acc->transactions()->whereIn('type', ['expense', 'prive'])->sum('amount');
-            echo "   - [{$acc->name}]: Saldo Tercatat Rp " . number_format($acc->balance, 2, ',', '.') . " | Total Masuk: Rp " . number_format($inflows, 2, ',', '.') . " | Total Keluar: Rp " . number_format($outflows, 2, ',', '.') . "\n";
+            echo "   - [{$acc->name}]: Saldo Tercatat Rp ".number_format($acc->balance, 2, ',', '.').' | Total Masuk: Rp '.number_format($inflows, 2, ',', '.').' | Total Keluar: Rp '.number_format($outflows, 2, ',', '.')."\n";
         }
 
         // 3. Audit Laporan Laba Rugi (Income Statement)
@@ -621,11 +618,11 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         $netProfit = $grossMargin - $expTotal;
 
         echo "\n3. Laporan Laba Rugi (Income Statement):\n";
-        echo "   - Total Pendapatan Konsinyasi (4-xxxx) : Rp " . number_format($revTotal, 2, ',', '.') . "\n";
-        echo "   - Beban Pokok Penjualan HPP (5-xxxx)    : Rp " . number_format($cogsTotal, 2, ',', '.') . "\n";
-        echo "   - Laba Kotor Usaha                     : Rp " . number_format($grossMargin, 2, ',', '.') . "\n";
-        echo "   - Total Beban Operasional (6-xxxx)     : Rp " . number_format($expTotal, 2, ',', '.') . "\n";
-        echo "   - LABA / (RUGI) BERSIH USAHA           : Rp " . number_format($netProfit, 2, ',', '.') . "\n";
+        echo '   - Total Pendapatan Konsinyasi (4-xxxx) : Rp '.number_format($revTotal, 2, ',', '.')."\n";
+        echo '   - Beban Pokok Penjualan HPP (5-xxxx)    : Rp '.number_format($cogsTotal, 2, ',', '.')."\n";
+        echo '   - Laba Kotor Usaha                     : Rp '.number_format($grossMargin, 2, ',', '.')."\n";
+        echo '   - Total Beban Operasional (6-xxxx)     : Rp '.number_format($expTotal, 2, ',', '.')."\n";
+        echo '   - LABA / (RUGI) BERSIH USAHA           : Rp '.number_format($netProfit, 2, ',', '.')."\n";
 
         // 4. Audit Neraca Keuangan (Balance Sheet)
         $assetTotal = (float) $coaAccounts->where('type', 'asset')->sum('balance');
@@ -637,15 +634,15 @@ class FinalAcceptanceSimulationSeeder extends Seeder
         $totalPasiva = $liabTotal + $totalEquity;
 
         echo "\n4. Laporan Neraca Keuangan (Balance Sheet):\n";
-        echo "   - Total Aset (Aktiva)                  : Rp " . number_format($assetTotal, 2, ',', '.') . "\n";
-        echo "   - Total Kewajiban (Hutang)             : Rp " . number_format($liabTotal, 2, ',', '.') . "\n";
-        echo "   - Ekuitas Modal Usaha                  : Rp " . number_format($equityWithoutIncome, 2, ',', '.') . "\n";
-        echo "   - Laba Berjalan Periode                : Rp " . number_format($netProfit, 2, ',', '.') . "\n";
-        echo "   - Total Ekuitas                        : Rp " . number_format($totalEquity, 2, ',', '.') . "\n";
-        echo "   - Total Pasiva (Hutang + Ekuitas)      : Rp " . number_format($totalPasiva, 2, ',', '.') . "\n";
+        echo '   - Total Aset (Aktiva)                  : Rp '.number_format($assetTotal, 2, ',', '.')."\n";
+        echo '   - Total Kewajiban (Hutang)             : Rp '.number_format($liabTotal, 2, ',', '.')."\n";
+        echo '   - Ekuitas Modal Usaha                  : Rp '.number_format($equityWithoutIncome, 2, ',', '.')."\n";
+        echo '   - Laba Berjalan Periode                : Rp '.number_format($netProfit, 2, ',', '.')."\n";
+        echo '   - Total Ekuitas                        : Rp '.number_format($totalEquity, 2, ',', '.')."\n";
+        echo '   - Total Pasiva (Hutang + Ekuitas)      : Rp '.number_format($totalPasiva, 2, ',', '.')."\n";
 
         $neracaDiff = $assetTotal - $totalPasiva;
-        echo "   - Selisih Neraca (Aktiva - Pasiva)     : Rp " . number_format($neracaDiff, 2, ',', '.') . "\n";
+        echo '   - Selisih Neraca (Aktiva - Pasiva)     : Rp '.number_format($neracaDiff, 2, ',', '.')."\n";
         echo "========================================================================\n\n";
     }
 }

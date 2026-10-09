@@ -9,10 +9,15 @@ use Livewire\Component;
 new #[Layout('components.layouts.admin'), Title('Pengaturan Usaha - Halala Food')] class extends Component
 {
     public string $company_name = '';
+
     public ?string $legal_name = '';
+
     public ?string $tagline = '';
+
     public ?string $phone = '';
+
     public ?string $email = '';
+
     public ?string $address = '';
 
     /**
@@ -21,6 +26,7 @@ new #[Layout('components.layouts.admin'), Title('Pengaturan Usaha - Halala Food'
     public array $bank_accounts = [];
 
     public ?string $invoice_notes = '';
+
     public ?string $delivery_notes = '';
 
     public function mount()

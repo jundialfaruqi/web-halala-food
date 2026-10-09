@@ -38,7 +38,7 @@ class FixedAsset extends Model
             $next = static::count() + 1;
         }
 
-        return 'AST-' . str_pad((string) $next, 3, '0', STR_PAD_LEFT);
+        return 'AST-'.str_pad((string) $next, 3, '0', STR_PAD_LEFT);
     }
 
     protected $casts = [
@@ -53,6 +53,7 @@ class FixedAsset extends Model
     public function getMonthlyDepreciationAttribute(): float
     {
         $months = max(1, $this->useful_life_months ?: 36);
+
         return round($this->purchase_price / $months, 2);
     }
 
@@ -64,22 +65,22 @@ class FixedAsset extends Model
     public static function categories(): array
     {
         return [
-            'mesin'      => 'Mesin Produksi',
-            'peralatan'  => 'Peralatan Dapur & Alat',
-            'kendaraan'  => 'Kendaraan',
+            'mesin' => 'Mesin Produksi',
+            'peralatan' => 'Peralatan Dapur & Alat',
+            'kendaraan' => 'Kendaraan',
             'inventaris' => 'Inventaris Kantor',
-            'bangunan'   => 'Bangunan / Sewa Tempat',
-            'lainnya'    => 'Lainnya',
+            'bangunan' => 'Bangunan / Sewa Tempat',
+            'lainnya' => 'Lainnya',
         ];
     }
 
     public static function conditions(): array
     {
         return [
-            'baik'         => 'Baik',
+            'baik' => 'Baik',
             'rusak_ringan' => 'Rusak Ringan',
-            'rusak_berat'  => 'Rusak Berat',
-            'tidak_aktif'  => 'Tidak Aktif / Disimpan',
+            'rusak_berat' => 'Rusak Berat',
+            'tidak_aktif' => 'Tidak Aktif / Disimpan',
         ];
     }
 }

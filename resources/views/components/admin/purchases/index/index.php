@@ -1,8 +1,11 @@
 <?php
 
-use App\Models\RawMaterial;
+use App\Models\Account;
+use App\Models\CashTransaction;
+use App\Models\JournalEntry;
 use App\Models\RawMaterialPurchase;
 use App\Models\StockMutation;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -29,10 +32,15 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
 
     // Debt Payment Modal State
     public bool $showPaymentModal = false;
+
     public ?int $payingPurchaseId = null;
+
     public ?int $paymentAccountId = null;
+
     public string $paymentDate = '';
+
     public int|float|string $paymentAmount = 0;
+
     public string $paymentNotes = '';
 
     public function updatedSearch(): void
@@ -56,7 +64,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
         $this->payingPurchaseId = $id;
         $this->paymentDate = now()->toDateString();
         $this->paymentAmount = $purchase->remaining_debt;
-        $this->paymentAccountId = \App\Models\Account::first()?->id;
+        $this->paymentAccountId = Account::first()?->id;
         $this->paymentNotes = "Pelunasan Hutang {$purchase->purchase_number} ke {$purchase->supplier_name}";
         $this->showPaymentModal = true;
     }
@@ -92,13 +100,13 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
             'paymentDate.required' => 'Tanggal pembayaran wajib diisi.',
             'paymentAmount.required' => 'Nominal pembayaran wajib diisi.',
             'paymentAmount.min' => 'Nominal pembayaran minimal Rp 1.',
-            'paymentAmount.max' => 'Nominal pembayaran melebihi sisa hutang (Rp ' . number_format($remaining, 0, ',', '.') . ').',
+            'paymentAmount.max' => 'Nominal pembayaran melebihi sisa hutang (Rp '.number_format($remaining, 0, ',', '.').').',
         ]);
 
-        $account = \App\Models\Account::findOrFail($this->paymentAccountId);
+        $account = Account::findOrFail($this->paymentAccountId);
 
         DB::transaction(function () use ($purchase, $account) {
-            \App\Services\AccountingService::recordPurchaseDebtPayment(
+            AccountingService::recordPurchaseDebtPayment(
                 $purchase,
                 $account,
                 (float) $this->paymentAmount,
@@ -110,7 +118,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
         $this->showPaymentModal = false;
         $this->payingPurchaseId = null;
 
-        session()->flash('success', "Pembayaran hutang pembelian {$purchase->purchase_number} sebesar Rp " . number_format((float) $this->paymentAmount, 0, ',', '.') . " berhasil dicatat dan diposting ke Buku Kas & Jurnal.");
+        session()->flash('success', "Pembayaran hutang pembelian {$purchase->purchase_number} sebesar Rp ".number_format((float) $this->paymentAmount, 0, ',', '.').' berhasil dicatat dan diposting ke Buku Kas & Jurnal.');
     }
 
     public function viewDetails(int $id): void
@@ -136,6 +144,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
             $currentStock = (float) $item->rawMaterial->stock;
             if ($currentStock < (float) $item->quantity) {
                 session()->flash('error', "Pembelian {$purchase->purchase_number} tidak dapat dihapus karena sisa stok '{$item->rawMaterial->name}' ({$currentStock}) lebih kecil dari jumlah yang dibeli ({$item->quantity}). Sebagian bahan telah terpakai dalam proses masak dapur.");
+
                 return;
             }
         }
@@ -165,7 +174,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
             }
 
             // Revert and delete associated cash transaction if exists
-            $cashTx = \App\Models\CashTransaction::where('reference_type', 'purchase')
+            $cashTx = CashTransaction::where('reference_type', 'purchase')
                 ->where('reference_id', $purchase->id)
                 ->first();
             if ($cashTx) {
@@ -174,7 +183,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
             }
 
             // Revert and delete associated debt payment cash transactions if exist
-            $debtCashTxs = \App\Models\CashTransaction::where('reference_type', 'purchase_payment')
+            $debtCashTxs = CashTransaction::where('reference_type', 'purchase_payment')
                 ->where('reference_id', $purchase->id)
                 ->get();
             foreach ($debtCashTxs as $dtx) {
@@ -188,7 +197,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
                 ->delete();
 
             // Remove associated journal entries
-            \App\Models\JournalEntry::whereIn('reference_type', ['purchase', 'purchase_payment'])
+            JournalEntry::whereIn('reference_type', ['purchase', 'purchase_payment'])
                 ->where('reference_id', $purchase->id)
                 ->delete();
 
@@ -211,7 +220,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
             ->latest('id');
 
         if (trim($this->search) !== '') {
-            $term = '%' . trim($this->search) . '%';
+            $term = '%'.trim($this->search).'%';
             $query->where(function ($q) use ($term) {
                 $q->where('purchase_number', 'like', $term)
                     ->orWhere('supplier_name', 'like', $term)
@@ -252,7 +261,7 @@ new #[Layout('components.layouts.admin')] #[Title('Pengadaan & Pembelian Bahan B
             $payingPurchase = RawMaterialPurchase::find($this->payingPurchaseId);
         }
 
-        $accounts = \App\Models\Account::orderBy('name')->get();
+        $accounts = Account::orderBy('name')->get();
 
         return [
             'purchases' => $purchases,

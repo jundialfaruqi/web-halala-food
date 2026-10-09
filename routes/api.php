@@ -6,7 +6,10 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+Broadcast::routes(['middleware' => ['auth:api']]);
 
 /*
 |--------------------------------------------------------------------------

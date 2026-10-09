@@ -66,7 +66,7 @@ class Store extends Model
             $digits = substr($digits, 2);
         }
 
-        return ! empty($digits) ? '62' . $digits : null;
+        return ! empty($digits) ? '62'.$digits : null;
     }
 
     /**
@@ -82,13 +82,12 @@ class Store extends Model
             return $this->photo;
         }
 
-        return asset('storage/' . $this->photo);
+        return asset('storage/'.$this->photo);
     }
 
     /**
      * Validate photo base64 data for maximum upload size and allowed formats.
      *
-     * @param string|null $photoData
      * @return string|null Error message if invalid, null if valid
      */
     public static function validatePhotoBase64(?string $photoData): ?string
@@ -151,7 +150,7 @@ class Store extends Model
                 $storeSlug = Str::slug($this->name ?: 'toko');
                 $randomCode = Str::lower(Str::random(8));
                 $filename = "{$date}_{$storeSlug}_{$randomCode}.{$ext}";
-                $path = 'foto-toko/' . $filename;
+                $path = 'foto-toko/'.$filename;
 
                 Storage::disk('public')->put($path, $decoded);
 

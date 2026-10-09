@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Store;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;

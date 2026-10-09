@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\Account;
+use App\Models\BusinessSetting;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
-use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
@@ -39,10 +39,15 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     // Payment Form Fields
     public ?float $payment_amount = null;
+
     public string $payment_date = '';
+
     public string $payment_method = 'tunai';
+
     public ?int $account_id = null;
+
     public ?string $reference_number = '';
+
     public ?string $payment_notes = '';
 
     public function mount(Invoice $invoice)
@@ -178,6 +183,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         if ($this->invoice->status === 'dibatalkan') {
             $this->notify('Faktur yang telah dibatalkan tidak dapat direkonsiliasi.', 'error');
+
             return;
         }
 
@@ -193,6 +199,7 @@ new #[Layout('components.layouts.admin')] class extends Component
             $totalOut = (int) $rItem['remaining_quantity'] + (int) $rItem['damaged_quantity'] + (int) $rItem['returned_quantity'];
             if ($totalOut > $delivered) {
                 $this->addError("reconciliationItems.{$idx}.remaining_quantity", "Total sisa, rusak, dan retur ({$totalOut}) melebihi jumlah terkirim ({$delivered}) untuk {$rItem['product_name']}.");
+
                 return;
             }
         }
@@ -209,7 +216,8 @@ new #[Layout('components.layouts.admin')] class extends Component
         }
         $newTotalCalc = max(0.0, $newSubtotalCalc - (float) $this->invoice->discount);
         if ((float) $this->invoice->paid_amount > $newTotalCalc) {
-            $this->notify('Total tagihan hasil rekonsiliasi (Rp ' . number_format($newTotalCalc, 0, ',', '.') . ') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp ' . number_format((float) $this->invoice->paid_amount, 0, ',', '.') . ').', 'error');
+            $this->notify('Total tagihan hasil rekonsiliasi (Rp '.number_format($newTotalCalc, 0, ',', '.').') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp '.number_format((float) $this->invoice->paid_amount, 0, ',', '.').').', 'error');
+
             return;
         }
 
@@ -271,7 +279,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->resetPaymentForm();
         $this->showReconciliation = false;
 
-        $this->notify('Rekonsiliasi titip jual berhasil disimpan. Tagihan baru sebesar Rp ' . number_format($this->invoice->total_amount, 0, ',', '.') . '.', 'success');
+        $this->notify('Rekonsiliasi titip jual berhasil disimpan. Tagihan baru sebesar Rp '.number_format($this->invoice->total_amount, 0, ',', '.').'.', 'success');
     }
 
     public function recordPayment(): void
@@ -282,17 +290,19 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         if ($this->invoice->status === 'dibatalkan') {
             $this->notify('Faktur yang telah dibatalkan tidak dapat menerima pembayaran.', 'error');
+
             return;
         }
 
         $remaining = (float) $this->invoice->remaining_balance;
         if ($remaining <= 0) {
             $this->notify('Faktur tagihan ini sudah lunas.', 'warning');
+
             return;
         }
 
         $this->validate([
-            'payment_amount' => ['required', 'numeric', 'min:1', 'max:' . $remaining],
+            'payment_amount' => ['required', 'numeric', 'min:1', 'max:'.$remaining],
             'payment_date' => ['required', 'date'],
             'payment_method' => ['required', 'in:tunai,transfer_bank,qris'],
             'account_id' => ['nullable', 'exists:accounts,id'],
@@ -301,7 +311,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         ], [
             'payment_amount.required' => 'Nominal pembayaran wajib diisi.',
             'payment_amount.min' => 'Nominal pembayaran minimal Rp 1.',
-            'payment_amount.max' => 'Nominal pembayaran tidak boleh melebihi sisa piutang (Rp ' . number_format($remaining, 0, ',', '.') . ').',
+            'payment_amount.max' => 'Nominal pembayaran tidak boleh melebihi sisa piutang (Rp '.number_format($remaining, 0, ',', '.').').',
             'payment_date.required' => 'Tanggal pembayaran wajib diisi.',
             'payment_method.required' => 'Pilih metode pembayaran.',
             'account_id.exists' => 'Akun kas/bank tidak valid.',
@@ -330,7 +340,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->invoice->load(['payments.user']);
         $this->resetPaymentForm();
 
-        $this->notify('Pembayaran sebesar Rp ' . number_format($amount, 0, ',', '.') . ' berhasil dicatat.', 'success');
+        $this->notify('Pembayaran sebesar Rp '.number_format($amount, 0, ',', '.').' berhasil dicatat.', 'success');
     }
 
     public function deletePayment(int $paymentId): void
@@ -365,6 +375,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         if ((float) $this->invoice->paid_amount > 0) {
             $this->notify('Faktur yang sudah memiliki riwayat pembayaran tidak dapat dibatalkan. Hapus pembayaran terlebih dahulu jika ingin membatalkan.', 'error');
+
             return;
         }
 
@@ -379,40 +390,40 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function getWhatsappUrlProperty(): string
     {
-        $setting = \App\Models\BusinessSetting::getSettings();
+        $setting = BusinessSetting::getSettings();
         $store = $this->invoice->store;
         $companyName = $setting->company_name ?: 'Halala Food';
 
         $phone = preg_replace('/[^0-9]/', '', $store->phone ?? '');
         if (str_starts_with($phone, '0')) {
-            $phone = '62' . substr($phone, 1);
+            $phone = '62'.substr($phone, 1);
         }
 
         $lines = [];
         $recipientGreeting = $store->owner_name ? "{$store->name} (Bpk/Ibu {$store->owner_name})" : $store->name;
         $lines[] = "Halo *{$recipientGreeting}*,";
-        $lines[] = "";
+        $lines[] = '';
         $lines[] = "Berikut kami sampaikan rincian tagihan faktur konsinyasi dari *{$companyName}*:";
         $lines[] = "• No. Faktur: *{$this->invoice->invoice_number}*";
-        $lines[] = "• Tanggal: " . ($this->invoice->invoice_date?->translatedFormat('d F Y') ?? '-');
-        $lines[] = "• Jatuh Tempo: " . ($this->invoice->due_date?->translatedFormat('d F Y') ?? '-');
-        $lines[] = "";
-        $lines[] = "*Rincian Produk:*";
+        $lines[] = '• Tanggal: '.($this->invoice->invoice_date?->translatedFormat('d F Y') ?? '-');
+        $lines[] = '• Jatuh Tempo: '.($this->invoice->due_date?->translatedFormat('d F Y') ?? '-');
+        $lines[] = '';
+        $lines[] = '*Rincian Produk:*';
         foreach ($this->invoice->items as $item) {
             $prodName = $item->product?->name ?? 'Produk';
             $unitName = $item->product?->unitModel?->name ?? $item->product?->unit ?? 'pcs';
-            $lines[] = "- {$prodName} ({$item->quantity} {$unitName}) = Rp " . number_format($item->subtotal, 0, ',', '.');
+            $lines[] = "- {$prodName} ({$item->quantity} {$unitName}) = Rp ".number_format($item->subtotal, 0, ',', '.');
         }
-        $lines[] = "";
-        $lines[] = "Total Tagihan: *Rp " . number_format($this->invoice->total_amount, 0, ',', '.') . "*";
+        $lines[] = '';
+        $lines[] = 'Total Tagihan: *Rp '.number_format($this->invoice->total_amount, 0, ',', '.').'*';
         if ((float) $this->invoice->paid_amount > 0) {
-            $lines[] = "Sudah Dibayar: Rp " . number_format($this->invoice->paid_amount, 0, ',', '.');
+            $lines[] = 'Sudah Dibayar: Rp '.number_format($this->invoice->paid_amount, 0, ',', '.');
         }
-        $lines[] = "*Sisa Tagihan: Rp " . number_format($this->invoice->remaining_balance, 0, ',', '.') . "*";
+        $lines[] = '*Sisa Tagihan: Rp '.number_format($this->invoice->remaining_balance, 0, ',', '.').'*';
 
         if (! empty($setting->bank_accounts) && is_array($setting->bank_accounts)) {
-            $lines[] = "";
-            $lines[] = "*Rekening Pembayaran Resmi:*";
+            $lines[] = '';
+            $lines[] = '*Rekening Pembayaran Resmi:*';
             foreach ($setting->bank_accounts as $bank) {
                 if (! empty($bank['bank_name']) && ! empty($bank['account_number'])) {
                     $accName = $bank['account_name'] ?? $bank['account_holder'] ?? 'Halala Food CV';
@@ -421,8 +432,8 @@ new #[Layout('components.layouts.admin')] class extends Component
             }
         }
 
-        $lines[] = "";
-        $lines[] = "Terima kasih atas kerja samanya.";
+        $lines[] = '';
+        $lines[] = 'Terima kasih atas kerja samanya.';
 
         $message = implode("\n", $lines);
 
@@ -432,13 +443,13 @@ new #[Layout('components.layouts.admin')] class extends Component
             $params['phone'] = $phone;
         }
 
-        return $baseUrl . http_build_query($params);
+        return $baseUrl.http_build_query($params);
     }
 
     public function with(): array
     {
         return [
-            'businessSetting' => \App\Models\BusinessSetting::getSettings(),
+            'businessSetting' => BusinessSetting::getSettings(),
             'accounts' => Account::orderBy('name')->get(),
         ];
     }

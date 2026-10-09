@@ -61,8 +61,8 @@ class InvoicePayment extends Model
 
     public static function generatePaymentNumber(): string
     {
-        $prefix = 'PAY-' . now()->format('Ymd') . '-';
-        $latest = static::where('payment_number', 'like', $prefix . '%')
+        $prefix = 'PAY-'.now()->format('Ymd').'-';
+        $latest = static::where('payment_number', 'like', $prefix.'%')
             ->orderByDesc('id')
             ->value('payment_number');
 
@@ -73,6 +73,6 @@ class InvoicePayment extends Model
             $nextSequence = '0001';
         }
 
-        return $prefix . $nextSequence;
+        return $prefix.$nextSequence;
     }
 }

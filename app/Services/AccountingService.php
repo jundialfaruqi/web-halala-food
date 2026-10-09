@@ -37,11 +37,11 @@ class AccountingService
             $nextSeq = ((int) $matches[1]) + 1;
         }
 
-        while (JournalEntry::where('entry_number', $prefix . str_pad((string) $nextSeq, 3, '0', STR_PAD_LEFT))->exists()) {
+        while (JournalEntry::where('entry_number', $prefix.str_pad((string) $nextSeq, 3, '0', STR_PAD_LEFT))->exists()) {
             $nextSeq++;
         }
 
-        return $prefix . str_pad((string) $nextSeq, 3, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) $nextSeq, 3, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -147,7 +147,7 @@ class AccountingService
             $expenseCode = '6-1099'; // default beban operasional
 
             // Check if matches specific raw material in database
-            $matchedMaterial = \App\Models\RawMaterial::all()->first(function ($mat) use ($cat) {
+            $matchedMaterial = RawMaterial::all()->first(function ($mat) use ($cat) {
                 return str_contains($cat, strtolower($mat->name))
                     || str_contains(strtolower($mat->name), $cat);
             });
@@ -426,12 +426,12 @@ class AccountingService
         // 1. Resolve Cash Account for Cash Book (Buku Kas)
         $account = null;
         if ($accountId) {
-            $account = \App\Models\Account::find($accountId);
+            $account = Account::find($accountId);
         }
 
         if (! $account) {
             if ($isBank) {
-                $account = \App\Models\Account::where('name', 'like', '%bank%')
+                $account = Account::where('name', 'like', '%bank%')
                     ->orWhere('name', 'like', '%bca%')
                     ->orWhere('name', 'like', '%mandiri%')
                     ->orWhere('name', 'like', '%bri%')
@@ -439,9 +439,9 @@ class AccountingService
             }
 
             if (! $account) {
-                $account = \App\Models\Account::where('name', 'like', '%kas%')
+                $account = Account::where('name', 'like', '%kas%')
                     ->orWhere('name', 'like', '%tunai%')
-                    ->first() ?? \App\Models\Account::first() ?? \App\Models\Account::firstOrCreate(
+                    ->first() ?? Account::first() ?? Account::firstOrCreate(
                         ['name' => 'Kas Tunai'],
                         [
                             'type' => 'business',
@@ -608,7 +608,7 @@ class AccountingService
             }
 
             $productId = (int) ($item['product_id'] ?? 0);
-            $product = \App\Models\Product::with(['recipes.rawMaterial', 'unitModel'])->find($productId);
+            $product = Product::with(['recipes.rawMaterial', 'unitModel'])->find($productId);
 
             $costPerUnit = 0.0;
             if ($product) {
@@ -623,7 +623,7 @@ class AccountingService
 
             $productName = $product?->name ?? ($item['product_name'] ?? 'Produk');
             $unit = $product?->unit ?? ($item['unit'] ?? 'pcs');
-            $memos[] = "{$productName} ({$qty} {$unit} @ Rp ".number_format($costPerUnit, 0, ',', '.').")";
+            $memos[] = "{$productName} ({$qty} {$unit} @ Rp ".number_format($costPerUnit, 0, ',', '.').')';
         }
 
         $totalDamagedValue = round($totalDamagedValue, 2);
@@ -675,7 +675,7 @@ class AccountingService
     /**
      * Sync single raw material to Chart of Accounts
      */
-    public static function syncMaterialAccount(\App\Models\RawMaterial $material): ChartOfAccount
+    public static function syncMaterialAccount(RawMaterial $material): ChartOfAccount
     {
         $code = self::getAccountCodeForRawMaterial($material->id);
 
@@ -696,7 +696,7 @@ class AccountingService
      * Debit: 1-1001 (Kas Tunai) or 1-1002 (Kas Bank)
      * Credit: 3-1000 (Modal Usaha Pemilik)
      */
-    public static function recordOpeningBalance(\App\Models\Account $account, float $amount, ?string $date = null): ?CashTransaction
+    public static function recordOpeningBalance(Account $account, float $amount, ?string $date = null): ?CashTransaction
     {
         if ($amount <= 0) {
             return null;
@@ -733,7 +733,7 @@ class AccountingService
      * Debit: 1-2000 Aset Tetap Usaha
      * Credit: Cash/Bank account used to pay
      */
-    public static function recordFixedAssetPurchase(\App\Models\FixedAsset $asset, ?int $cashAccountId = null): ?JournalEntry
+    public static function recordFixedAssetPurchase(FixedAsset $asset, ?int $cashAccountId = null): ?JournalEntry
     {
         self::ensureChartOfAccountsExist();
 
@@ -741,26 +741,26 @@ class AccountingService
         ChartOfAccount::firstOrCreate(
             ['code' => '1-2000'],
             [
-                'name'           => 'Aset Tetap Usaha',
-                'type'           => 'asset',
+                'name' => 'Aset Tetap Usaha',
+                'type' => 'asset',
                 'normal_balance' => 'debit',
-                'is_system'      => true,
-                'description'    => 'Nilai buku aset tetap: mesin, peralatan, kendaraan, inventaris usaha',
+                'is_system' => true,
+                'description' => 'Nilai buku aset tetap: mesin, peralatan, kendaraan, inventaris usaha',
             ]
         );
 
         $items = [
             [
                 'account_code' => '1-2000',
-                'debit'        => $asset->purchase_price,
-                'credit'       => 0,
-                'memo'         => "Pembelian Aset: {$asset->name}",
+                'debit' => $asset->purchase_price,
+                'credit' => 0,
+                'memo' => "Pembelian Aset: {$asset->name}",
             ],
         ];
 
         // Credit side: cash account if provided, otherwise use equity (modal)
         if ($cashAccountId) {
-            $cashAccount = \App\Models\Account::find($cashAccountId);
+            $cashAccount = Account::find($cashAccountId);
             if ($cashAccount) {
                 // Decrement cash balance
                 $cashAccount->decrement('balance', $asset->purchase_price);
@@ -795,25 +795,25 @@ class AccountingService
 
                 $items[] = [
                     'account_code' => $cashCode,
-                    'debit'        => 0,
-                    'credit'       => $asset->purchase_price,
-                    'memo'         => "Pembayaran aset: {$asset->name} via {$cashAccount->name}",
+                    'debit' => 0,
+                    'credit' => $asset->purchase_price,
+                    'memo' => "Pembayaran aset: {$asset->name} via {$cashAccount->name}",
                 ];
             } else {
                 // Fallback: credit modal
                 $items[] = [
                     'account_code' => '3-1000',
-                    'debit'        => 0,
-                    'credit'       => $asset->purchase_price,
-                    'memo'         => "Pembelian Aset: {$asset->name} (kontribusi modal)",
+                    'debit' => 0,
+                    'credit' => $asset->purchase_price,
+                    'memo' => "Pembelian Aset: {$asset->name} (kontribusi modal)",
                 ];
             }
         } else {
             $items[] = [
                 'account_code' => '3-1000',
-                'debit'        => 0,
-                'credit'       => $asset->purchase_price,
-                'memo'         => "Pembelian Aset: {$asset->name} (kontribusi modal)",
+                'debit' => 0,
+                'credit' => $asset->purchase_price,
+                'memo' => "Pembelian Aset: {$asset->name} (kontribusi modal)",
             ];
         }
 
@@ -829,7 +829,7 @@ class AccountingService
     /**
      * Remove raw material account if unused
      */
-    public static function removeMaterialAccount(\App\Models\RawMaterial $material): void
+    public static function removeMaterialAccount(RawMaterial $material): void
     {
         $code = self::getAccountCodeForRawMaterial($material->id);
         $account = ChartOfAccount::where('code', $code)->first();
@@ -844,7 +844,7 @@ class AccountingService
      */
     public static function syncAllRawMaterialAccounts(): void
     {
-        $materials = \App\Models\RawMaterial::all();
+        $materials = RawMaterial::all();
         foreach ($materials as $material) {
             self::syncMaterialAccount($material);
         }
@@ -888,10 +888,11 @@ class AccountingService
             $unit = $it->rawMaterial?->display_unit ?? '';
             $qty = (float) $it->quantity;
             $formattedQty = number_format($qty, (floor($qty) == $qty ? 0 : 2), ',', '.');
+
             return "{$name} ({$formattedQty} {$unit})";
         })->filter()->implode(', ');
 
-        $desc = $notes ?: ("Pelunasan Hutang Pembelian {$purchase->purchase_number}: " . ($materialsStr ? "{$materialsStr} - " : "") . "Supplier: {$purchase->supplier_name}");
+        $desc = $notes ?: ("Pelunasan Hutang Pembelian {$purchase->purchase_number}: ".($materialsStr ? "{$materialsStr} - " : '')."Supplier: {$purchase->supplier_name}");
         CashTransaction::create([
             'transaction_date' => $txDate,
             'account_id' => $account->id,
@@ -1035,7 +1036,7 @@ class AccountingService
             $unit = $item->unitModel?->short_name ?? $item->unit ?? 'pcs';
         }
 
-        $formattedDiff = ($diffQty > 0 ? '+' : '') . number_format($diffQty, 2, ',', '.') . ' ' . $unit;
+        $formattedDiff = ($diffQty > 0 ? '+' : '').number_format($diffQty, 2, ',', '.').' '.$unit;
         $memo = "Stock Opname {$itemName} ({$formattedDiff}) - {$reason}";
 
         $items = [];
@@ -1093,4 +1094,3 @@ class AccountingService
         self::syncAllRawMaterialAccounts();
     }
 }
-

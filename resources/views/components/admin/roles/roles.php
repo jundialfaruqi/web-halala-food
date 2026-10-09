@@ -4,7 +4,6 @@ namespace App\Livewire\Admin;
 
 use App\Models\Permission;
 use App\Models\PermissionGroup;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -18,9 +17,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
     /**
      * Save (Create or Update) a Role
      *
-     * @param int|null $id
-     * @param string $name
-     * @param array<int> $permissionIds
+     * @param  array<int>  $permissionIds
      */
     public function saveRole(?int $id, string $name, array $permissionIds = []): array
     {
@@ -82,7 +79,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
                 'message' => $msg,
             ];
         } catch (\Throwable $th) {
-            $errMsg = 'Terjadi kesalahan: ' . $th->getMessage();
+            $errMsg = 'Terjadi kesalahan: '.$th->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 
             return [
@@ -134,7 +131,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
                 'message' => $msg,
             ];
         } catch (\Throwable $th) {
-            $errMsg = 'Gagal menghapus role: ' . $th->getMessage();
+            $errMsg = 'Gagal menghapus role: '.$th->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 
             return [
@@ -147,10 +144,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
     /**
      * Save (Create or Update) a Permission Group
      *
-     * @param int|null $id
-     * @param string $name
-     * @param string|null $description
-     * @param array<int> $permissionIds
+     * @param  array<int>  $permissionIds
      */
     public function saveGroup(?int $id, string $name, ?string $description = null, array $permissionIds = []): array
     {
@@ -206,7 +200,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
                     ->update(['permission_group_id' => null]);
 
                 // Assign selected permissions to this group
-                if (!empty($permissionIds)) {
+                if (! empty($permissionIds)) {
                     Permission::whereIn('id', $permissionIds)
                         ->update(['permission_group_id' => $group->id]);
                 }
@@ -222,7 +216,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
                 'message' => $msg,
             ];
         } catch (\Throwable $th) {
-            $errMsg = 'Terjadi kesalahan: ' . $th->getMessage();
+            $errMsg = 'Terjadi kesalahan: '.$th->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 
             return [
@@ -254,7 +248,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
                 'message' => $msg,
             ];
         } catch (\Throwable $th) {
-            $errMsg = 'Gagal menghapus grup permission: ' . $th->getMessage();
+            $errMsg = 'Gagal menghapus grup permission: '.$th->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 
             return [
@@ -326,7 +320,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
                 'message' => $msg,
             ];
         } catch (\Throwable $th) {
-            $errMsg = 'Terjadi kesalahan: ' . $th->getMessage();
+            $errMsg = 'Terjadi kesalahan: '.$th->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 
             return [
@@ -359,7 +353,7 @@ new #[Layout('components.layouts.admin'), Title('Role & Permission - Halala Food
                 'message' => $msg,
             ];
         } catch (\Throwable $th) {
-            $errMsg = 'Gagal menghapus permission: ' . $th->getMessage();
+            $errMsg = 'Gagal menghapus permission: '.$th->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 
             return [

@@ -6,7 +6,8 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.admin'), Title('Master Satuan - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Master Satuan - Halala Food')] class extends Component
+{
     public function mount()
     {
         if (Gate::denies('satuan-view')) {
@@ -55,7 +56,7 @@ new #[Layout('components.layouts.admin'), Title('Master Satuan - Halala Food')] 
 
         return [
             'success' => true,
-            'message' => 'Status satuan ' . $unit->name . ' berhasil diubah menjadi ' . ($unit->is_active ? 'Aktif' : 'Nonaktif') . '.',
+            'message' => 'Status satuan '.$unit->name.' berhasil diubah menjadi '.($unit->is_active ? 'Aktif' : 'Nonaktif').'.',
         ];
     }
 

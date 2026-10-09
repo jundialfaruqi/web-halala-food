@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Account;
+use App\Models\CashTransaction;
 use App\Models\FixedAsset;
 use App\Models\JournalEntry;
 use App\Services\AccountingService;
@@ -28,30 +29,55 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
 
     // Modal states
     public bool $showAssetModal = false;
+
     public ?int $editingId = null;
+
     public ?int $deletingId = null;
 
     // Form fields
     public string $name = '';
+
     public string $category = 'peralatan';
+
     public string $purchase_date = '';
+
     public float $purchase_price = 0;
+
     public int $useful_life_months = 36;
+
     public string $condition = 'baik';
+
     public string $location = '';
+
     public string $notes = '';
+
     public ?int $account_id = null; // cash/bank account used to pay (optional)
 
     // Depreciation modal state
     public bool $showDepreciationModal = false;
+
     public ?int $depreciatingAssetId = null;
+
     public string $depreciationDate = '';
+
     public float|int|string $depreciationAmount = 0;
+
     public string $depreciationNotes = '';
 
-    public function updatedSearch(): void { $this->resetPage(); }
-    public function updatedCategoryFilter(): void { $this->resetPage(); }
-    public function updatedConditionFilter(): void { $this->resetPage(); }
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCategoryFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedConditionFilter(): void
+    {
+        $this->resetPage();
+    }
 
     public function resetFilters(): void
     {
@@ -117,7 +143,7 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
             'depreciationDate.required' => 'Tanggal penyusutan wajib diisi.',
             'depreciationAmount.required' => 'Nominal penyusutan wajib diisi.',
             'depreciationAmount.min' => 'Nominal penyusutan minimal Rp 1.',
-            'depreciationAmount.max' => 'Nominal penyusutan tidak boleh melebihi sisa nilai buku (Rp ' . number_format($maxAmount, 0, ',', '.') . ').',
+            'depreciationAmount.max' => 'Nominal penyusutan tidak boleh melebihi sisa nilai buku (Rp '.number_format($maxAmount, 0, ',', '.').').',
         ]);
 
         DB::transaction(function () use ($asset) {
@@ -131,7 +157,7 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
 
         $this->showDepreciationModal = false;
         $this->depreciatingAssetId = null;
-        session()->flash('success', "Penyusutan aset '{$asset->name}' sebesar Rp " . number_format((float) $this->depreciationAmount, 0, ',', '.') . " berhasil dicatat dan diposting ke Jurnal Akuntansi.");
+        session()->flash('success', "Penyusutan aset '{$asset->name}' sebesar Rp ".number_format((float) $this->depreciationAmount, 0, ',', '.').' berhasil dicatat dan diposting ke Jurnal Akuntansi.');
     }
 
     public function openEditModal(int $id): void
@@ -155,18 +181,18 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
     public function saveAsset(): void
     {
         $this->validate([
-            'name'           => 'required|string|max:255',
-            'category'       => 'required|in:mesin,peralatan,kendaraan,inventaris,bangunan,lainnya',
-            'purchase_date'  => 'required|date',
+            'name' => 'required|string|max:255',
+            'category' => 'required|in:mesin,peralatan,kendaraan,inventaris,bangunan,lainnya',
+            'purchase_date' => 'required|date',
             'purchase_price' => 'required|numeric|min:1',
-            'condition'      => 'required|in:baik,rusak_ringan,rusak_berat,tidak_aktif',
-            'location'       => 'nullable|string|max:100',
-            'notes'          => 'nullable|string|max:500',
+            'condition' => 'required|in:baik,rusak_ringan,rusak_berat,tidak_aktif',
+            'location' => 'nullable|string|max:100',
+            'notes' => 'nullable|string|max:500',
         ], [
-            'name.required'           => 'Nama aset wajib diisi.',
-            'purchase_price.min'      => 'Harga perolehan minimal Rp 1.',
+            'name.required' => 'Nama aset wajib diisi.',
+            'purchase_price.min' => 'Harga perolehan minimal Rp 1.',
             'purchase_price.required' => 'Harga perolehan wajib diisi.',
-            'purchase_date.required'  => 'Tanggal perolehan wajib diisi.',
+            'purchase_date.required' => 'Tanggal perolehan wajib diisi.',
         ]);
 
         DB::transaction(function () {
@@ -174,26 +200,26 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
                 // Edit mode — update non-financial fields only
                 $asset = FixedAsset::findOrFail($this->editingId);
                 $asset->update([
-                    'name'      => $this->name,
-                    'category'  => $this->category,
+                    'name' => $this->name,
+                    'category' => $this->category,
                     'condition' => $this->condition,
-                    'location'  => $this->location ?: null,
-                    'notes'     => $this->notes ?: null,
+                    'location' => $this->location ?: null,
+                    'notes' => $this->notes ?: null,
                 ]);
             } else {
                 // Create mode — auto-generate asset code, save and auto-journal
                 $asset = FixedAsset::create([
-                    'name'           => $this->name,
-                    'category'       => $this->category,
-                    'asset_code'     => FixedAsset::generateAssetCode(),
-                    'purchase_date'  => $this->purchase_date,
+                    'name' => $this->name,
+                    'category' => $this->category,
+                    'asset_code' => FixedAsset::generateAssetCode(),
+                    'purchase_date' => $this->purchase_date,
                     'purchase_price' => $this->purchase_price,
                     'useful_life_months' => max(1, $this->useful_life_months ?: 36),
                     'accumulated_depreciation' => 0.00,
-                    'book_value'     => $this->purchase_price,
-                    'condition'      => $this->condition,
-                    'location'       => $this->location ?: null,
-                    'notes'          => $this->notes ?: null,
+                    'book_value' => $this->purchase_price,
+                    'condition' => $this->condition,
+                    'location' => $this->location ?: null,
+                    'notes' => $this->notes ?: null,
                 ]);
 
                 $journal = AccountingService::recordFixedAssetPurchase($asset, $this->account_id ?: null);
@@ -228,7 +254,9 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
             abort(403);
         }
 
-        if (! $this->deletingId) return;
+        if (! $this->deletingId) {
+            return;
+        }
 
         $asset = FixedAsset::findOrFail($this->deletingId);
 
@@ -244,7 +272,7 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
                 ->delete();
 
             // Revert and delete associated cash transaction if paid via cash/bank
-            $cashTx = \App\Models\CashTransaction::where('reference_type', 'fixed_asset_purchase')
+            $cashTx = CashTransaction::where('reference_type', 'fixed_asset_purchase')
                 ->where('reference_id', $asset->id)
                 ->first();
             if ($cashTx) {
@@ -266,20 +294,20 @@ new #[Layout('components.layouts.admin')] #[Title('Aset Tetap Usaha - Halala Foo
         $conditions = FixedAsset::conditions();
 
         $assets = FixedAsset::query()
-            ->when($this->search, fn ($q) => $q->where('name', 'like', '%' . $this->search . '%')
-                ->orWhere('asset_code', 'like', '%' . $this->search . '%')
-                ->orWhere('location', 'like', '%' . $this->search . '%'))
+            ->when($this->search, fn ($q) => $q->where('name', 'like', '%'.$this->search.'%')
+                ->orWhere('asset_code', 'like', '%'.$this->search.'%')
+                ->orWhere('location', 'like', '%'.$this->search.'%'))
             ->when($this->categoryFilter, fn ($q) => $q->where('category', $this->categoryFilter))
             ->when($this->conditionFilter, fn ($q) => $q->where('condition', $this->conditionFilter))
             ->orderByDesc('purchase_date')
             ->orderByDesc('id')
             ->paginate(12);
 
-        $totalValue  = FixedAsset::whereIn('condition', ['baik', 'rusak_ringan'])->sum('book_value');
+        $totalValue = FixedAsset::whereIn('condition', ['baik', 'rusak_ringan'])->sum('book_value');
         $totalDepreciation = FixedAsset::sum('accumulated_depreciation');
         $totalAssets = FixedAsset::count();
         $activeCount = FixedAsset::whereIn('condition', ['baik', 'rusak_ringan'])->count();
-        $accounts    = Account::orderBy('name')->get();
+        $accounts = Account::orderBy('name')->get();
         $depreciatingAsset = $this->depreciatingAssetId ? FixedAsset::find($this->depreciatingAssetId) : null;
 
         $hasActiveFilters = $this->search !== '' || $this->categoryFilter !== '' || $this->conditionFilter !== '';

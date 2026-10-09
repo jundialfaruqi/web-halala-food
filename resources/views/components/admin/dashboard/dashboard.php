@@ -95,8 +95,8 @@ new #[Layout('components.layouts.admin'), Title('Dashboard - Halala Food')] clas
                 ->with('roles')
                 ->when($this->search, function ($query) {
                     $query->where(function ($q) {
-                        $q->where('name', 'like', '%' . $this->search . '%')
-                            ->orWhere('email', 'like', '%' . $this->search . '%');
+                        $q->where('name', 'like', '%'.$this->search.'%')
+                            ->orWhere('email', 'like', '%'.$this->search.'%');
                     });
                 })
                 ->when($this->selectedRole, function ($query) {

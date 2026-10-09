@@ -9,7 +9,6 @@ use Database\Seeders\DatabaseSeeder;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\PermissionRegistrar;
 
-use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\seed;
@@ -315,4 +314,3 @@ test('courier can only see and access their own deliveries in api, cannot see or
         ->getJson("/api/deliveries/{$delivery2->id}")
         ->assertOk();
 });
-

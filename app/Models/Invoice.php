@@ -15,6 +15,7 @@ class Invoice extends Model
         'invoice_number',
         'delivery_id',
         'store_id',
+        'courier_id',
         'created_by',
         'invoice_date',
         'due_date',
@@ -70,6 +71,11 @@ class Invoice extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'courier_id');
     }
 
     public function items(): HasMany
@@ -128,8 +134,8 @@ class Invoice extends Model
 
     public static function generateInvoiceNumber(): string
     {
-        $prefix = 'INV-' . now()->format('Ymd') . '-';
-        $latest = static::where('invoice_number', 'like', $prefix . '%')
+        $prefix = 'INV-'.now()->format('Ymd').'-';
+        $latest = static::where('invoice_number', 'like', $prefix.'%')
             ->orderByDesc('id')
             ->value('invoice_number');
 
@@ -140,6 +146,6 @@ class Invoice extends Model
             $nextSequence = '0001';
         }
 
-        return $prefix . $nextSequence;
+        return $prefix.$nextSequence;
     }
 }

@@ -3,6 +3,7 @@
 use App\Models\BusinessSetting;
 use App\Models\Delivery;
 use App\Models\Invoice;
+use App\Models\Store;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
@@ -98,7 +99,7 @@ test('invoice and delivery detail pages render dynamic business settings and ban
         ],
     ]);
 
-    $store = \App\Models\Store::create([
+    $store = Store::create([
         'name' => 'Toko Barokah',
         'owner_name' => 'Pak Budi',
         'phone' => '081234567890',

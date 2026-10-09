@@ -71,17 +71,17 @@ class RawMaterialPurchase extends Model
      */
     public static function generatePurchaseNumber(): string
     {
-        $prefix = 'BELI-' . date('Ymd') . '-';
-        $latest = static::where('purchase_number', 'like', $prefix . '%')
+        $prefix = 'BELI-'.date('Ymd').'-';
+        $latest = static::where('purchase_number', 'like', $prefix.'%')
             ->orderBy('id', 'desc')
             ->first();
 
         if (! $latest) {
-            return $prefix . '0001';
+            return $prefix.'0001';
         }
 
         $sequence = (int) substr($latest->purchase_number, -4);
 
-        return $prefix . str_pad((string) ($sequence + 1), 4, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) ($sequence + 1), 4, '0', STR_PAD_LEFT);
     }
 }

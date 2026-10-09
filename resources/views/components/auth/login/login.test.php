@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
+
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 
@@ -61,5 +62,3 @@ it('redirects authenticated user accessing login route to dashboard', function (
     get(route('login'))
         ->assertRedirect(route('admin.dashboard'));
 });
-
-

@@ -11,7 +11,8 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
 
-new #[Layout('components.layouts.admin'), Title('Manajemen Pengguna - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Manajemen Pengguna - Halala Food')] class extends Component
+{
     public function mount()
     {
         if (Gate::denies('user-manage')) {
@@ -130,7 +131,7 @@ new #[Layout('components.layouts.admin'), Title('Manajemen Pengguna - Halala Foo
                 'success' => true,
                 'message' => $msg,
             ];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $errMsg = 'Gagal menyimpan data pengguna: '.$e->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 
@@ -193,7 +194,7 @@ new #[Layout('components.layouts.admin'), Title('Manajemen Pengguna - Halala Foo
                 'success' => true,
                 'message' => $msg,
             ];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $errMsg = 'Gagal menghapus pengguna: '.$e->getMessage();
             $this->dispatch('show-toast', message: $errMsg, type: 'error');
 

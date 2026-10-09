@@ -3,14 +3,19 @@
 use App\Models\Product;
 use App\Models\ProductRecipe;
 use App\Models\RawMaterial;
+use App\Models\StockMutation;
 use App\Models\Unit;
+use App\Services\AccountingService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM) - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM) - Halala Food')] class extends Component
+{
     public function mount()
     {
         if (Gate::denies('bahan-baku-view')) {
@@ -33,7 +38,7 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
                     'stock' => (float) $mat->stock,
                     'min_stock' => (float) $mat->min_stock,
                     'cost_per_unit' => (float) $mat->cost_per_unit,
-                    'cost_formatted' => 'Rp ' . number_format($mat->cost_per_unit, 2, ',', '.'),
+                    'cost_formatted' => 'Rp '.number_format($mat->cost_per_unit, 2, ',', '.'),
                     'stock_status' => $mat->stock_status,
                     'recipes_count' => $mat->recipes()->count(),
                 ];
@@ -57,7 +62,7 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
                         'cost_per_unit' => (float) ($r->rawMaterial?->cost_per_unit ?? 0),
                         'quantity_needed' => (float) $r->quantity_needed,
                         'subtotal_cost' => $r->subtotal_cost,
-                        'subtotal_formatted' => 'Rp ' . number_format($r->subtotal_cost, 2, ',', '.'),
+                        'subtotal_formatted' => 'Rp '.number_format($r->subtotal_cost, 2, ',', '.'),
                     ];
                 });
 
@@ -66,11 +71,11 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
                     'name' => $prod->name,
                     'unit_name' => $prod->unitModel?->name ?? $prod->unit,
                     'consignment_price' => $consignmentPrice,
-                    'consignment_formatted' => 'Rp ' . number_format($consignmentPrice, 0, ',', '.'),
+                    'consignment_formatted' => 'Rp '.number_format($consignmentPrice, 0, ',', '.'),
                     'retail_price' => (float) $prod->retail_price,
-                    'retail_formatted' => 'Rp ' . number_format($prod->retail_price, 0, ',', '.'),
+                    'retail_formatted' => 'Rp '.number_format($prod->retail_price, 0, ',', '.'),
                     'material_cost' => $materialCost,
-                    'material_cost_formatted' => 'Rp ' . number_format($materialCost, 2, ',', '.'),
+                    'material_cost_formatted' => 'Rp '.number_format($materialCost, 2, ',', '.'),
                     'gross_margin' => $grossMargin,
                     'recipes' => $recipeItems,
                     'recipes_count' => $recipeItems->count(),
@@ -96,7 +101,7 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
             return ['success' => false, 'message' => 'Anda tidak memiliki izin untuk menyimpan bahan baku.'];
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make([
+        $validator = Validator::make([
             'name' => $name,
             'unit_id' => $unitId,
             'stock' => $stock,
@@ -196,22 +201,22 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
             return ['success' => false, 'message' => 'Stok fisik yang dimasukkan sama dengan stok sistem (tidak ada selisih).'];
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($material, $physicalStock, $currentStock, $diff, $reason, $date) {
+        DB::transaction(function () use ($material, $physicalStock, $currentStock, $diff, $reason, $date) {
             $cost = (float) $material->cost_per_unit;
 
             // 1. Catat ke StockMutation
-            \App\Models\StockMutation::create([
+            StockMutation::create([
                 'raw_material_id' => $material->id,
                 'reference_type' => 'stock_opname',
                 'reference_id' => $material->id,
-                'reference_number' => 'OPN-BAHAN-' . date('Ymd-His'),
+                'reference_number' => 'OPN-BAHAN-'.date('Ymd-His'),
                 'type' => $diff > 0 ? 'in' : 'out',
                 'quantity' => abs($diff),
                 'stock_before' => $currentStock,
                 'stock_after' => $physicalStock,
                 'cost_per_unit' => $cost,
-                'notes' => 'Stock Opname: ' . ($reason ?: 'Penyesuaian fisik dapur/gudang'),
-                'user_id' => \Illuminate\Support\Facades\Auth::id(),
+                'notes' => 'Stock Opname: '.($reason ?: 'Penyesuaian fisik dapur/gudang'),
+                'user_id' => Auth::id(),
             ]);
 
             // 2. Update stock bahan
@@ -219,7 +224,7 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
             $material->save();
 
             // 3. Catat dan posting Jurnal Akuntansi otomatis
-            \App\Services\AccountingService::recordStockAdjustment(
+            AccountingService::recordStockAdjustment(
                 $material,
                 $diff,
                 $cost,
@@ -228,7 +233,8 @@ new #[Layout('components.layouts.admin'), Title('Master Bahan Baku & Resep (BOM)
             );
         });
 
-        $diffStr = ($diff > 0 ? '+' : '') . number_format($diff, 2, ',', '.') . ' ' . $material->display_unit;
+        $diffStr = ($diff > 0 ? '+' : '').number_format($diff, 2, ',', '.').' '.$material->display_unit;
+
         return [
             'success' => true,
             'message' => "Stok bahan '{$material->name}' berhasil disesuaikan ({$diffStr}) dan diposting ke Jurnal Akuntansi.",

@@ -1,10 +1,12 @@
 <?php
 
+use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchMaterial;
 use App\Models\RawMaterial;
 use App\Models\StockMutation;
+use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +20,7 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
     /**
      * Execute a new cooking batch with atomic material deduction & finished goods increment.
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array{success: bool, message: string}
      */
     public function executeBatch(array $data): array
@@ -80,7 +82,7 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
 
             if ((float) $rawMat->stock < $neededQty) {
                 $deficit = $neededQty - (float) $rawMat->stock;
-                $shortages[] = "{$rawMat->name} (Kurang " . number_format($deficit, 2, ',', '.') . " {$unitName})";
+                $shortages[] = "{$rawMat->name} (Kurang ".number_format($deficit, 2, ',', '.')." {$unitName})";
             }
 
             $materialRequirements[] = [
@@ -95,7 +97,7 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
         if (! empty($shortages)) {
             return [
                 'success' => false,
-                'message' => 'Stok bahan baku tidak mencukupi untuk memproduksi ' . number_format($plannedQty, 0, ',', '.') . " unit: \n• " . implode("\n• ", $shortages),
+                'message' => 'Stok bahan baku tidak mencukupi untuk memproduksi '.number_format($plannedQty, 0, ',', '.')." unit: \n• ".implode("\n• ", $shortages),
             ];
         }
 
@@ -162,7 +164,7 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
             $product->increment('stock_ready', $actualGood);
 
             // Catat jurnal pemakaian bahan baku & penambahan produk jadi
-            \App\Services\AccountingService::recordProduction($batch);
+            AccountingService::recordProduction($batch);
 
             return [
                 'success' => true,
@@ -174,7 +176,6 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
     /**
      * Cancel an existing batch, safely restoring raw materials and adjusting finished goods stock.
      *
-     * @param int $batchId
      * @return array{success: bool, message: string}
      */
     public function cancelBatch(int $batchId): array
@@ -234,7 +235,7 @@ new #[Layout('components.layouts.admin'), Title('Produksi & Manufaktur - Halala 
             }
 
             // Batalkan catatan jurnal akuntansi batch produksi
-            \App\Models\JournalEntry::where('reference_type', 'production')
+            JournalEntry::where('reference_type', 'production')
                 ->where('reference_id', $batch->id)
                 ->delete();
 

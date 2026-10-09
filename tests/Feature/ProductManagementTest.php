@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Product;
+use App\Models\ProductRecipe;
+use App\Models\RawMaterial;
 use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -32,12 +34,12 @@ beforeEach(function () {
         ]
     );
 
-    $mat = \App\Models\RawMaterial::firstOrCreate(
+    $mat = RawMaterial::firstOrCreate(
         ['name' => 'Wijen Putih Sangrai'],
         ['unit_id' => $rawUnit->id, 'unit' => 'g', 'stock' => 5000, 'cost_per_unit' => 0.05]
     );
 
-    \App\Models\ProductRecipe::firstOrCreate([
+    ProductRecipe::firstOrCreate([
         'product_id' => $product->id,
         'raw_material_id' => $mat->id,
     ], [

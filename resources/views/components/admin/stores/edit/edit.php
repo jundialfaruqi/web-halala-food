@@ -2,23 +2,37 @@
 
 use App\Models\Store;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala Food')] class extends Component
+{
     public ?Store $store = null;
+
     public ?int $storeId = null;
+
     public string $name = '';
+
     public ?string $owner_name = '';
+
     public ?string $phone = '';
+
     public ?string $address = '';
+
     public ?float $latitude = null;
+
     public ?float $longitude = null;
+
     public ?string $route = '';
+
     public ?string $notes = '';
+
     public bool $is_active = true;
+
     public ?string $photo_data = null;
+
     public ?string $photo_url = null;
 
     public function mount(Store $store)
@@ -108,8 +122,8 @@ new #[Layout('components.layouts.admin'), Title('Ubah Data Toko Mitra - Halala F
         ]);
 
         if ($this->photo_data === 'DELETE') {
-            if ($this->store->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->store->photo)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($this->store->photo);
+            if ($this->store->photo && Storage::disk('public')->exists($this->store->photo)) {
+                Storage::disk('public')->delete($this->store->photo);
             }
             $this->store->photo = null;
             $this->store->save();

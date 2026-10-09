@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryItem;
+use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +22,7 @@ class ProductController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama dengan web (produk-view)
@@ -77,9 +80,9 @@ class ProductController extends Controller
                 'unit_name' => $prod->unitModel?->name ?? $prod->unit,
                 'unit_short' => $prod->unitModel?->short_name ?? $prod->unit,
                 'consignment_price' => (float) $prod->consignment_price,
-                'consignment_price_formatted' => 'Rp ' . number_format($prod->consignment_price, 0, ',', '.'),
+                'consignment_price_formatted' => 'Rp '.number_format($prod->consignment_price, 0, ',', '.'),
                 'retail_price' => (float) $prod->retail_price,
-                'retail_price_formatted' => 'Rp ' . number_format($prod->retail_price, 0, ',', '.'),
+                'retail_price_formatted' => 'Rp '.number_format($prod->retail_price, 0, ',', '.'),
                 'stock_ready' => (int) $prod->stock_ready,
                 'description' => $prod->description ?? '-',
                 'is_active' => (bool) $prod->is_active,
@@ -106,7 +109,7 @@ class ProductController extends Controller
      */
     public function units(): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('produk-view', 'web') && ! $user->can('produk-view'))) {
@@ -132,7 +135,7 @@ class ProductController extends Controller
      */
     public function show(Product $product): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('produk-view', 'web') && ! $user->can('produk-view'))) {
@@ -154,9 +157,9 @@ class ProductController extends Controller
                 'unit_name' => $product->unitModel?->name ?? $product->unit,
                 'unit_short' => $product->unitModel?->short_name ?? $product->unit,
                 'consignment_price' => (float) $product->consignment_price,
-                'consignment_price_formatted' => 'Rp ' . number_format($product->consignment_price, 0, ',', '.'),
+                'consignment_price_formatted' => 'Rp '.number_format($product->consignment_price, 0, ',', '.'),
                 'retail_price' => (float) $product->retail_price,
-                'retail_price_formatted' => 'Rp ' . number_format($product->retail_price, 0, ',', '.'),
+                'retail_price_formatted' => 'Rp '.number_format($product->retail_price, 0, ',', '.'),
                 'stock_ready' => (int) $product->stock_ready,
                 'description' => $product->description ?? '-',
                 'is_active' => (bool) $product->is_active,
@@ -171,7 +174,7 @@ class ProductController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama persis dengan web (produk-create)
@@ -265,7 +268,7 @@ class ProductController extends Controller
                 $randomCode = Str::lower(Str::random(8));
                 $ext = $file->getClientOriginalExtension() ?: 'jpg';
                 $filename = "{$date}_{$productSlug}_{$randomCode}.{$ext}";
-                $path = 'foto-produk/' . $filename;
+                $path = 'foto-produk/'.$filename;
 
                 Storage::disk('public')->putFileAs('foto-produk', $file, $filename);
 
@@ -287,9 +290,9 @@ class ProductController extends Controller
                 'unit_name' => $product->unitModel?->name ?? $product->unit,
                 'unit_short' => $product->unitModel?->short_name ?? $product->unit,
                 'consignment_price' => (float) $product->consignment_price,
-                'consignment_price_formatted' => 'Rp ' . number_format($product->consignment_price, 0, ',', '.'),
+                'consignment_price_formatted' => 'Rp '.number_format($product->consignment_price, 0, ',', '.'),
                 'retail_price' => (float) $product->retail_price,
-                'retail_price_formatted' => 'Rp ' . number_format($product->retail_price, 0, ',', '.'),
+                'retail_price_formatted' => 'Rp '.number_format($product->retail_price, 0, ',', '.'),
                 'stock_ready' => (int) $product->stock_ready,
                 'description' => $product->description ?? '-',
                 'is_active' => (bool) $product->is_active,
@@ -304,7 +307,7 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama persis dengan web (produk-edit)
@@ -316,7 +319,7 @@ class ProductController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:150', 'unique:products,name,' . $product->id],
+            'name' => ['required', 'string', 'max:150', 'unique:products,name,'.$product->id],
             'unit_id' => ['required', 'exists:units,id'],
             'consignment_price' => ['required', 'numeric', 'min:0'],
             'retail_price' => ['required', 'numeric', 'min:0'],
@@ -411,7 +414,7 @@ class ProductController extends Controller
                 $randomCode = Str::lower(Str::random(8));
                 $ext = $file->getClientOriginalExtension() ?: 'jpg';
                 $filename = "{$date}_{$productSlug}_{$randomCode}.{$ext}";
-                $path = 'foto-produk/' . $filename;
+                $path = 'foto-produk/'.$filename;
 
                 Storage::disk('public')->putFileAs('foto-produk', $file, $filename);
 
@@ -433,9 +436,9 @@ class ProductController extends Controller
                 'unit_name' => $product->unitModel?->name ?? $product->unit,
                 'unit_short' => $product->unitModel?->short_name ?? $product->unit,
                 'consignment_price' => (float) $product->consignment_price,
-                'consignment_price_formatted' => 'Rp ' . number_format($product->consignment_price, 0, ',', '.'),
+                'consignment_price_formatted' => 'Rp '.number_format($product->consignment_price, 0, ',', '.'),
                 'retail_price' => (float) $product->retail_price,
-                'retail_price_formatted' => 'Rp ' . number_format($product->retail_price, 0, ',', '.'),
+                'retail_price_formatted' => 'Rp '.number_format($product->retail_price, 0, ',', '.'),
                 'stock_ready' => (int) $product->stock_ready,
                 'description' => $product->description ?? '-',
                 'is_active' => (bool) $product->is_active,
@@ -450,7 +453,7 @@ class ProductController extends Controller
      */
     public function destroy(Product $product): JsonResponse
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
 
         // Pastikan permission sama dengan web (produk-delete)
@@ -464,8 +467,8 @@ class ProductController extends Controller
         // Safety check: verifikasi jika produk digunakan pada formula resep, riwayat produksi, surat jalan, atau faktur
         $hasRecipes = $product->recipes()->exists();
         $hasBatches = $product->productionBatches()->exists();
-        $hasDeliveries = \App\Models\DeliveryItem::where('product_id', $product->id)->exists();
-        $hasInvoices = \App\Models\InvoiceItem::where('product_id', $product->id)->exists();
+        $hasDeliveries = DeliveryItem::where('product_id', $product->id)->exists();
+        $hasInvoices = InvoiceItem::where('product_id', $product->id)->exists();
 
         if ($hasRecipes || $hasBatches || $hasDeliveries || $hasInvoices) {
             return response()->json([

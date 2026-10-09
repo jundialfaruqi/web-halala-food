@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Product;
 use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;

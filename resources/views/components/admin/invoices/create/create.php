@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\InvoiceCreated;
 use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -9,6 +10,7 @@ use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -16,11 +18,19 @@ use Livewire\Component;
 new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Halala Food')] class extends Component
 {
     public string $invoice_number = '';
+
     public ?int $delivery_id = null;
+
     public ?int $store_id = null;
+
+    public ?int $courier_id = null;
+
     public string $invoice_date = '';
+
     public string $due_date = '';
+
     public float $discount = 0.00;
+
     public ?string $notes = '';
 
     /**
@@ -48,12 +58,14 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
                         'message' => "Surat jalan {$delivery->delivery_number} sudah memiliki faktur ({$activeInvoice->invoice_number}).",
                         'type' => 'info',
                     ]);
+
                     return redirect()->route('admin.invoices.show', $activeInvoice);
                 }
 
                 $this->delivery_id = $delivery->id;
                 $this->store_id = $delivery->store_id;
                 $this->populateFromDelivery($delivery);
+
                 return;
             }
         }
@@ -82,6 +94,7 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
 
     protected function populateFromDelivery(Delivery $delivery): void
     {
+        $this->courier_id = $delivery->courier_id;
         $this->items = [];
         foreach ($delivery->items as $item) {
             $this->items[] = [
@@ -211,6 +224,7 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
                 'invoice_number' => $this->invoice_number,
                 'delivery_id' => $this->delivery_id,
                 'store_id' => $this->store_id,
+                'courier_id' => $this->courier_id,
                 'created_by' => Auth::id(),
                 'invoice_date' => $this->invoice_date,
                 'due_date' => $this->due_date,
@@ -253,6 +267,14 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
         });
 
         AccountingService::syncInvoiceAccounting($invoice);
+
+        $invoice->load(['store', 'courier', 'delivery']);
+
+        try {
+            event(new InvoiceCreated($invoice));
+        } catch (Throwable $e) {
+            Log::warning('Broadcast InvoiceCreated error: '.$e->getMessage());
+        }
 
         session()->flash('toast', [
             'message' => "Faktur tagihan {$invoice->invoice_number} berhasil dibuat.",

@@ -1,8 +1,11 @@
 <?php
 
+use App\Models\Account;
+use App\Models\CashTransaction;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialPurchase;
 use App\Models\StockMutation;
+use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
@@ -17,14 +20,14 @@ beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-    \App\Models\Account::firstOrCreate(
+    Account::firstOrCreate(
         ['name' => 'Kas Tunai Usaha'],
         ['type' => 'business', 'balance' => 1000000.00]
     );
 
-    $unit = \App\Models\Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
+    $unit = Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
 
-    \App\Models\RawMaterial::firstOrCreate(
+    RawMaterial::firstOrCreate(
         ['name' => 'Wijen Putih Sangrai'],
         [
             'unit_id' => $unit->id,
@@ -108,7 +111,7 @@ test('manager can record new raw material purchase and stock increments automati
         ->and((float) $mutation->quantity)->toBe(2500.0);
 
     // Verify CashTransaction created in Buku Kas
-    $cashTx = \App\Models\CashTransaction::where('reference_type', 'purchase')
+    $cashTx = CashTransaction::where('reference_type', 'purchase')
         ->where('reference_id', $purchase->id)
         ->first();
 
@@ -262,5 +265,3 @@ test('clearing price_per_package or subtotal resets dependent fields and unlocks
         ->and($component->get('items.0.price_per_package'))->toBe('')
         ->and($component->get('items.0.cost_per_unit'))->toBe('');
 });
-
-

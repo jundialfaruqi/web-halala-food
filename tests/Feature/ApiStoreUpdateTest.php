@@ -3,6 +3,7 @@
 use App\Models\Store;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Support\Facades\Storage;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -102,7 +103,7 @@ test('validation fails when name is empty', function () {
 });
 
 test('manager user can upload store photo via api matching web naming and storage path', function () {
-    \Illuminate\Support\Facades\Storage::fake('public');
+    Storage::fake('public');
 
     $store = Store::where('name', 'Toko Sumber Rejeki Testing')->firstOrFail();
     $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
@@ -125,5 +126,5 @@ test('manager user can upload store photo via api matching web naming and storag
         ->and($store->photo)->toStartWith('foto-toko/')
         ->and($store->photo)->toEndWith('.png');
 
-    \Illuminate\Support\Facades\Storage::disk('public')->assertExists($store->photo);
+    Storage::disk('public')->assertExists($store->photo);
 });

@@ -1,7 +1,14 @@
 <?php
 
+use App\Models\Delivery;
+use App\Models\DeliveryItem;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\Product;
+use App\Models\Store;
 use App\Models\Unit;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -14,7 +21,7 @@ Route::post('/logout', function () {
 
     session()->flash('toast', [
         'message' => 'Anda telah berhasil keluar dari akun.',
-        'type'    => 'success',
+        'type' => 'success',
     ]);
 
     return redirect()->route('login');
@@ -46,17 +53,18 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/products', 'admin.products.index')->name('admin.products')->middleware('permission:produk-view');
     Route::livewire('/products/create', 'admin.products.create')->name('admin.products.create')->middleware('permission:produk-create');
     Route::livewire('/products/{product}/edit', 'admin.products.edit')->name('admin.products.edit')->middleware('permission:produk-edit');
-    Route::delete('/products/{product}', function (\App\Models\Product $product) {
+    Route::delete('/products/{product}', function (Product $product) {
         $hasRecipes = $product->recipes()->exists();
         $hasBatches = $product->productionBatches()->exists();
-        $hasDeliveries = \App\Models\DeliveryItem::where('product_id', $product->id)->exists();
-        $hasInvoices = \App\Models\InvoiceItem::where('product_id', $product->id)->exists();
+        $hasDeliveries = DeliveryItem::where('product_id', $product->id)->exists();
+        $hasInvoices = InvoiceItem::where('product_id', $product->id)->exists();
 
         if ($hasRecipes || $hasBatches || $hasDeliveries || $hasInvoices) {
             session()->flash('toast', [
                 'message' => "Produk '{$product->name}' tidak dapat dihapus karena sudah memiliki riwayat produksi, resep, atau transaksi. Silakan nonaktifkan status produk sebagai gantinya.",
                 'type' => 'error',
             ]);
+
             return redirect()->route('admin.products');
         }
 
@@ -85,7 +93,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/stores', 'admin.stores.index')->name('admin.stores')->middleware('permission:toko-view');
     Route::livewire('/stores/create', 'admin.stores.create')->name('admin.stores.create')->middleware('permission:toko-create');
     Route::livewire('/stores/{store}/edit', 'admin.stores.edit')->name('admin.stores.edit')->middleware('permission:toko-edit');
-    Route::delete('/stores/{store}', function (\App\Models\Store $store) {
+    Route::delete('/stores/{store}', function (Store $store) {
         $storeName = $store->name;
         $store->delete();
         session()->flash('toast', [
@@ -101,7 +109,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/deliveries/create', 'admin.deliveries.create')->name('admin.deliveries.create')->middleware('permission:pengantaran-create');
     Route::livewire('/deliveries/{delivery}', 'admin.deliveries.show')->name('admin.deliveries.show')->middleware('permission:pengantaran-view');
     Route::livewire('/deliveries/{delivery}/edit', 'admin.deliveries.edit')->name('admin.deliveries.edit')->middleware('permission:pengantaran-edit');
-    Route::delete('/deliveries/{delivery}', function (\App\Models\Delivery $delivery) {
+    Route::delete('/deliveries/{delivery}', function (Delivery $delivery) {
         abort_if(! $delivery->isAccessibleBy(Auth::user()), 403, 'Anda tidak memiliki hak akses untuk menghapus surat jalan ini.');
 
         if ($delivery->status === 'selesai') {
@@ -109,14 +117,15 @@ Route::prefix('admin')->middleware('auth')->group(function () {
                 'message' => 'Surat jalan yang telah selesai serah terima tidak boleh dihapus.',
                 'type' => 'error',
             ]);
+
             return redirect()->route('admin.deliveries');
         }
 
         $deliveryNumber = $delivery->delivery_number;
-        \Illuminate\Support\Facades\DB::transaction(function () use ($delivery) {
+        DB::transaction(function () use ($delivery) {
             if ($delivery->status !== 'dibatalkan') {
                 foreach ($delivery->items as $item) {
-                    \App\Models\Product::where('id', $item->product_id)->increment('stock_ready', $item->quantity);
+                    Product::where('id', $item->product_id)->increment('stock_ready', $item->quantity);
                 }
             }
             $delivery->delete();
@@ -136,7 +145,6 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     // Aset Tetap Usaha
     Route::livewire('/fixed-assets', 'admin.fixed-assets.index')->name('admin.fixed-assets')->middleware('permission:aset-view');
 
-
     // Faktur Penagihan & Piutang Toko (Keuangan)
     Route::livewire('/invoices', 'admin.invoices.index')->name('admin.invoices')->middleware('permission:faktur-view');
     Route::livewire('/invoices/create', 'admin.invoices.create')->name('admin.invoices.create')->middleware('permission:faktur-create');
@@ -149,12 +157,13 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::livewire('/accounting/financial-statements', 'admin.accounting.financial-statements.index')->name('admin.accounting.financial-statements')->middleware('permission:laporan-keuangan-view');
 
     Route::livewire('/reports', 'admin.reports.index')->name('admin.reports')->middleware('permission:laporan-view');
-    Route::delete('/invoices/{invoice}', function (\App\Models\Invoice $invoice) {
+    Route::delete('/invoices/{invoice}', function (Invoice $invoice) {
         if ($invoice->status === 'lunas') {
             session()->flash('toast', [
                 'message' => 'Faktur yang telah lunas tidak boleh dihapus demi integritas data keuangan.',
                 'type' => 'error',
             ]);
+
             return redirect()->route('admin.invoices');
         }
 

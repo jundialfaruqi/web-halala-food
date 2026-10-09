@@ -6,7 +6,6 @@ use Database\Seeders\DatabaseSeeder;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\PermissionRegistrar;
 
-use function Pest\Laravel\getJson;
 use function Pest\Laravel\seed;
 use function Pest\Laravel\withHeader;
 

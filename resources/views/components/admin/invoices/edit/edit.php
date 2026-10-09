@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
@@ -17,11 +16,17 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
     public Invoice $invoice;
 
     public string $invoice_number = '';
+
     public ?int $delivery_id = null;
+
     public ?int $store_id = null;
+
     public string $invoice_date = '';
+
     public string $due_date = '';
+
     public float $discount = 0.00;
+
     public ?string $notes = '';
 
     /**
@@ -40,6 +45,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
                 'message' => 'Faktur yang sudah lunas atau dibatalkan tidak dapat diedit.',
                 'type' => 'error',
             ]);
+
             return redirect()->route('admin.invoices.show', $invoice);
         }
 
@@ -159,7 +165,8 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
 
         $newTotalAmount = $this->totalAmount;
         if ($newTotalAmount < (float) $this->invoice->paid_amount) {
-            $this->addError('discount', 'Total tagihan akhir (Rp ' . number_format($newTotalAmount, 0, ',', '.') . ') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp ' . number_format($this->invoice->paid_amount, 0, ',', '.') . ').');
+            $this->addError('discount', 'Total tagihan akhir (Rp '.number_format($newTotalAmount, 0, ',', '.').') tidak boleh lebih kecil dari pembayaran yang sudah diterima (Rp '.number_format($this->invoice->paid_amount, 0, ',', '.').').');
+
             return;
         }
 

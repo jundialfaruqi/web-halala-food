@@ -5,11 +5,13 @@ use App\Models\PermissionGroup;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
+
 use function Pest\Laravel\seed;
 
 beforeEach(function () {
     seed(DatabaseSeeder::class);
-    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    app()[PermissionRegistrar::class]->forgetCachedPermissions();
 });
 
 test('master satuan permissions are created and grouped correctly', function () {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\BusinessSetting;
 use App\Models\Delivery;
 use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
@@ -7,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
 new #[Layout('components.layouts.admin')] class extends Component
@@ -17,12 +19,18 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     // Handover Confirmation Form Fields
     public string $recipient_name = '';
+
     public ?string $recipient_role = '';
+
     public ?string $recipient_phone = '';
+
     public ?string $handover_notes = '';
-    /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
+
+    /** @var TemporaryUploadedFile|null */
     public mixed $proof_photo = null;
+
     public ?string $photo_data = null;
+
     public ?string $signature_data = '';
 
     public function mount(Delivery $delivery)
@@ -134,7 +142,7 @@ new #[Layout('components.layouts.admin')] class extends Component
                 'delivered_at' => now(),
                 'recipient_name' => $this->recipient_name,
                 'recipient_role' => $this->recipient_role ?: null,
-                'recipient_phone' => ! empty($this->recipient_phone) ? '62' . preg_replace('/\D/', '', $this->recipient_phone) : null,
+                'recipient_phone' => ! empty($this->recipient_phone) ? '62'.preg_replace('/\D/', '', $this->recipient_phone) : null,
                 'proof_image' => $proofPath,
                 'signature_data' => $this->signature_data ?: $this->delivery->signature_data,
                 'notes' => $updatedNotes,
@@ -146,7 +154,7 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->delivery->refresh();
         $this->delivery->load('invoice');
 
-        $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : "";
+        $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : '';
 
         $this->notify("Pengantaran selesai! Barang telah diterima oleh {$this->recipient_name}.{$invoiceMsg}", 'success');
     }
@@ -176,13 +184,13 @@ new #[Layout('components.layouts.admin')] class extends Component
 
         $this->delivery->refresh();
 
-        $this->notify("Surat jalan dibatalkan dan stok produk dikembalikan ke gudang.", 'success');
+        $this->notify('Surat jalan dibatalkan dan stok produk dikembalikan ke gudang.', 'success');
     }
 
     public function with(): array
     {
         return [
-            'businessSetting' => \App\Models\BusinessSetting::getSettings(),
+            'businessSetting' => BusinessSetting::getSettings(),
         ];
     }
 

@@ -4,6 +4,7 @@ use App\Models\Account;
 use App\Models\CashTransaction;
 use App\Models\ChartOfAccount;
 use App\Models\FixedAsset;
+use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Models\RawMaterial;
 use App\Models\RawMaterialPurchase;
@@ -14,7 +15,6 @@ use App\Models\User;
 use App\Services\AccountingService;
 use Database\Seeders\AccountingSeeder;
 use Database\Seeders\DatabaseSeeder;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Livewire;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -162,7 +162,7 @@ test('tempo raw material purchase records liability 2-1000 and debt repayment se
     expect((float) $cashAccount->balance)->toBe($initialBalance - 300000.0);
 
     // Pastikan jurnal pelunasan hutang terposting: Debet 2-1000 vs Kredit Kas
-    $payJournal = \App\Models\JournalEntry::with('items.chartOfAccount')
+    $payJournal = JournalEntry::with('items.chartOfAccount')
         ->where('reference_type', 'purchase_payment')
         ->where('reference_id', $purchase->id)
         ->first();
@@ -208,7 +208,7 @@ test('fixed asset creation and monthly depreciation post to 6-1005 and 1-2100', 
     expect((float) $asset->accumulated_depreciation)->toBe(100000.0);
     expect((float) $asset->book_value)->toBe(3500000.0);
 
-    $depJournal = \App\Models\JournalEntry::with('items.chartOfAccount')
+    $depJournal = JournalEntry::with('items.chartOfAccount')
         ->where('reference_type', 'fixed_asset_depreciation')
         ->where('reference_id', $asset->id)
         ->first();
@@ -248,7 +248,7 @@ test('stock opname physical adjustment journals to 6-1006 and mutates inventory'
     expect($mutation->type)->toBe('out');
     expect((float) $mutation->quantity)->toBe(5.0);
 
-    $matJournal = \App\Models\JournalEntry::with('items.chartOfAccount')
+    $matJournal = JournalEntry::with('items.chartOfAccount')
         ->where('reference_type', 'stock_opname_material')
         ->where('reference_id', $material->id)
         ->latest('id')
@@ -270,7 +270,7 @@ test('stock opname physical adjustment journals to 6-1006 and mutates inventory'
     $product->refresh();
     expect($product->stock_ready)->toBe(20);
 
-    $prodJournal = \App\Models\JournalEntry::with('items.chartOfAccount')
+    $prodJournal = JournalEntry::with('items.chartOfAccount')
         ->where('reference_type', 'stock_opname_product')
         ->where('reference_id', $product->id)
         ->latest('id')

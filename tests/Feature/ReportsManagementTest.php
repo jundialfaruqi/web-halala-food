@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Product;
+use App\Models\ProductionBatch;
+use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
@@ -61,8 +64,8 @@ test('reports component can switch tabs and period filters', function () {
 
 test('reports calculates hpp from completed production batches without database error', function () {
     $manager = User::where('email', 'manager@halala-food.id')->first();
-    $unit = \App\Models\Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
-    $product = \App\Models\Product::firstOrCreate(
+    $unit = Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+    $product = Product::firstOrCreate(
         ['name' => 'Marie Wijen'],
         [
             'unit_id' => $unit->id,
@@ -74,7 +77,7 @@ test('reports calculates hpp from completed production batches without database 
         ]
     );
 
-    \App\Models\ProductionBatch::create([
+    ProductionBatch::create([
         'batch_code' => 'PRD-TEST-HPP',
         'product_id' => $product->id,
         'user_id' => $manager->id,

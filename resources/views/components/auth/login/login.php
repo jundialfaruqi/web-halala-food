@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -17,7 +18,7 @@ new #[Layout('layouts.app'), Title('Masuk ke Akun - Halala Food')] class extends
     public function mount(): void
     {
         if (Auth::check()) {
-            /** @var \App\Models\User|null $user */
+            /** @var User|null $user */
             $user = Auth::user();
             $defaultRoute = ($user && $user->roles()->exists())
                 ? route('admin.dashboard')
@@ -60,15 +61,15 @@ new #[Layout('layouts.app'), Title('Masuk ke Akun - Halala Food')] class extends
             ]);
         }
 
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = Auth::user();
         $defaultRoute = ($user && $user->roles()->exists())
             ? route('admin.dashboard')
             : route('home');
 
         session()->flash('toast', [
-            'message' => 'Selamat datang kembali, ' . ($user?->name ?? 'Admin') . '!',
-            'type'    => 'success',
+            'message' => 'Selamat datang kembali, '.($user?->name ?? 'Admin').'!',
+            'type' => 'success',
         ]);
 
         $this->redirectIntended(default: $defaultRoute, navigate: true);

@@ -15,9 +15,13 @@ use Livewire\Component;
 new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala Food')] class extends Component
 {
     public string $delivery_number = '';
+
     public ?int $store_id = null;
+
     public ?int $courier_id = null;
+
     public string $delivery_date = '';
+
     public ?string $notes = '';
 
     /**

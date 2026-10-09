@@ -2,11 +2,13 @@
 
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
@@ -275,7 +277,7 @@ test('deleting a delivery restores stock and completed delivery cannot be delete
 });
 
 test('courier can complete delivery with proof photo and digital signature', function () {
-    \Illuminate\Support\Facades\Storage::fake('public');
+    Storage::fake('public');
 
     $kurir = User::where('email', 'kurir@halala-food.id')->first();
     $delivery = Delivery::where('status', 'diproses')->first();
@@ -290,7 +292,7 @@ test('courier can complete delivery with proof photo and digital signature', fun
     expect($delivery->status)->toBe('dikirim');
 
     // 2. Complete handover with photo and signature
-    $file = \Illuminate\Http\UploadedFile::fake()->image('bukti_drop.jpg');
+    $file = UploadedFile::fake()->image('bukti_drop.jpg');
     $fakeSignature = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
     Livewire::test('admin.deliveries.show', ['delivery' => $delivery])
@@ -313,7 +315,7 @@ test('courier can complete delivery with proof photo and digital signature', fun
     expect(Storage::disk('public')->exists($delivery->proof_image))->toBeTrue();
 
     // Verify invoice is automatically generated
-    $invoice = \App\Models\Invoice::with('items')->where('delivery_id', $delivery->id)->first();
+    $invoice = Invoice::with('items')->where('delivery_id', $delivery->id)->first();
     expect($invoice)->not->toBeNull()
         ->and($invoice->store_id)->toBe($delivery->store_id)
         ->and($invoice->status)->toBe('belum_dibayar')
@@ -437,4 +439,3 @@ test('courier in web interface can only view their own deliveries, and cannot op
     $indexTest->call('markAsDispatched', $delivery2->id);
     expect($delivery2->fresh()->status)->toBe('diproses');
 });
-

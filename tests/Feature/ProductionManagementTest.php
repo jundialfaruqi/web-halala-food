@@ -2,8 +2,11 @@
 
 use App\Models\Product;
 use App\Models\ProductionBatch;
+use App\Models\ProductionBatchMaterial;
+use App\Models\ProductRecipe;
 use App\Models\RawMaterial;
 use App\Models\StockMutation;
+use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Livewire\Livewire;
@@ -18,8 +21,8 @@ beforeEach(function () {
     seed(DatabaseSeeder::class);
     app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-    $unit = \App\Models\Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
-    $rawUnit = \App\Models\Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
+    $unit = Unit::firstOrCreate(['short_name' => 'bungkus'], ['name' => 'Bungkus', 'is_active' => true]);
+    $rawUnit = Unit::firstOrCreate(['short_name' => 'g'], ['name' => 'Gram', 'is_active' => true]);
 
     $product = Product::firstOrCreate(
         ['name' => 'Marie Wijen'],
@@ -44,7 +47,7 @@ beforeEach(function () {
         ]
     );
 
-    \App\Models\ProductRecipe::firstOrCreate([
+    ProductRecipe::firstOrCreate([
         'product_id' => $product->id,
         'raw_material_id' => $wijen->id,
     ], [
@@ -250,7 +253,7 @@ test('cancelling a batch restores raw materials and decrements product ready sto
         'completed_at' => now(),
     ]);
 
-    \App\Models\ProductionBatchMaterial::create([
+    ProductionBatchMaterial::create([
         'production_batch_id' => $batch->id,
         'raw_material_id' => $wijen->id,
         'unit_name' => 'g',

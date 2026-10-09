@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class DeliveryController extends Controller
 {
@@ -22,7 +21,7 @@ class DeliveryController extends Controller
      */
     private function checkPermission(string $permission): bool
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
         if (! $user) {
             return false;
@@ -44,7 +43,7 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth('api')->user();
         $isCourier = $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
 
@@ -153,7 +152,7 @@ class DeliveryController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'unit', 'unit_id', 'stock_ready', 'consignment_price', 'retail_price', 'photo']);
 
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth('api')->user();
         $isCourier = $user && $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
 
@@ -277,7 +276,7 @@ class DeliveryController extends Controller
         }
         unset($item);
 
-        /** @var \App\Models\User $currentUser */
+        /** @var User $currentUser */
         $currentUser = auth('api')->user();
         $isCourier = $currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager']);
 
@@ -335,7 +334,7 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth('api')->user();
         if (! $delivery->isAccessibleBy($user)) {
             return response()->json([
@@ -366,7 +365,7 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth('api')->user();
         if (! $delivery->isAccessibleBy($user)) {
             return response()->json([
@@ -383,7 +382,7 @@ class DeliveryController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'delivery_number' => ['required', 'string', 'max:50', 'unique:deliveries,delivery_number,' . $delivery->id],
+            'delivery_number' => ['required', 'string', 'max:50', 'unique:deliveries,delivery_number,'.$delivery->id],
             'store_id' => ['required', 'exists:stores,id'],
             'courier_id' => ['nullable', 'exists:users,id'],
             'delivery_date' => ['required', 'date'],
@@ -519,7 +518,7 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth('api')->user();
         if (! $delivery->isAccessibleBy($user)) {
             return response()->json([
@@ -564,7 +563,7 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth('api')->user();
         if (! $delivery->isAccessibleBy($user)) {
             return response()->json([
@@ -638,7 +637,7 @@ class DeliveryController extends Controller
         $cleanPhone = null;
         if (! empty($recipientPhone)) {
             $digits = preg_replace('/\D/', '', $recipientPhone);
-            $cleanPhone = str_starts_with($digits, '62') ? $digits : '62' . $digits;
+            $cleanPhone = str_starts_with($digits, '62') ? $digits : '62'.$digits;
         }
 
         $invoice = DB::transaction(function () use ($delivery, $request, $proofPath, $updatedNotes, $cleanPhone) {
@@ -659,7 +658,7 @@ class DeliveryController extends Controller
         $delivery->refresh();
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel', 'invoice']);
 
-        $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : "";
+        $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : '';
 
         return response()->json([
             'success' => true,
@@ -681,7 +680,7 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth('api')->user();
         if (! $delivery->isAccessibleBy($user)) {
             return response()->json([
@@ -739,7 +738,7 @@ class DeliveryController extends Controller
             ], 403);
         }
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth('api')->user();
         if (! $delivery->isAccessibleBy($user)) {
             return response()->json([

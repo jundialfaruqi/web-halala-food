@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\ChartOfAccount;
+use App\Services\AccountingService;
 use Illuminate\Database\Seeder;
 
 class AccountingSeeder extends Seeder
@@ -206,6 +207,6 @@ class AccountingSeeder extends Seeder
             ChartOfAccount::updateOrCreate(['code' => $data['code']], $data);
         }
 
-        \App\Services\AccountingService::syncAllRawMaterialAccounts();
+        AccountingService::syncAllRawMaterialAccounts();
     }
 }

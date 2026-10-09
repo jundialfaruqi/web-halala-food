@@ -7,14 +7,22 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.admin'), Title('Tambah Produk Jadi Baru - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Tambah Produk Jadi Baru - Halala Food')] class extends Component
+{
     public string $name = '';
+
     public ?int $unit_id = null;
+
     public float $consignment_price = 0;
+
     public float $retail_price = 0;
+
     public int $stock_ready = 0;
+
     public ?string $description = '';
+
     public bool $is_active = true;
+
     public ?string $photo_data = null;
 
     public function mount()

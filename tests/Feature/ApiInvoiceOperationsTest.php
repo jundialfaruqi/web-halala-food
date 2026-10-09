@@ -10,9 +10,6 @@ use Database\Seeders\DatabaseSeeder;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\PermissionRegistrar;
 
-use function Pest\Laravel\deleteJson;
-use function Pest\Laravel\postJson;
-use function Pest\Laravel\putJson;
 use function Pest\Laravel\seed;
 use function Pest\Laravel\withHeader;
 
@@ -57,7 +54,7 @@ function createTestInvoiceData(): array
     $token = JWTAuth::fromUser($manager);
 
     $invoice = Invoice::create([
-        'invoice_number' => 'INV-TEST-' . uniqid(),
+        'invoice_number' => 'INV-TEST-'.uniqid(),
         'store_id' => $store->id,
         'created_by' => $manager->id,
         'invoice_date' => now()->toDateString(),

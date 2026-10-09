@@ -6,16 +6,26 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Layout('components.layouts.admin'), Title('Tambah Toko Mitra Baru - Halala Food')] class extends Component {
+new #[Layout('components.layouts.admin'), Title('Tambah Toko Mitra Baru - Halala Food')] class extends Component
+{
     public string $name = '';
+
     public ?string $owner_name = '';
+
     public ?string $phone = '';
+
     public ?string $address = '';
+
     public ?float $latitude = null;
+
     public ?float $longitude = null;
+
     public ?string $route = '';
+
     public ?string $notes = '';
+
     public bool $is_active = true;
+
     public ?string $photo_data = null;
 
     public function mount()
