@@ -19,6 +19,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $name
  * @property string $email
  * @property string|null $phone
+ * @property string|null $fcm_token
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
@@ -32,7 +33,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @method bool hasAllRoles(string|array ...$roles)
  * @method bool hasPermissionTo(string|\Spatie\Permission\Contracts\Permission $permission, ?string $guard = null)
  */
-#[Fillable(['name', 'email', 'phone', 'password'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'fcm_token'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements JWTSubject
 {

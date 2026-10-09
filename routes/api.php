@@ -35,6 +35,9 @@ Route::prefix('auth')->group(function () {
 
 // Protected Business Routes
 Route::middleware(['auth:api'])->group(function () {
+    // Sinkronisasi Device Token (FCM Push Notification)
+    Route::post('/user/fcm-token', [UserController::class, 'updateFcmToken'])->name('api.user.fcm_token');
+
     // Manajemen Pengguna (Staf & Hak Akses)
     Route::get('/users/roles', [UserController::class, 'roles'])->name('api.users.roles');
     Route::get('/users', [UserController::class, 'index'])->name('api.users.index');

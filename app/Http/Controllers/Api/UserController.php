@@ -286,6 +286,33 @@ class UserController extends Controller
     }
 
     /**
+     * Update authenticated user's FCM device token.
+     */
+    public function updateFcmToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'fcm_token' => 'required|string|max:500',
+        ]);
+
+        /** @var User|null $user */
+        $user = auth('api')->user();
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengguna tidak terautentikasi.',
+            ], 401);
+        }
+
+        $user->update(['fcm_token' => $request->input('fcm_token')]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'FCM Token berhasil diperbarui.',
+        ]);
+    }
+
+    /**
      * Helper formatting human-friendly role name.
      */
     private function formatRoleDisplayName(string $role): string
