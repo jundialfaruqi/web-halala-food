@@ -21,6 +21,14 @@ use Illuminate\Support\Facades\Validator;
 
 class InvoiceController extends Controller
 {
+    private function isDevOrManager(User $user): bool
+    {
+        return $user->hasRole('dev', 'web')
+            || $user->hasRole('manager', 'web')
+            || $user->roles->contains('name', 'dev')
+            || $user->roles->contains('name', 'manager');
+    }
+
     /**
      * Helper to verify if the authenticated user has the specified permission.
      */
@@ -32,7 +40,81 @@ class InvoiceController extends Controller
             return false;
         }
 
-        return $user->hasRole('dev') || $user->hasPermissionTo($permission, 'web') || $user->can($permission);
+        return $this->isDevOrManager($user)
+            || $user->hasPermissionTo($permission, 'web')
+            || $user->can($permission);
+    }
+
+    /**
+     * Check if user is allowed to record payment for the invoice.
+     * Allowed if:
+     * 1. User has 'faktur-pembayaran' permission or 'faktur-edit' permission
+     * 2. Or user has dev/manager role
+     * 3. Or user is the courier assigned to this invoice ($invoice->courier_id === $user->id)
+     */
+    private function canRecordPaymentForInvoice(Invoice $invoice): bool
+    {
+        /** @var User|null $user */
+        $user = auth('api')->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->isDevOrManager($user)) {
+            return true;
+        }
+
+        if ($this->checkPermission('faktur-pembayaran') || $this->checkPermission('faktur-edit')) {
+            return true;
+        }
+
+        return $invoice->courier_id !== null && (int) $invoice->courier_id === (int) $user->id;
+    }
+
+    /**
+     * Check if user is allowed to reconcile items for the invoice.
+     * Allowed if:
+     * 1. User has 'faktur-rekonsiliasi' permission or 'faktur-edit' permission
+     * 2. Or user has dev/manager role
+     * 3. Or user is the courier assigned to this invoice ($invoice->courier_id === $user->id)
+     */
+    private function canReconcileInvoice(Invoice $invoice): bool
+    {
+        /** @var User|null $user */
+        $user = auth('api')->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->isDevOrManager($user)) {
+            return true;
+        }
+
+        if ($this->checkPermission('faktur-rekonsiliasi') || $this->checkPermission('faktur-edit')) {
+            return true;
+        }
+
+        return $invoice->courier_id !== null && (int) $invoice->courier_id === (int) $user->id;
+    }
+
+    /**
+     * Check if user is allowed to delete payment record.
+     * Strictly requires 'faktur-pembayaran-delete' permission (or dev/manager role).
+     * Assigned courier status does NOT automatically allow deleting payment records.
+     */
+    private function canDeletePaymentRecord(): bool
+    {
+        /** @var User|null $user */
+        $user = auth('api')->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->isDevOrManager($user)) {
+            return true;
+        }
+
+        return $this->checkPermission('faktur-pembayaran-delete');
     }
 
     /**
@@ -596,11 +678,11 @@ class InvoiceController extends Controller
 
     /**
      * Record a new payment for an invoice.
-     * Permission: faktur-edit
+     * Permission: faktur-pembayaran or assigned courier (or faktur-edit)
      */
     public function recordPayment(Request $request, Invoice $invoice): JsonResponse
     {
-        if (! $this->checkPermission('faktur-edit')) {
+        if (! $this->canRecordPaymentForInvoice($invoice)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk mencatat pembayaran faktur.',
@@ -705,11 +787,11 @@ class InvoiceController extends Controller
 
     /**
      * Delete a payment record.
-     * Permission: faktur-edit
+     * Permission: faktur-pembayaran-delete
      */
     public function deletePayment(Invoice $invoice, InvoicePayment $payment): JsonResponse
     {
-        if (! $this->checkPermission('faktur-edit')) {
+        if (! $this->canDeletePaymentRecord()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk menghapus pembayaran.',
@@ -740,11 +822,11 @@ class InvoiceController extends Controller
 
     /**
      * Reconcile consignment invoice items (sold, remaining, damaged, returned).
-     * Permission: faktur-edit
+     * Permission: faktur-rekonsiliasi or assigned courier (or faktur-edit)
      */
     public function reconcile(Request $request, Invoice $invoice): JsonResponse
     {
-        if (! $this->checkPermission('faktur-edit')) {
+        if (! $this->canReconcileInvoice($invoice)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk merekonsiliasi faktur.',

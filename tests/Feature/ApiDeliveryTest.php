@@ -314,3 +314,66 @@ test('courier can only see and access their own deliveries in api, cannot see or
         ->getJson("/api/deliveries/{$delivery2->id}")
         ->assertOk();
 });
+
+test('status_counts all remains total count when filtering by specific status', function () {
+    $kurir = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+    $dev = User::where('email', 'developer@halala-food.id')->firstOrFail();
+    $store = Store::firstOrCreate(
+        ['name' => 'Toko Kurir Test Status'],
+        ['owner_name' => 'Pak Test', 'phone' => '0812345678', 'address' => 'Jl. Test', 'route' => 'Rute Test', 'is_active' => true]
+    );
+
+    // Create 3 deliveries: 2 diproses, 1 dikirim
+    Delivery::create([
+        'delivery_number' => 'SJ-TEST-COUNT-01',
+        'store_id' => $store->id,
+        'courier_id' => $kurir->id,
+        'created_by' => $dev->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'diproses',
+        'total_items' => 1,
+        'total_amount' => 10000,
+    ]);
+    Delivery::create([
+        'delivery_number' => 'SJ-TEST-COUNT-02',
+        'store_id' => $store->id,
+        'courier_id' => $kurir->id,
+        'created_by' => $dev->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'diproses',
+        'total_items' => 1,
+        'total_amount' => 10000,
+    ]);
+    Delivery::create([
+        'delivery_number' => 'SJ-TEST-COUNT-03',
+        'store_id' => $store->id,
+        'courier_id' => $kurir->id,
+        'created_by' => $dev->id,
+        'delivery_date' => now()->toDateString(),
+        'status' => 'dikirim',
+        'total_items' => 1,
+        'total_amount' => 10000,
+    ]);
+
+    $kurirToken = JWTAuth::fromUser($kurir);
+
+    // When status=all
+    $resAll = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->getJson('/api/deliveries?status=all');
+    $resAll->assertOk();
+    $totalAll = $resAll->json('status_counts.all');
+    $totalDiproses = $resAll->json('status_counts.diproses');
+    expect($totalDiproses)->toBeGreaterThanOrEqual(2)
+        ->and($totalAll)->toBeGreaterThan($totalDiproses);
+
+    // When status=diproses (filtered)
+    $resDiproses = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->getJson('/api/deliveries?status=diproses');
+    $resDiproses->assertOk();
+
+    // 'all' count MUST remain equal to totalAll, NOT shrink to diproses count!
+    expect($resDiproses->json('status_counts.all'))->toBe($totalAll)
+        ->and($resDiproses->json('status_counts.diproses'))->toBe($totalDiproses)
+        ->and(count($resDiproses->json('data')))->toBe($totalDiproses);
+});
+

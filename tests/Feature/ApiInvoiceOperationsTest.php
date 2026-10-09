@@ -239,3 +239,61 @@ test('user can cancel and delete unpaid invoice', function () {
 
     expect(Invoice::find($invoice->id))->toBeNull();
 });
+
+test('courier assigned to invoice can record payment and reconcile but cannot delete payment via API', function () {
+    [
+        'manager' => $manager,
+        'token' => $managerToken,
+        'invoice' => $invoice,
+        'invoiceItem' => $invoiceItem,
+    ] = createTestInvoiceData();
+
+    $kurir = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+    $invoice->update(['courier_id' => $kurir->id]);
+    $kurirToken = JWTAuth::fromUser($kurir);
+
+    // 1. Courier can record payment for this assigned invoice
+    $resPay = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->postJson("/api/invoices/{$invoice->id}/payments", [
+            'amount' => 20000,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'tunai',
+        ]);
+
+    $resPay->assertCreated()
+        ->assertJsonPath('success', true);
+
+    $paymentId = $resPay->json('data.payment.id');
+
+    // 2. Courier can reconcile this assigned invoice
+    $resRec = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->postJson("/api/invoices/{$invoice->id}/reconcile", [
+            'items' => [
+                [
+                    'id' => $invoiceItem->id,
+                    'remaining_quantity' => 1,
+                    'damaged_quantity' => 0,
+                    'returned_quantity' => 1,
+                ],
+            ],
+        ]);
+
+    $resRec->assertOk()
+        ->assertJsonPath('success', true);
+
+    // 3. Courier CANNOT delete payment (403 Forbidden)
+    $resDeleteForbidden = withHeader('Authorization', "Bearer {$kurirToken}")
+        ->deleteJson("/api/invoices/{$invoice->id}/payments/{$paymentId}");
+
+    $resDeleteForbidden->assertForbidden()
+        ->assertJsonPath('success', false);
+
+    // 4. Manager CAN delete payment
+    auth('api')->setUser($manager);
+    $resDeleteAllowed = withHeader('Authorization', "Bearer {$managerToken}")
+        ->deleteJson("/api/invoices/{$invoice->id}/payments/{$paymentId}");
+
+    $resDeleteAllowed->assertOk()
+        ->assertJsonPath('success', true);
+});
+

@@ -101,7 +101,10 @@ class DatabaseSeeder extends Seeder
                 'permissions' => [
                     'faktur-view' => 'Melihat daftar faktur tagihan dan kartu piutang toko mitra.',
                     'faktur-create' => 'Membuat faktur tagihan konsinyasi baru.',
-                    'faktur-edit' => 'Mengubah data faktur tagihan atau mencatat pembayaran pelunasan.',
+                    'faktur-edit' => 'Mengubah data faktur tagihan konsinyasi.',
+                    'faktur-pembayaran' => 'Mencatat penerimaan pembayaran atau cicilan faktur.',
+                    'faktur-rekonsiliasi' => 'Melakukan rekonsiliasi faktur (retur dan barang terjual).',
+                    'faktur-pembayaran-delete' => 'Menghapus riwayat transaksi pembayaran faktur.',
                     'faktur-delete' => 'Membatalkan atau menghapus faktur tagihan.',
                 ],
             ],
@@ -230,6 +233,9 @@ class DatabaseSeeder extends Seeder
             'faktur-view',
             'faktur-create',
             'faktur-edit',
+            'faktur-pembayaran',
+            'faktur-rekonsiliasi',
+            'faktur-pembayaran-delete',
             'faktur-delete',
             'pengaturan-view',
             'pengaturan-edit',
@@ -252,19 +258,21 @@ class DatabaseSeeder extends Seeder
             'aset-delete',
         ]);
 
-        // Kurir gets dashboard access, toko view, pengantaran view & status, and faktur view
+        // Kurir gets dashboard access, toko view, pengantaran view & status, faktur view, faktur pembayaran, and faktur rekonsiliasi
         $kurirRole->syncPermissions([
             'dashboard-view',
             'toko-view',
             'pengantaran-view',
             'pengantaran-status',
             'faktur-view',
+            'faktur-pembayaran',
+            'faktur-rekonsiliasi',
         ]);
 
         // 4. Seed Standard Users for the 3 Roles
         $users = [
             [
-                'email' => 'dev@hmail.com',
+                'email' => 'dev@mail.com',
                 'name' => 'Developer Super Admin',
                 'phone' => '081234567890',
                 'role' => $devRole,

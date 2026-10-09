@@ -103,6 +103,9 @@ test('role dev and manager have all faktur permissions', function () {
         'faktur-view',
         'faktur-create',
         'faktur-edit',
+        'faktur-pembayaran',
+        'faktur-rekonsiliasi',
+        'faktur-pembayaran-delete',
         'faktur-delete',
     ];
 
@@ -110,6 +113,11 @@ test('role dev and manager have all faktur permissions', function () {
         expect($devRole->hasPermissionTo($perm))->toBeTrue()
             ->and($managerRole->hasPermissionTo($perm))->toBeTrue();
     }
+
+    $kurirRole = Role::findByName('kurir', 'web');
+    expect($kurirRole->hasPermissionTo('faktur-pembayaran'))->toBeTrue()
+        ->and($kurirRole->hasPermissionTo('faktur-rekonsiliasi'))->toBeTrue()
+        ->and($kurirRole->hasPermissionTo('faktur-pembayaran-delete'))->toBeFalse();
 });
 
 test('manager can access invoices index page and see list of invoices', function () {
@@ -575,3 +583,32 @@ test('deliveries that already have an invoice are excluded from the invoice crea
         ->call('save')
         ->assertHasErrors(['delivery_id']);
 });
+
+test('assigned courier can record payment and reconcile invoice but cannot delete payment', function () {
+    $kurir = User::where('email', 'kurir@halala-food.id')->first();
+    $invoice = Invoice::first();
+    $invoice->update(['courier_id' => $kurir->id]);
+
+    actingAs($kurir);
+
+    // 1. Kurir can record payment on assigned invoice
+    $payAmount = 15000.0;
+    $initialBalance = (float) $invoice->remaining_balance;
+
+    Livewire::test('admin.invoices.show', ['invoice' => $invoice])
+        ->set('payment_amount', $payAmount)
+        ->set('payment_date', now()->toDateString())
+        ->set('payment_method', 'tunai')
+        ->call('recordPayment')
+        ->assertHasNoErrors();
+
+    $invoice->refresh();
+    expect((float) $invoice->remaining_balance)->toBe($initialBalance - $payAmount);
+
+    // 2. Kurir cannot delete payment
+    $latestPayment = $invoice->payments()->latest()->first();
+    Livewire::test('admin.invoices.show', ['invoice' => $invoice])
+        ->call('deletePayment', $latestPayment->id)
+        ->assertForbidden();
+});
+

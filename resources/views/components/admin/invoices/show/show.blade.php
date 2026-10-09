@@ -110,7 +110,7 @@
         );
     @endphp
 
-    @can('faktur-edit')
+    @if ($this->canReconcile())
         @if ($invoice->status !== 'dibatalkan')
             <div class="bg-neutral-50/70 border border-brand-border rounded-2xl p-6 shadow-xs space-y-4 print:hidden">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -300,10 +300,10 @@
                 @endif
             </div>
         @endif
-    @endcan
+    @endif
 
     <!-- Quick Payment Recording Form (Visible if remaining balance > 0 and not cancelled) -->
-    @can('faktur-edit')
+    @if ($this->canRecordPayment())
         @if ($invoice->status !== 'dibatalkan' && $invoice->remaining_balance > 0)
             <div class="bg-neutral-50/70 border border-brand-border rounded-2xl p-6 shadow-xs space-y-4 print:hidden">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -409,7 +409,7 @@
                 </form>
             </div>
         @endif
-    @endcan
+    @endif
 
     <!-- Printable Invoice Document Card -->
     <div
@@ -741,14 +741,14 @@
                                         {{ $pay->user?->name ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap print:hidden">
-                                        @can('faktur-edit')
+                                        @if ($this->canDeletePayment())
                                             <button type="button" wire:click="deletePayment({{ $pay->id }})"
                                                 wire:confirm="Hapus catatan pembayaran ini? Saldo faktur akan dihitung ulang."
                                                 wire:loading.attr="disabled" wire:target="deletePayment({{ $pay->id }})"
                                                 class="text-xs text-red-600 hover:text-red-800 hover:underline cursor-pointer disabled:opacity-50">
                                                 Hapus
                                             </button>
-                                        @endcan
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -764,7 +764,7 @@
                 <p class="font-semibold text-brand-espresso">Petugas Penagihan / Halala Food</p>
                 <div class="h-20 flex items-end justify-center">
                     <p class="border-b border-brand-espresso/50 w-44 pb-1 font-medium">
-                        {{ $invoice->creator?->name ?? '( Bagian Keuangan )' }}
+                        {{ $invoice->courier?->name ?? ($invoice->creator?->name ?? '( Bagian Keuangan )') }}
                     </p>
                 </div>
             </div>

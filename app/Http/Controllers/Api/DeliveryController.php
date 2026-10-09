@@ -48,12 +48,12 @@ class DeliveryController extends Controller
         $user = auth('api')->user();
         $isCourier = $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
 
-        $query = Delivery::with(['store', 'courier', 'creator', 'items.product'])->forUser($user);
+        $baseQuery = Delivery::with(['store', 'courier', 'creator', 'items.product'])->forUser($user);
 
         // Search query across delivery_number, store name, owner name, address, courier name, recipient name, notes
         if ($request->filled('search')) {
             $searchTerm = trim($request->input('search'));
-            $query->where(function ($q) use ($searchTerm) {
+            $baseQuery->where(function ($q) use ($searchTerm) {
                 $q->where('delivery_number', 'like', "%{$searchTerm}%")
                     ->orWhere('recipient_name', 'like', "%{$searchTerm}%")
                     ->orWhere('recipient_phone', 'like', "%{$searchTerm}%")
@@ -71,36 +71,37 @@ class DeliveryController extends Controller
             });
         }
 
-        // Status Filter
-        if ($request->filled('status') && $request->input('status') !== 'all') {
-            $query->where('status', $request->input('status'));
-        }
-
         // Route Filter
         if ($request->filled('route') && $request->input('route') !== 'all') {
-            $query->whereHas('store', function ($sq) use ($request) {
+            $baseQuery->whereHas('store', function ($sq) use ($request) {
                 $sq->where('route', $request->input('route'));
             });
         }
 
         // Date Filter
         if ($request->filled('delivery_date')) {
-            $query->whereDate('delivery_date', $request->input('delivery_date'));
+            $baseQuery->whereDate('delivery_date', $request->input('delivery_date'));
         }
 
         // Courier Filter (only for dev/manager, kurir is strictly scoped to their own tasks)
-        if (! $isCourier && $request->filled('courier_id')) {
-            $query->where('courier_id', $request->input('courier_id'));
+        if (! $isCourier && $request->filled('courier_id') && $request->input('courier_id') !== 'all') {
+            $baseQuery->where('courier_id', $request->input('courier_id'));
         }
 
-        // Status counts for badge tabs (scoped to user's accessible deliveries)
+        // Status counts for badge tabs (calculated from baseQuery BEFORE applying status filter)
         $statusCounts = [
-            'all' => (clone $query)->withoutGlobalScopes()->count(),
-            'diproses' => Delivery::forUser($user)->where('status', 'diproses')->count(),
-            'dikirim' => Delivery::forUser($user)->where('status', 'dikirim')->count(),
-            'selesai' => Delivery::forUser($user)->where('status', 'selesai')->count(),
-            'dibatalkan' => Delivery::forUser($user)->where('status', 'dibatalkan')->count(),
+            'all' => (clone $baseQuery)->count(),
+            'diproses' => (clone $baseQuery)->where('status', 'diproses')->count(),
+            'dikirim' => (clone $baseQuery)->where('status', 'dikirim')->count(),
+            'selesai' => (clone $baseQuery)->where('status', 'selesai')->count(),
+            'dibatalkan' => (clone $baseQuery)->where('status', 'dibatalkan')->count(),
         ];
+
+        // Clone baseQuery for pagination and apply status filter
+        $query = clone $baseQuery;
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $query->where('status', $request->input('status'));
+        }
 
         // Ordering: latest delivery_date and id first
         $query->orderByDesc('delivery_date')->orderByDesc('id');

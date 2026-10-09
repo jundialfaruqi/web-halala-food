@@ -102,8 +102,55 @@ new #[Layout('components.layouts.admin')] class extends Component
         $this->payment_amount = (float) $this->invoice->remaining_balance;
     }
 
+    public function canRecordPayment(): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('dev')
+            || $user->hasRole('manager')
+            || Gate::allows('faktur-pembayaran')
+            || Gate::allows('faktur-edit')
+            || ($this->invoice->courier_id !== null && (int) $this->invoice->courier_id === (int) $user->id);
+    }
+
+    public function canReconcile(): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('dev')
+            || $user->hasRole('manager')
+            || Gate::allows('faktur-rekonsiliasi')
+            || Gate::allows('faktur-edit')
+            || ($this->invoice->courier_id !== null && (int) $this->invoice->courier_id === (int) $user->id);
+    }
+
+    public function canDeletePayment(): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('dev')
+            || $user->hasRole('manager')
+            || Gate::allows('faktur-pembayaran-delete');
+    }
+
     public function openReconciliation(): void
     {
+        if (! $this->canReconcile()) {
+            abort(403, 'Anda tidak memiliki hak akses untuk merekonsiliasi faktur.');
+        }
+
         $this->reconciliationItems = [];
         foreach ($this->invoice->items as $item) {
             $delivered = $item->delivered_quantity !== null && $item->delivered_quantity > 0
@@ -173,7 +220,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function saveReconciliation(?array $items = null): void
     {
-        if (Gate::denies('faktur-edit')) {
+        if (! $this->canReconcile()) {
             abort(403, 'Anda tidak memiliki hak akses untuk merekonsiliasi faktur.');
         }
 
@@ -284,7 +331,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function recordPayment(): void
     {
-        if (Gate::denies('faktur-edit')) {
+        if (! $this->canRecordPayment()) {
             abort(403, 'Anda tidak memiliki hak akses untuk mencatat pembayaran faktur.');
         }
 
@@ -345,7 +392,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function deletePayment(int $paymentId): void
     {
-        if (Gate::denies('faktur-edit')) {
+        if (! $this->canDeletePayment()) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus pembayaran.');
         }
 
