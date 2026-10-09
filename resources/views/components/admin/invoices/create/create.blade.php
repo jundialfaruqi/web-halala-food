@@ -102,6 +102,26 @@
                     @endif
                 </div>
 
+                <!-- 4. Kurir Pengantar / Penagih (Opsional) -->
+                <div>
+                    <label for="courier_id" class="block text-sm font-semibold text-brand-espresso mb-1.5">
+                        Kurir Pengantar / Penagih (Opsional)
+                    </label>
+                    <select id="courier_id" wire:model="courier_id"
+                        class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm text-brand-espresso focus:outline-none focus:border-brand-primary transition">
+                        <option value="">-- Tanpa Kurir Spesifik --</option>
+                        @foreach ($couriers as $courier)
+                            <option value="{{ $courier->id }}">
+                                {{ $courier->name }} {{ $courier->phone ? "({$courier->phone})" : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('courier_id')
+                        <p class="text-xs text-red-600 font-medium mt-1">{{ $message }}</p>
+                    @enderror
+                    <p class="text-xs text-brand-warm-gray mt-1">Pilih kurir yang ditugaskan mengantar faktur ini ke toko mitra. Otomatis terisi jika surat jalan dipilih di atas.</p>
+                </div>
+
                 <!-- 4. Tanggal Faktur & Jatuh Tempo -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>

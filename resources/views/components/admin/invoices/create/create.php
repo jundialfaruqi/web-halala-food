@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\User;
 use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -306,11 +307,17 @@ new #[Layout('components.layouts.admin'), Title('Buat Faktur Tagihan Baru - Hala
 
         $selectedStore = $this->store_id ? Store::find($this->store_id) : null;
 
+        $couriers = User::role('kurir')->orderBy('name')->get();
+        if ($couriers->isEmpty()) {
+            $couriers = User::orderBy('name')->get();
+        }
+
         return [
             'stores' => $stores,
             'products' => $products,
             'deliveries' => $deliveries,
             'selectedStore' => $selectedStore,
+            'couriers' => $couriers,
         ];
     }
 };

@@ -4,6 +4,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\User;
 use App\Services\AccountingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -20,6 +21,8 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
     public ?int $delivery_id = null;
 
     public ?int $store_id = null;
+
+    public ?int $courier_id = null;
 
     public string $invoice_date = '';
 
@@ -53,6 +56,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
         $this->invoice_number = $invoice->invoice_number;
         $this->delivery_id = $invoice->delivery_id;
         $this->store_id = $invoice->store_id;
+        $this->courier_id = $invoice->courier_id;
         $this->invoice_date = $invoice->invoice_date->toDateString();
         $this->due_date = $invoice->due_date->toDateString();
         $this->discount = (float) $invoice->discount;
@@ -144,6 +148,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
 
         $this->validate([
             'store_id' => ['required', 'exists:stores,id'],
+            'courier_id' => ['nullable', 'exists:users,id'],
             'invoice_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
             'discount' => ['nullable', 'numeric', 'min:0'],
@@ -177,6 +182,7 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
 
             $this->invoice->update([
                 'store_id' => $this->store_id,
+                'courier_id' => $this->courier_id,
                 'invoice_date' => $this->invoice_date,
                 'due_date' => $this->due_date,
                 'subtotal' => $subtotal,
@@ -238,10 +244,16 @@ new #[Layout('components.layouts.admin'), Title('Edit Faktur Tagihan - Halala Fo
         $products = Product::where('is_active', true)->orderBy('name')->get();
         $selectedStore = $this->store_id ? Store::find($this->store_id) : null;
 
+        $couriers = User::role('kurir')->orderBy('name')->get();
+        if ($couriers->isEmpty()) {
+            $couriers = User::orderBy('name')->get();
+        }
+
         return [
             'stores' => $stores,
             'products' => $products,
             'selectedStore' => $selectedStore,
+            'couriers' => $couriers,
         ];
     }
 };

@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\DeliveryCreated;
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
 use App\Models\Product;
@@ -196,6 +197,9 @@ new #[Layout('components.layouts.admin'), Title('Buat Surat Jalan Baru - Halala 
 
             return $delivery;
         });
+
+        $delivery->loadMissing(['store', 'courier']);
+        event(new DeliveryCreated($delivery));
 
         session()->flash('toast', [
             'message' => "Surat jalan {$delivery->delivery_number} berhasil dibuat.",

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\DeliveryCreated;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
@@ -313,6 +314,8 @@ class DeliveryController extends Controller
         });
 
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
+
+        event(new DeliveryCreated($delivery));
 
         return response()->json([
             'success' => true,

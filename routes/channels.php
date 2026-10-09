@@ -17,3 +17,7 @@ Broadcast::channel('courier.{id}', function ($user, $id) {
 Broadcast::channel('invoices', function ($user) {
     return $user->hasRole('dev') || $user->hasPermissionTo('faktur-view', 'web') || $user->can('faktur-view');
 });
+
+Broadcast::channel('deliveries', function ($user) {
+    return $user->hasRole('dev') || $user->hasPermissionTo('pengantaran-view', 'web') || $user->can('pengantaran-view');
+});

@@ -497,6 +497,14 @@
                             ({{ $invoice->delivery->delivery_date?->translatedFormat('d M Y') }})
                         </div>
                     @endif
+                    @if ($invoice->courier)
+                        <div>Kurir Penagih / Pengantar:
+                            <strong class="text-brand-espresso">{{ $invoice->courier->name }}</strong>
+                            @if ($invoice->courier->phone)
+                                <span class="font-mono">({{ $invoice->courier->phone }})</span>
+                            @endif
+                        </div>
+                    @endif
                     @if (!empty($businessSetting->bank_accounts))
                         <div class="pt-2">
                             <div class="font-semibold text-brand-espresso">Rekening Resmi Pembayaran:</div>
