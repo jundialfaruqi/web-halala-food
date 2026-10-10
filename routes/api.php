@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CashBookController;
 use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
@@ -107,4 +108,11 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/productions', [ProductionController::class, 'store'])->name('api.productions.store');
     Route::get('/productions/{productionBatch}', [ProductionController::class, 'show'])->name('api.productions.show');
     Route::post('/productions/{productionBatch}/cancel', [ProductionController::class, 'cancel'])->name('api.productions.cancel');
+
+    // Buku Kas & Keuangan
+    Route::get('/cash-book', [CashBookController::class, 'index'])->name('api.cash-book.index');
+    Route::post('/cash-book/transactions', [CashBookController::class, 'store'])->name('api.cash-book.store');
+    Route::get('/cash-book/transactions/{id}', [CashBookController::class, 'show'])->name('api.cash-book.show');
+    Route::delete('/cash-book/transactions/{id}', [CashBookController::class, 'destroy'])->name('api.cash-book.destroy');
+    Route::post('/cash-book/accounts', [CashBookController::class, 'storeAccount'])->name('api.cash-book.store-account');
 });

@@ -21,6 +21,10 @@ class CashTransaction extends Model
         'description',
     ];
 
+    protected $appends = [
+        'materials_summary',
+    ];
+
     protected function casts(): array
     {
         return [
