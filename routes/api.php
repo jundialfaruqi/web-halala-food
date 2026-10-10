@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductionController;
+use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\RawMaterialController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
@@ -115,4 +116,12 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/cash-book/transactions/{id}', [CashBookController::class, 'show'])->name('api.cash-book.show');
     Route::delete('/cash-book/transactions/{id}', [CashBookController::class, 'destroy'])->name('api.cash-book.destroy');
     Route::post('/cash-book/accounts', [CashBookController::class, 'storeAccount'])->name('api.cash-book.store-account');
+
+    // Pengadaan & Pembelian Bahan Baku
+    Route::get('/purchases/options', [PurchaseController::class, 'options'])->name('api.purchases.options');
+    Route::get('/purchases', [PurchaseController::class, 'index'])->name('api.purchases.index');
+    Route::post('/purchases', [PurchaseController::class, 'store'])->name('api.purchases.store');
+    Route::get('/purchases/{purchase}', [PurchaseController::class, 'show'])->name('api.purchases.show');
+    Route::delete('/purchases/{purchase}', [PurchaseController::class, 'destroy'])->name('api.purchases.destroy');
+    Route::post('/purchases/{purchase}/pay-debt', [PurchaseController::class, 'payDebt'])->name('api.purchases.pay-debt');
 });

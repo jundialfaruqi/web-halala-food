@@ -25,6 +25,10 @@ class RawMaterialPurchase extends Model
         'created_by',
     ];
 
+    protected $appends = [
+        'remaining_debt',
+    ];
+
     protected function casts(): array
     {
         return [
