@@ -459,6 +459,8 @@ class RawMaterialController extends Controller
             return [
                 'id' => $prod->id,
                 'name' => $prod->name,
+                'photo' => $prod->photo,
+                'photo_url' => $prod->photo_url,
                 'unit_id' => $prod->unit_id,
                 'unit_name' => $prod->unitModel?->name ?? $prod->unit,
                 'consignment_price' => $consignmentPrice,
@@ -555,6 +557,8 @@ class RawMaterialController extends Controller
             'data' => [
                 'id' => $product->id,
                 'name' => $product->name,
+                'photo' => $product->photo,
+                'photo_url' => $product->photo_url,
                 'material_cost' => $materialCost,
                 'material_cost_formatted' => 'Rp '.number_format($materialCost, 2, ',', '.'),
                 'gross_margin' => (float) $product->consignment_margin,
