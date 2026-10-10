@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductionController;
 use App\Http\Controllers\Api\RawMaterialController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
@@ -98,4 +99,12 @@ Route::middleware(['auth:api'])->group(function () {
     // Resep Produk (BOM)
     Route::get('/recipes', [RawMaterialController::class, 'recipes'])->name('api.recipes.index');
     Route::post('/recipes/{product}', [RawMaterialController::class, 'saveRecipe'])->name('api.recipes.save');
+
+    // Produksi & Manufaktur (Batch Masak & Kartu Stok)
+    Route::get('/productions/options', [ProductionController::class, 'options'])->name('api.productions.options');
+    Route::get('/productions/mutations', [ProductionController::class, 'mutations'])->name('api.productions.mutations');
+    Route::get('/productions', [ProductionController::class, 'index'])->name('api.productions.index');
+    Route::post('/productions', [ProductionController::class, 'store'])->name('api.productions.store');
+    Route::get('/productions/{productionBatch}', [ProductionController::class, 'show'])->name('api.productions.show');
+    Route::post('/productions/{productionBatch}/cancel', [ProductionController::class, 'cancel'])->name('api.productions.cancel');
 });
