@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\RawMaterialController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Broadcast;
@@ -84,4 +85,17 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('api.invoices.record-payment');
     Route::delete('/invoices/{invoice}/payments/{payment}', [InvoiceController::class, 'deletePayment'])->name('api.invoices.delete-payment');
     Route::post('/invoices/{invoice}/reconcile', [InvoiceController::class, 'reconcile'])->name('api.invoices.reconcile');
+
+    // Master Bahan Baku & Resep Produk (BOM)
+    Route::get('/raw-materials/options', [RawMaterialController::class, 'options'])->name('api.raw-materials.options');
+    Route::get('/raw-materials', [RawMaterialController::class, 'index'])->name('api.raw-materials.index');
+    Route::post('/raw-materials', [RawMaterialController::class, 'store'])->name('api.raw-materials.store');
+    Route::get('/raw-materials/{rawMaterial}', [RawMaterialController::class, 'show'])->name('api.raw-materials.show');
+    Route::match(['put', 'patch', 'post'], '/raw-materials/{rawMaterial}', [RawMaterialController::class, 'update'])->name('api.raw-materials.update');
+    Route::delete('/raw-materials/{rawMaterial}', [RawMaterialController::class, 'destroy'])->name('api.raw-materials.destroy');
+    Route::post('/raw-materials/{rawMaterial}/adjust-stock', [RawMaterialController::class, 'adjustStock'])->name('api.raw-materials.adjust-stock');
+
+    // Resep Produk (BOM)
+    Route::get('/recipes', [RawMaterialController::class, 'recipes'])->name('api.recipes.index');
+    Route::post('/recipes/{product}', [RawMaterialController::class, 'saveRecipe'])->name('api.recipes.save');
 });
