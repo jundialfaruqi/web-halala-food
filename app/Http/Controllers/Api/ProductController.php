@@ -8,8 +8,10 @@ use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\AccountingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -487,6 +489,101 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Produk '{$productName}' berhasil dihapus.",
+        ]);
+    }
+
+    /**
+     * Stock Opname (Penyesuaian Fisik Stok) for a finished product.
+     * Dilindungi dengan autentikasi auth:api dan permission produk-edit.
+     */
+    public function adjustStock(Request $request, Product $product): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = auth('api')->user();
+
+        // Pastikan permission sama dengan web (produk-edit)
+        if (! $user || (! $user->hasRole('dev') && ! $user->hasPermissionTo('produk-edit', 'web') && ! $user->can('produk-edit'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk menyesuaikan stok produk.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'physical_stock' => ['required', 'integer', 'min:0'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'date' => ['nullable', 'date'],
+        ], [
+            'physical_stock.required' => 'Jumlah stok fisik hasil opname wajib diisi.',
+            'physical_stock.integer' => 'Jumlah stok fisik harus berupa bilangan bulat.',
+            'physical_stock.min' => 'Stok fisik tidak boleh bernilai negatif.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi data stok opname gagal.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $physicalStock = (int) $request->input('physical_stock');
+        $currentStock = (int) $product->stock_ready;
+        $diff = $physicalStock - $currentStock;
+
+        if ($diff == 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stok fisik yang dimasukkan sama dengan stok sistem (tidak ada selisih).',
+            ], 422);
+        }
+
+        $reason = (string) $request->input('reason', '');
+        $date = (string) $request->input('date', '');
+
+        DB::transaction(function () use ($product, $physicalStock, $diff, $reason, $date) {
+            $cost = (float) $product->material_cost;
+            if ($cost <= 0) {
+                $cost = (float) $product->consignment_price;
+            }
+
+            // 1. Update stock ready
+            $product->stock_ready = $physicalStock;
+            $product->save();
+
+            // 2. Record accounting journal
+            AccountingService::recordStockAdjustment(
+                $product,
+                (float) $diff,
+                $cost,
+                $reason ?: 'Stock Opname Produk Jadi',
+                $date ?: now()->toDateString()
+            );
+        });
+
+        $product->load(['unitModel']);
+        $unitLabel = $product->unitModel?->short_name ?? $product->unit ?? 'pcs';
+        $diffStr = ($diff > 0 ? '+' : '').$diff.' '.$unitLabel;
+
+        return response()->json([
+            'success' => true,
+            'message' => "Stok produk '{$product->name}' berhasil disesuaikan ({$diffStr}) dan diposting ke Jurnal Akuntansi.",
+            'data' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'unit_id' => $product->unit_id,
+                'unit_name' => $product->unitModel?->name ?? $product->unit,
+                'unit_short' => $unitLabel,
+                'consignment_price' => (float) $product->consignment_price,
+                'consignment_price_formatted' => 'Rp '.number_format($product->consignment_price, 0, ',', '.'),
+                'retail_price' => (float) $product->retail_price,
+                'retail_price_formatted' => 'Rp '.number_format($product->retail_price, 0, ',', '.'),
+                'stock_ready' => (int) $product->stock_ready,
+                'description' => $product->description ?? '-',
+                'is_active' => (bool) $product->is_active,
+                'photo_url' => $product->photo_url,
+                'diff' => $diff,
+            ],
         ]);
     }
 }

@@ -66,6 +66,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/products/{product}', [ProductController::class, 'show'])->name('api.products.show');
     Route::match(['put', 'patch', 'post'], '/products/{product}', [ProductController::class, 'update'])->name('api.products.update');
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('api.products.destroy');
+    Route::post('/products/{product}/adjust-stock', [ProductController::class, 'adjustStock'])->name('api.products.adjust-stock');
 
     // Surat Jalan & Pengantaran
     Route::get('/deliveries/options', [DeliveryController::class, 'options'])->name('api.deliveries.options');
