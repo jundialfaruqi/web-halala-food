@@ -147,7 +147,7 @@ class DeliveryController extends Controller
 
         $stores = Store::where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'owner_name', 'phone', 'address', 'latitude', 'longitude', 'route']);
+            ->get(['id', 'name', 'owner_name', 'phone', 'address', 'latitude', 'longitude', 'route', 'photo']);
 
         $products = Product::where('is_active', true)
             ->with('unitModel')
