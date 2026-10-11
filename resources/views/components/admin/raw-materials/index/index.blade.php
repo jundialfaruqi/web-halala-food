@@ -1155,6 +1155,9 @@
                         <span>Hapus Sekarang</span>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Stock Opname Bahan Baku -->
     <div x-cloak x-show="showOpnameModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
