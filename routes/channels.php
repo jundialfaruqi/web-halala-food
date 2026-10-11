@@ -21,3 +21,11 @@ Broadcast::channel('invoices', function ($user) {
 Broadcast::channel('deliveries', function ($user) {
     return $user->hasRole('dev') || $user->hasPermissionTo('pengantaran-view', 'web') || $user->can('pengantaran-view');
 });
+
+Broadcast::channel('delivery.{id}', function ($user, $id) {
+    $delivery = \App\Models\Delivery::find($id);
+    if (! $delivery) {
+        return false;
+    }
+    return $delivery->isAccessibleBy($user);
+});

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\CourierLocationUpdated;
+use App\Events\CourierTrackingRequested;
 use App\Events\DeliveryCreated;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
@@ -775,6 +777,135 @@ class DeliveryController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Surat jalan {$deliveryNumber} berhasil dihapus.",
+        ]);
+    }
+
+    /**
+     * Request tracking / notify courier that someone is watching the delivery (On-Demand).
+     */
+    public function watch(Request $request, Delivery $delivery): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth('api')->user();
+        if (! $delivery->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk memantau pengantaran ini.',
+            ], 403);
+        }
+
+        // Jika ada kurir yang ditugaskan dan viewer bukan kurir itu sendiri
+        if ($delivery->courier_id && $delivery->courier_id !== $user->id) {
+            broadcast(new CourierTrackingRequested(
+                deliveryId: $delivery->id,
+                deliveryNumber: $delivery->delivery_number,
+                courierId: $delivery->courier_id,
+                isWatching: true,
+                watcherId: $user->id,
+                watcherName: $user->name,
+            ))->toOthers();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permintaan pelacakan kurir telah dikirim.',
+            'data' => [
+                'delivery_id' => $delivery->id,
+                'courier_id' => $delivery->courier_id,
+                'is_watching' => true,
+            ],
+        ]);
+    }
+
+    /**
+     * Notify courier that watcher has left the delivery tracking screen.
+     */
+    public function unwatch(Request $request, Delivery $delivery): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth('api')->user();
+
+        if ($delivery->courier_id && $delivery->courier_id !== $user->id) {
+            broadcast(new CourierTrackingRequested(
+                deliveryId: $delivery->id,
+                deliveryNumber: $delivery->delivery_number,
+                courierId: $delivery->courier_id,
+                isWatching: false,
+                watcherId: $user->id,
+                watcherName: $user->name,
+            ))->toOthers();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pemantauan pengantaran dihentikan.',
+            'data' => [
+                'delivery_id' => $delivery->id,
+                'courier_id' => $delivery->courier_id,
+                'is_watching' => false,
+            ],
+        ]);
+    }
+
+    /**
+     * Update courier location for an active delivery and broadcast to watchers.
+     */
+    public function updateLocation(Request $request, Delivery $delivery): JsonResponse
+    {
+        /** @var User $user */
+        $user = auth('api')->user();
+
+        // Hanya kurir yang ditugaskan (atau dev untuk pengujian) yang boleh update lokasi
+        if ($delivery->courier_id !== $user->id && ! $user->hasRole('dev')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya kurir yang ditugaskan yang dapat memperbarui kordinat pengantaran.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'heading' => ['nullable', 'numeric', 'between:0,360'],
+            'speed' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $lat = (float) $validated['latitude'];
+        $lng = (float) $validated['longitude'];
+        $heading = isset($validated['heading']) ? (float) $validated['heading'] : null;
+        $speed = isset($validated['speed']) ? (float) $validated['speed'] : null;
+
+        // Simpan posisi terakhir kurir di tabel users
+        $user->update([
+            'last_latitude' => $lat,
+            'last_longitude' => $lng,
+            'last_location_updated_at' => now(),
+        ]);
+
+        // Broadcast kordinat kurir via Reverb ke room delivery.{id}
+        broadcast(new CourierLocationUpdated(
+            deliveryId: $delivery->id,
+            courierId: $user->id,
+            courierName: $user->name,
+            latitude: $lat,
+            longitude: $lng,
+            heading: $heading,
+            speed: $speed,
+            updatedAt: now()->toIso8601String(),
+        ))->toOthers();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kordinat kurir berhasil diperbarui.',
+            'data' => [
+                'delivery_id' => $delivery->id,
+                'courier_id' => $user->id,
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'heading' => $heading,
+                'speed' => $speed,
+                'updated_at' => now()->toIso8601String(),
+            ],
         ]);
     }
 }

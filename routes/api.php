@@ -77,6 +77,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('/deliveries/{delivery}/dispatch', [DeliveryController::class, 'dispatchDelivery'])->name('api.deliveries.dispatch');
     Route::post('/deliveries/{delivery}/complete', [DeliveryController::class, 'completeDelivery'])->name('api.deliveries.complete');
     Route::post('/deliveries/{delivery}/cancel', [DeliveryController::class, 'cancelDelivery'])->name('api.deliveries.cancel');
+    Route::post('/deliveries/{delivery}/watch', [DeliveryController::class, 'watch'])->name('api.deliveries.watch');
+    Route::post('/deliveries/{delivery}/unwatch', [DeliveryController::class, 'unwatch'])->name('api.deliveries.unwatch');
+    Route::post('/deliveries/{delivery}/location', [DeliveryController::class, 'updateLocation'])->name('api.deliveries.location');
 
     // Faktur & Piutang Toko
     Route::get('/invoices/create-options', [InvoiceController::class, 'createOptions'])->name('api.invoices.create-options');
