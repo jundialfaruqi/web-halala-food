@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductionController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\RawMaterialController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Broadcast;
@@ -124,4 +125,7 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/purchases/{purchase}', [PurchaseController::class, 'show'])->name('api.purchases.show');
     Route::delete('/purchases/{purchase}', [PurchaseController::class, 'destroy'])->name('api.purchases.destroy');
     Route::post('/purchases/{purchase}/pay-debt', [PurchaseController::class, 'payDebt'])->name('api.purchases.pay-debt');
+
+    // Laporan & Rekapitulasi Bisnis
+    Route::get('/reports', [ReportController::class, 'index'])->name('api.reports.index');
 });
