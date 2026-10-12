@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CashTransaction;
 use App\Models\Delivery;
-use App\Models\Invoice;
-use App\Models\Product;
-use App\Models\Store;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -58,77 +56,89 @@ class DashboardStatController extends Controller
 
     /**
      * Ringkasan Bisnis untuk Manager / Pemilik Usaha
+     * Mengambil data mutasi kas (Pemasukan, Biaya Usaha, dan Prive) dari Buku Kas untuk periode berjalan.
      */
     private function getBusinessStat(): array
     {
-        $today = Carbon::today()->toDateString();
         $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
         $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
 
-        // 1. Penjualan Hari Ini (jika ada), jika 0 ambil total bulan ini
-        $salesToday = (float) Invoice::whereDate('invoice_date', $today)->sum('total_amount');
-        $isMonthly = false;
+        // Ambil mutasi kas untuk periode bulan ini
+        $income = (float) CashTransaction::where('type', 'income')
+            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
 
-        if ($salesToday <= 0) {
-            $salesToday = (float) Invoice::whereBetween('invoice_date', [$startOfMonth, $endOfMonth])->sum('total_amount');
-            $isMonthly = true;
+        $expense = (float) CashTransaction::where('type', 'expense')
+            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
+
+        $prive = (float) CashTransaction::where('type', 'prive')
+            ->whereBetween('transaction_date', [$startOfMonth, $endOfMonth])
+            ->sum('amount');
+
+        // Fallback jika belum ada transaksi di bulan berjalan, ambil total keseluruhan mutasi kas
+        if ($income === 0.0 && $expense === 0.0 && $prive === 0.0) {
+            $income = (float) CashTransaction::where('type', 'income')->sum('amount');
+            $expense = (float) CashTransaction::where('type', 'expense')->sum('amount');
+            $prive = (float) CashTransaction::where('type', 'prive')->sum('amount');
         }
 
-        $formattedSales = $this->formatCurrencyCompact($salesToday);
+        // Hitung Surplus / Defisit kas bersih
+        $net = $income - $expense - $prive;
+        $totalOutflow = $expense + $prive;
 
-        // 2. Stok Barang Jadi Siap Jual
-        $readyStock = (int) Product::sum('stock_ready');
-
-        // 3. Toko Terlayani / Pengantaran Hari ini
-        $deliveriesToday = Delivery::whereDate('delivery_date', $today)->get();
-        if ($deliveriesToday->isEmpty()) {
-            // Ambil pengantaran aktif non-dibatalkan terbaru
-            $deliveriesToday = Delivery::whereIn('status', ['diproses', 'dikirim', 'selesai'])
-                ->where('created_at', '>=', Carbon::now()->subDays(7))
-                ->get();
-        }
-
-        $completedCount = $deliveriesToday->where('status', 'selesai')->count();
-        $dispatchedCount = $deliveriesToday->where('status', 'dikirim')->count();
-        $processingCount = $deliveriesToday->where('status', 'diproses')->count();
-        $totalDeliveries = $completedCount + $dispatchedCount + $processingCount;
-
-        $activeStoresCount = Store::where('is_active', true)->count();
-
-        // Donut Chart Slices
-        $slices = [];
         $percentage = 0;
+        $centerLabel = '0%';
+        $centerSublabel = 'Surplus';
 
-        if ($totalDeliveries > 0) {
-            $percentage = (int) round(($completedCount / $totalDeliveries) * 100);
-
-            if ($completedCount > 0) {
-                $slices[] = [
-                    'label' => 'Selesai',
-                    'value' => $completedCount,
-                    'color' => '#10B981', // Emerald / Green
-                ];
+        if ($income > 0) {
+            $ratio = ($net / $income) * 100;
+            $percentage = (int) max(0, min(100, round($ratio)));
+            if ($net >= 0) {
+                $centerLabel = round($ratio).'%';
+                $centerSublabel = 'Surplus';
+            } else {
+                $centerLabel = abs(round($ratio)).'%';
+                $centerSublabel = 'Defisit';
             }
-            if ($dispatchedCount > 0) {
-                $slices[] = [
-                    'label' => 'Dalam Rute',
-                    'value' => $dispatchedCount,
-                    'color' => '#F59E0B', // Amber / Orange
-                ];
-            }
-            if ($processingCount > 0) {
-                $slices[] = [
-                    'label' => 'Diproses',
-                    'value' => $processingCount,
-                    'color' => '#3B82F6', // Blue
-                ];
-            }
+        } elseif ($totalOutflow > 0) {
+            $percentage = 0;
+            $centerLabel = '0%';
+            $centerSublabel = 'Defisit';
         } else {
-            // Fallback jika belum ada delivery
             $percentage = 100;
+            $centerLabel = '100%';
+            $centerSublabel = 'Stabil';
+        }
+
+        // Donut Chart Slices (Pemasukan, Biaya Usaha, Prive)
+        $slices = [];
+        if ($income > 0) {
             $slices[] = [
-                'label' => 'Toko Aktif',
-                'value' => max(1, $activeStoresCount),
+                'label' => 'Pemasukan',
+                'value' => (int) round($income),
+                'color' => '#10B981', // Emerald / Green
+            ];
+        }
+        if ($expense > 0) {
+            $slices[] = [
+                'label' => 'Biaya Usaha',
+                'value' => (int) round($expense),
+                'color' => '#EF4444', // Red / Rose
+            ];
+        }
+        if ($prive > 0) {
+            $slices[] = [
+                'label' => 'Prive',
+                'value' => (int) round($prive),
+                'color' => '#8B5CF6', // Purple
+            ];
+        }
+
+        if (empty($slices)) {
+            $slices[] = [
+                'label' => 'Kas Usaha',
+                'value' => 1,
                 'color' => '#10B981',
             ];
         }
@@ -136,28 +146,28 @@ class DashboardStatController extends Controller
         return [
             'type' => 'bisnis',
             'title' => 'Ringkasan Bisnis',
-            'date_formatted' => Carbon::now()->translatedFormat('l, d M Y'),
+            'date_formatted' => Carbon::now()->locale('id')->translatedFormat('l, d M Y'),
             'donut' => [
                 'percentage' => $percentage,
-                'center_label' => $percentage.'%',
-                'center_sublabel' => 'Selesai',
+                'center_label' => $centerLabel,
+                'center_sublabel' => $centerSublabel,
                 'slices' => $slices,
             ],
             'metrics' => [
                 [
-                    'label' => $isMonthly ? 'Penjualan Bln Ini' : 'Penjualan Hari Ini',
-                    'value' => $formattedSales,
+                    'label' => 'Pemasukan Periode ini',
+                    'value' => 'Rp '.number_format($income, 0, ',', '.'),
                     'color' => '#10B981',
                 ],
                 [
-                    'label' => 'Produksi Siap',
-                    'value' => number_format($readyStock, 0, ',', '.').' Box',
-                    'color' => '#3B82F6',
+                    'label' => 'Biaya Usaha Periode ini',
+                    'value' => 'Rp '.number_format($expense, 0, ',', '.'),
+                    'color' => '#EF4444',
                 ],
                 [
-                    'label' => 'Toko Mitra',
-                    'value' => $activeStoresCount.' Toko',
-                    'color' => '#F59E0B',
+                    'label' => 'Total Prive',
+                    'value' => 'Rp '.number_format($prive, 0, ',', '.'),
+                    'color' => '#8B5CF6',
                 ],
             ],
         ];
@@ -233,7 +243,7 @@ class DashboardStatController extends Controller
         return [
             'type' => 'pengantaran',
             'title' => 'Tugas Pengantaran Hari Ini',
-            'date_formatted' => Carbon::now()->translatedFormat('l, d M Y'),
+            'date_formatted' => Carbon::now()->locale('id')->translatedFormat('l, d M Y'),
             'donut' => [
                 'percentage' => $percentage,
                 'center_label' => $percentage.'%',
