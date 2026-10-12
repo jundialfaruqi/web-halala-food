@@ -29,3 +29,8 @@ Broadcast::channel('delivery.{id}', function ($user, $id) {
     }
     return $delivery->isAccessibleBy($user);
 });
+
+Broadcast::channel('activities', function ($user) {
+    return $user->hasRole('dev') || $user->hasPermissionTo('aktifitas-semua', 'web') || $user->can('aktifitas-semua');
+});
+

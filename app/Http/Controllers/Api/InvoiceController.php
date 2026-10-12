@@ -345,6 +345,8 @@ class InvoiceController extends Controller
             Log::warning('Broadcast InvoiceCreated error: '.$e->getMessage());
         }
 
+        \App\Services\ActivityService::logInvoiceCreated($invoice, $currentUser);
+
         return response()->json([
             'success' => true,
             'message' => "Faktur tagihan {$invoice->invoice_number} berhasil dibuat.",
@@ -775,6 +777,10 @@ class InvoiceController extends Controller
 
         $invoice->load(['payments.user', 'items.product.unitModel', 'store']);
 
+        if ($invoice->status === 'lunas') {
+            \App\Services\ActivityService::logInvoicePaid($invoice, $payment, auth('api')->user());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Pembayaran sebesar Rp '.number_format($amount, 0, ',', '.').' berhasil dicatat.',
@@ -955,6 +961,10 @@ class InvoiceController extends Controller
         });
 
         $invoice->load(['payments.user', 'items.product.unitModel', 'store', 'courier']);
+
+        if ($invoice->status === 'lunas') {
+            \App\Services\ActivityService::logInvoicePaid($invoice, null, auth('api')->user());
+        }
 
         return response()->json([
             'success' => true,

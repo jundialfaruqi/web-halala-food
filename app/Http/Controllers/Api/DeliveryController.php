@@ -319,6 +319,7 @@ class DeliveryController extends Controller
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
 
         event(new DeliveryCreated($delivery));
+        \App\Services\ActivityService::logDeliveryCreated($delivery, $currentUser);
 
         return response()->json([
             'success' => true,
@@ -548,6 +549,8 @@ class DeliveryController extends Controller
         $delivery->refresh();
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
 
+        \App\Services\ActivityService::logDeliveryDispatched($delivery, $user);
+
         return response()->json([
             'success' => true,
             'message' => "Surat jalan {$delivery->delivery_number} kini dalam perjalanan (Sedang Dikirim).",
@@ -663,6 +666,11 @@ class DeliveryController extends Controller
 
         $delivery->refresh();
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel', 'invoice']);
+
+        \App\Services\ActivityService::logDeliveryCompleted($delivery, $user);
+        if ($invoice) {
+            \App\Services\ActivityService::logInvoiceCreated($invoice, $user);
+        }
 
         $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : '';
 

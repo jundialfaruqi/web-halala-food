@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ActivityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CashBookController;
 use App\Http\Controllers\Api\DashboardStatController;
@@ -136,4 +137,7 @@ Route::middleware(['auth:api'])->group(function () {
 
     // Dashboard & Stat Ringkasan (Permission-based)
     Route::get('/dashboard/stat', [DashboardStatController::class, 'index'])->name('api.dashboard.stat');
+
+    // Linimasa Aktifitas Sistem (WhatsApp-style Activity Feed)
+    Route::get('/activities', [ActivityController::class, 'index'])->name('api.activities.index');
 });

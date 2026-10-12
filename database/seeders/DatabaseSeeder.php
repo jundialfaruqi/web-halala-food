@@ -155,6 +155,13 @@ class DatabaseSeeder extends Seeder
                     'aset-delete' => 'Menghapus catatan aset tetap dari inventaris.',
                 ],
             ],
+            'Aktifitas & Linimasa' => [
+                'description' => 'Akses pemantauan linimasa aktifitas operasional pengantaran dan faktur sistem.',
+                'permissions' => [
+                    'aktifitas-semua' => 'Melihat seluruh linimasa aktifitas operasional dari semua staf dan pengguna.',
+                    'aktifitas-kurir' => 'Melihat linimasa aktifitas surat jalan dan faktur khusus yang ditugaskan ke kurir bersangkutan.',
+                ],
+            ],
         ];
 
         // Track valid active permission names
@@ -260,9 +267,10 @@ class DatabaseSeeder extends Seeder
             'aset-create',
             'aset-edit',
             'aset-delete',
+            'aktifitas-semua',
         ]);
 
-        // Kurir gets dashboard access, toko view, pengantaran view & status, faktur view, faktur pembayaran, and faktur rekonsiliasi
+        // Kurir gets dashboard access, toko view, pengantaran view & status, faktur view, faktur pembayaran, faktur rekonsiliasi, and aktifitas-kurir
         $kurirRole->syncPermissions([
             'dashboard-view',
             'dashboard-stat-pengantaran',
@@ -272,6 +280,7 @@ class DatabaseSeeder extends Seeder
             'faktur-view',
             'faktur-pembayaran',
             'faktur-rekonsiliasi',
+            'aktifitas-kurir',
         ]);
 
         // 4. Seed Standard Users for the 3 Roles
