@@ -171,4 +171,12 @@ class Store extends Model
     {
         return $query->where('is_active', true);
     }
+
+    /**
+     * Get invoices associated with the store.
+     */
+    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Invoice::class, 'store_id');
+    }
 }

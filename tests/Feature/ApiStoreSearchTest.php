@@ -58,3 +58,43 @@ test('authenticated user with toko-view can search stores by name, owner, addres
     $resLimit10->assertOk();
     expect(count($resLimit10->json('data')))->toBeLessThanOrEqual(10);
 });
+
+test('authenticated user can get stores sorted by highest sales', function () {
+    $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
+    $token = JWTAuth::fromUser($manager);
+
+    $storeA = Store::create([
+        'name' => 'Toko Penjualan Sedang',
+        'is_active' => true,
+    ]);
+    $storeB = Store::create([
+        'name' => 'Toko Penjualan Tertinggi',
+        'is_active' => true,
+    ]);
+
+    \App\Models\Invoice::create([
+        'invoice_number' => 'INV-TEST-TOP-1',
+        'store_id' => $storeB->id,
+        'invoice_date' => now()->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
+        'total_amount' => 5000000,
+        'status' => 'lunas',
+    ]);
+
+    \App\Models\Invoice::create([
+        'invoice_number' => 'INV-TEST-TOP-2',
+        'store_id' => $storeA->id,
+        'invoice_date' => now()->toDateString(),
+        'due_date' => now()->addDays(7)->toDateString(),
+        'total_amount' => 1000000,
+        'status' => 'lunas',
+    ]);
+
+    $response = withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/stores?sort_by=sales&per_page=10');
+
+    $response->assertOk();
+    $items = collect($response->json('data'));
+    expect($items->first()['name'])->toBe('Toko Penjualan Tertinggi');
+    expect($items->first()['total_sales'])->toBeGreaterThan(0);
+});

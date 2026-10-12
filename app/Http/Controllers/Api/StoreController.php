@@ -53,8 +53,21 @@ class StoreController extends Controller
             $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
-        // Urutkan berdasarkan nama toko
-        $query->orderBy('name', 'asc');
+        // Urutkan berdasarkan total penjualan jika diminta
+        if ($request->input('sort_by') === 'sales') {
+            $query->withSum(['invoices as total_sales' => function ($q) {
+                $q->where('status', '!=', 'dibatalkan');
+            }], 'total_amount')
+            ->withCount(['invoices as sales_count' => function ($q) {
+                $q->where('status', '!=', 'dibatalkan');
+            }])
+            ->orderByDesc('total_sales')
+            ->orderByDesc('sales_count')
+            ->orderBy('name', 'asc');
+        } else {
+            // Urutkan default berdasarkan nama toko
+            $query->orderBy('name', 'asc');
+        }
 
         // Pagination
         $perPage = max(1, min((int) $request->input('per_page', 15), 100));
