@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CashBookController;
+use App\Http\Controllers\Api\DashboardStatController;
 use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\ProductController;
@@ -132,4 +133,7 @@ Route::middleware(['auth:api'])->group(function () {
 
     // Laporan & Rekapitulasi Bisnis
     Route::get('/reports', [ReportController::class, 'index'])->name('api.reports.index');
+
+    // Dashboard & Stat Ringkasan (Permission-based)
+    Route::get('/dashboard/stat', [DashboardStatController::class, 'index'])->name('api.dashboard.stat');
 });

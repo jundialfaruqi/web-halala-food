@@ -30,6 +30,8 @@ class DatabaseSeeder extends Seeder
                 'description' => 'Akses ringkasan metrik performa toko dan operasional.',
                 'permissions' => [
                     'dashboard-view' => 'Melihat dashboard utama dan ringkasan metrik performa.',
+                    'dashboard-stat-bisnis' => 'Melihat kartu statistik ringkasan bisnis, omzet penjualan, dan performa keuangan di dashboard.',
+                    'dashboard-stat-pengantaran' => 'Melihat kartu statistik tugas pengantaran surat jalan dan progres pengiriman kurir di dashboard.',
                 ],
             ],
             'Pengguna & Hak Akses' => [
@@ -209,6 +211,8 @@ class DatabaseSeeder extends Seeder
         // Manager gets operational management + Bahan Baku, Resep, Produksi, Toko, Pengantaran & Faktur permissions
         $managerRole->syncPermissions([
             'dashboard-view',
+            'dashboard-stat-bisnis',
+            'dashboard-stat-pengantaran',
             'user-manage',
             'role-manage',
             'permission-manage',
@@ -261,6 +265,7 @@ class DatabaseSeeder extends Seeder
         // Kurir gets dashboard access, toko view, pengantaran view & status, faktur view, faktur pembayaran, and faktur rekonsiliasi
         $kurirRole->syncPermissions([
             'dashboard-view',
+            'dashboard-stat-pengantaran',
             'toko-view',
             'pengantaran-view',
             'pengantaran-status',
