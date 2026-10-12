@@ -61,8 +61,8 @@ class ActivityController extends Controller
             $query->where('id', '<', (int) $request->input('before_id'));
         }
 
-        // Urutan: dari yang terbaru ke yang terlama (descending)
-        $query->orderByDesc('id');
+        // Urutan: dari yang terbaru ke yang terlama (descending secara kronologis)
+        $query->orderByDesc('created_at')->orderByDesc('id');
 
         $paginator = $query->paginate($perPage);
 
