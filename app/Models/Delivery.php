@@ -22,6 +22,9 @@ class Delivery extends Model
     {
         static::deleting(function (Delivery $delivery) {
             ActivityService::markDeliveryDeleted($delivery);
+            try {
+                broadcast(new \App\Events\DeliveryUpdated($delivery));
+            } catch (\Throwable $e) {}
         });
     }
 

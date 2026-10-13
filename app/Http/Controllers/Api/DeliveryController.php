@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\CourierLocationUpdated;
 use App\Events\CourierTrackingRequested;
 use App\Events\DeliveryCreated;
+use App\Events\DeliveryUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
@@ -549,6 +550,7 @@ class DeliveryController extends Controller
         $delivery->refresh();
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
 
+        event(new DeliveryUpdated($delivery));
         \App\Services\ActivityService::logDeliveryDispatched($delivery, $user);
 
         return response()->json([
@@ -667,6 +669,7 @@ class DeliveryController extends Controller
         $delivery->refresh();
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel', 'invoice']);
 
+        event(new DeliveryUpdated($delivery));
         \App\Services\ActivityService::logDeliveryCompleted($delivery, $user);
         if ($invoice) {
             \App\Services\ActivityService::logInvoiceCreated($invoice, $user);
@@ -730,6 +733,8 @@ class DeliveryController extends Controller
 
         $delivery->refresh();
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
+
+        event(new DeliveryUpdated($delivery));
 
         return response()->json([
             'success' => true,
