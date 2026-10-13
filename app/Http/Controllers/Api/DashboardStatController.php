@@ -155,12 +155,12 @@ class DashboardStatController extends Controller
             ],
             'metrics' => [
                 [
-                    'label' => 'Pemasukan Periode ini',
+                    'label' => 'Pemasukan',
                     'value' => 'Rp '.number_format($income, 0, ',', '.'),
                     'color' => '#10B981',
                 ],
                 [
-                    'label' => 'Biaya Usaha Periode ini',
+                    'label' => 'Biaya Usaha',
                     'value' => 'Rp '.number_format($expense, 0, ',', '.'),
                     'color' => '#EF4444',
                 ],

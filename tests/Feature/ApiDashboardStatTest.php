@@ -32,8 +32,8 @@ test('manager with dashboard-stat-bisnis receives business statistics and donut 
         ->and($res->json('data.donut'))->toHaveKeys(['percentage', 'center_label', 'center_sublabel', 'slices'])
         ->and($res->json('data.metrics'))->toBeArray()
         ->and(count($res->json('data.metrics')))->toBe(3)
-        ->and($res->json('data.metrics.0.label'))->toBe('Pemasukan Periode ini')
-        ->and($res->json('data.metrics.1.label'))->toBe('Biaya Usaha Periode ini')
+        ->and($res->json('data.metrics.0.label'))->toBe('Pemasukan')
+        ->and($res->json('data.metrics.1.label'))->toBe('Biaya Usaha')
         ->and($res->json('data.metrics.2.label'))->toBe('Total Prive')
         ->and($res->json('data.date_formatted'))->toMatch('/^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu), \d{2} (Jan|Feb|Mar|Apr|Mei|Jun|Jul|Agu|Sep|Okt|Nov|Des) \d{4}$/');
 });
