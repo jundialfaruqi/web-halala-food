@@ -48,7 +48,7 @@ test('kurir with dashboard-stat-pengantaran receives courier delivery statistics
     $res->assertOk();
     expect($res->json('success'))->toBeTrue()
         ->and($res->json('data.type'))->toBe('pengantaran')
-        ->and($res->json('data.title'))->toBe('Tugas Pengantaran Hari Ini')
+        ->and($res->json('data.title'))->toBe('Tugas Pengantaran')
         ->and($res->json('data.donut'))->toHaveKeys(['percentage', 'center_label', 'center_sublabel', 'slices'])
         ->and($res->json('data.metrics'))->toBeArray()
         ->and(count($res->json('data.metrics')))->toBe(3)

@@ -174,27 +174,12 @@ class DashboardStatController extends Controller
     }
 
     /**
-     * Ringkasan Pengantaran untuk Kurir
+     * Ringkasan Pengantaran untuk Kurir (Akumulasi Keseluruhan)
      */
     private function getCourierStat(User $user): array
     {
-        $today = Carbon::today()->toDateString();
-
-        // Ambil surat jalan yang ditugaskan ke kurir ini hari ini atau yang sedang aktif
-        $deliveries = Delivery::where('courier_id', $user->id)
-            ->where(function ($q) use ($today) {
-                $q->whereDate('delivery_date', $today)
-                    ->orWhereIn('status', ['diproses', 'dikirim']);
-            })
-            ->get();
-
-        // Jika hari ini belum ada dan tidak ada aktif, ambil 10 pengantaran terakhir untuk demo/tampilan
-        if ($deliveries->isEmpty()) {
-            $deliveries = Delivery::where('courier_id', $user->id)
-                ->latest('id')
-                ->take(10)
-                ->get();
-        }
+        // Ambil akumulasi seluruh surat jalan yang ditugaskan ke kurir ini
+        $deliveries = Delivery::where('courier_id', $user->id)->get();
 
         $completedCount = $deliveries->where('status', 'selesai')->count();
         $dispatchedCount = $deliveries->where('status', 'dikirim')->count();
@@ -234,7 +219,7 @@ class DashboardStatController extends Controller
         } else {
             $percentage = 0;
             $slices[] = [
-                'label' => 'Tidak Ada Tugas',
+                'label' => 'Belum Ada Tugas',
                 'value' => 1,
                 'color' => '#CBD5E1',
             ];
@@ -242,7 +227,7 @@ class DashboardStatController extends Controller
 
         return [
             'type' => 'pengantaran',
-            'title' => 'Tugas Pengantaran Hari Ini',
+            'title' => 'Tugas Pengantaran',
             'date_formatted' => Carbon::now()->locale('id')->translatedFormat('l, d M Y'),
             'donut' => [
                 'percentage' => $percentage,
