@@ -341,7 +341,7 @@ class DeliveryController extends Controller
         }
 
         // Consolidated and Queued Push Notification to Courier
-        if ($courierId = $request->input('courier_id')) {
+        if ($courierId) {
             $count = count($createdDeliveries);
             if ($count === 1) {
                 $del = $createdDeliveries[0];
@@ -364,7 +364,7 @@ class DeliveryController extends Controller
                     [
                         'type' => 'delivery_batch',
                         'count' => (string) $count,
-                        'delivery_ids' => collect($createdDeliveries)->pluck('id')->map(fn ($id) => (string) $id)->values()->all(),
+                        'delivery_ids' => json_encode(collect($createdDeliveries)->pluck('id')->values()->all()),
                     ]
                 );
             }

@@ -365,7 +365,7 @@ class InvoiceController extends Controller
         }
 
         // Consolidated and Queued Push Notification to Courier
-        if ($courierId = $request->input('courier_id')) {
+        if ($courierId) {
             $count = count($createdInvoices);
             if ($count === 1) {
                 $inv = $createdInvoices[0];
@@ -388,7 +388,7 @@ class InvoiceController extends Controller
                     [
                         'type' => 'invoice_batch',
                         'count' => (string) $count,
-                        'invoice_ids' => collect($createdInvoices)->pluck('id')->map(fn ($id) => (string) $id)->values()->all(),
+                        'invoice_ids' => json_encode(collect($createdInvoices)->pluck('id')->values()->all()),
                     ]
                 );
             }

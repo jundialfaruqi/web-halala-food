@@ -119,7 +119,11 @@ class FcmService
             // Format data payload wajib berupa string key-value
             $stringData = [];
             foreach ($data as $key => $val) {
-                $stringData[(string) $key] = (string) $val;
+                if (is_array($val) || is_object($val)) {
+                    $stringData[(string) $key] = json_encode($val);
+                } else {
+                    $stringData[(string) $key] = (string) $val;
+                }
             }
 
             $messagePayload = [
