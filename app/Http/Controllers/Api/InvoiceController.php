@@ -412,6 +412,13 @@ class InvoiceController extends Controller
             $query->whereDate('invoice_date', $request->input('invoice_date'));
         }
 
+        // Route Filter
+        if ($request->filled('route') && $request->input('route') !== 'all') {
+            $query->whereHas('store', function ($sq) use ($request) {
+                $sq->where('route', $request->input('route'));
+            });
+        }
+
         // Status counts for badge tabs
         $statusCounts = [
             'all' => Invoice::count(),
@@ -427,7 +434,7 @@ class InvoiceController extends Controller
         // Store options list for filter dropdown
         $stores = Store::where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'owner_name', 'address', 'phone', 'route']);
+            ->get(['id', 'name', 'owner_name', 'address', 'phone', 'route', 'latitude', 'longitude', 'photo']);
 
         // Order by latest invoice date and id
         $query->orderByDesc('invoice_date')->orderByDesc('id');
@@ -448,6 +455,12 @@ class InvoiceController extends Controller
             ],
             'status_counts' => $statusCounts,
             'stores' => $stores,
+            'routes' => Store::whereNotNull('route')
+                ->where('route', '!=', '')
+                ->distinct()
+                ->orderBy('route')
+                ->pluck('route')
+                ->values(),
         ]);
     }
 
