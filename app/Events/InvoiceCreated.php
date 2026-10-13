@@ -37,7 +37,6 @@ class InvoiceCreated implements ShouldBroadcastNow
 
         if ($this->invoice->courier_id) {
             $channels[] = new PrivateChannel('courier.'.$this->invoice->courier_id);
-            $channels[] = new PrivateChannel('user.'.$this->invoice->courier_id);
         }
 
         return $channels;

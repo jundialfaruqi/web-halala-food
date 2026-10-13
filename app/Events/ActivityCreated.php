@@ -37,11 +37,13 @@ class ActivityCreated implements ShouldBroadcastNow
 
         if ($this->activity->courier_id) {
             $channels[] = new PrivateChannel('courier.' . $this->activity->courier_id);
-            $channels[] = new PrivateChannel('user.' . $this->activity->courier_id);
         }
 
         if ($this->activity->user_id && $this->activity->user_id !== $this->activity->courier_id) {
-            $channels[] = new PrivateChannel('user.' . $this->activity->user_id);
+            $user = $this->activity->user;
+            if (! $user || ! $user->hasAnyRole(['dev', 'manager'])) {
+                $channels[] = new PrivateChannel('user.' . $this->activity->user_id);
+            }
         }
 
         return $channels;

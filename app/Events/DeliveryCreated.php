@@ -37,7 +37,6 @@ class DeliveryCreated implements ShouldBroadcastNow
 
         if ($this->delivery->courier_id) {
             $channels[] = new PrivateChannel('courier.'.$this->delivery->courier_id);
-            $channels[] = new PrivateChannel('user.'.$this->delivery->courier_id);
         }
 
         return $channels;
