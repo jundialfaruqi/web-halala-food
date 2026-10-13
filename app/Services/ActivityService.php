@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Events\ActivityCreated;
+use App\Events\ActivityUpdated;
 use App\Models\Activity;
 use App\Models\Delivery;
 use App\Models\Invoice;
@@ -215,6 +216,7 @@ class ActivityService
 
             $act->data = $data;
             $act->save();
+            self::broadcastActivityUpdated($act);
             $count++;
         }
 
@@ -244,6 +246,7 @@ class ActivityService
 
             $act->data = $data;
             $act->save();
+            self::broadcastActivityUpdated($act);
             $count++;
         }
 
@@ -251,7 +254,7 @@ class ActivityService
     }
 
     /**
-     * Broadcast realtime event via Reverb/Pusher.
+     * Broadcast realtime event via Reverb/Pusher saat aktifitas baru dibuat.
      */
     private static function broadcastActivity(Activity $activity): void
     {
@@ -259,6 +262,18 @@ class ActivityService
             broadcast(new ActivityCreated($activity));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('[ActivityService] Failed to broadcast activity: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Broadcast realtime event via Reverb/Pusher saat status aktifitas diperbarui (misal dihapus).
+     */
+    private static function broadcastActivityUpdated(Activity $activity): void
+    {
+        try {
+            broadcast(new ActivityUpdated($activity));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[ActivityService] Failed to broadcast activity update: ' . $e->getMessage());
         }
     }
 
