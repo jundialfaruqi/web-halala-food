@@ -85,6 +85,8 @@ class ActivityController extends Controller
                 'subject_type' => $act->subject_type,
                 'subject_id' => $act->subject_id,
                 'data' => $act->data,
+                'is_deleted' => (bool) ($act->data['is_deleted'] ?? false),
+                'deletion_message' => $act->data['deletion_message'] ?? null,
                 'created_at' => $act->created_at?->toIso8601String(),
                 'time_formatted' => $act->time_formatted,
                 'date_formatted' => $act->date_formatted,

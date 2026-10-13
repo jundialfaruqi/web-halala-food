@@ -193,6 +193,64 @@ class ActivityService
     }
 
     /**
+     * Tandai log aktifitas yang berkaitan dengan faktur yang dihapus.
+     */
+    public static function markInvoiceDeleted(Invoice $invoice, ?User $actor = null): int
+    {
+        $actor = $actor ?? auth('api')->user() ?? Auth::user();
+        $actorName = $actor?->name ?? 'Pengguna';
+
+        $activities = Activity::where(function ($query) use ($invoice) {
+            $query->where('subject_type', Invoice::class)
+                ->where('subject_id', $invoice->id);
+        })->orWhere('data->invoice_id', $invoice->id)->get();
+
+        $count = 0;
+        foreach ($activities as $act) {
+            $data = $act->data ?? [];
+            $data['is_deleted'] = true;
+            $data['deleted_by'] = $actorName;
+            $data['deleted_at'] = now()->toIso8601String();
+            $data['deletion_message'] = "Faktur {$invoice->invoice_number} telah dihapus oleh {$actorName}";
+
+            $act->data = $data;
+            $act->save();
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Tandai log aktifitas yang berkaitan dengan surat jalan yang dihapus.
+     */
+    public static function markDeliveryDeleted(Delivery $delivery, ?User $actor = null): int
+    {
+        $actor = $actor ?? auth('api')->user() ?? Auth::user();
+        $actorName = $actor?->name ?? 'Pengguna';
+
+        $activities = Activity::where(function ($query) use ($delivery) {
+            $query->where('subject_type', Delivery::class)
+                ->where('subject_id', $delivery->id);
+        })->orWhere('data->delivery_id', $delivery->id)->get();
+
+        $count = 0;
+        foreach ($activities as $act) {
+            $data = $act->data ?? [];
+            $data['is_deleted'] = true;
+            $data['deleted_by'] = $actorName;
+            $data['deleted_at'] = now()->toIso8601String();
+            $data['deletion_message'] = "Surat jalan {$delivery->delivery_number} telah dihapus oleh {$actorName}";
+
+            $act->data = $data;
+            $act->save();
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
      * Broadcast realtime event via Reverb/Pusher.
      */
     private static function broadcastActivity(Activity $activity): void

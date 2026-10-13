@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ActivityService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,13 @@ use Illuminate\Support\Str;
 class Delivery extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Delivery $delivery) {
+            ActivityService::markDeliveryDeleted($delivery);
+        });
+    }
 
     protected $fillable = [
         'delivery_number',
