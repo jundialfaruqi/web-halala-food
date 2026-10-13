@@ -359,7 +359,7 @@
                                     class="block text-xs font-bold uppercase tracking-wider text-brand-warm-gray mb-1.5">
                                     Harga Perolehan (Rp) <span class="text-red-600">*</span>
                                 </label>
-                                <input type="number" wire:model="purchase_price" min="0" step="1000"
+                                <input type="number" wire:model="purchase_price" min="0" step="any"
                                     placeholder="0"
                                     class="w-full px-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary" />
                                 @error('purchase_price')

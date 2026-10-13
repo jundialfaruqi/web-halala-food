@@ -63,7 +63,7 @@
                     </label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-brand-warm-gray">Rp</span>
-                        <input type="number" id="consignment_price" wire:model="consignment_price" step="500" min="0" placeholder="12000"
+                        <input type="number" id="consignment_price" wire:model="consignment_price" step="any" min="0" placeholder="12000"
                             class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-mono font-bold text-brand-espresso focus:outline-none focus:border-brand-primary transition">
                     </div>
                     @error('consignment_price')
@@ -79,7 +79,7 @@
                     </label>
                     <div class="relative">
                         <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-brand-warm-gray">Rp</span>
-                        <input type="number" id="retail_price" wire:model="retail_price" step="500" min="0" placeholder="15000"
+                        <input type="number" id="retail_price" wire:model="retail_price" step="any" min="0" placeholder="15000"
                             class="w-full pl-10 pr-4 py-2.5 bg-white border border-brand-border rounded-xl text-sm font-mono text-brand-espresso focus:outline-none focus:border-brand-primary transition">
                     </div>
                     @error('retail_price')

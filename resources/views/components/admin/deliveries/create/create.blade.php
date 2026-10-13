@@ -193,7 +193,7 @@
                                 <td class="px-4 py-3">
                                     <div class="relative">
                                         <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-brand-warm-gray">Rp</span>
-                                        <input type="number" step="500" min="0" wire:model.live="items.{{ $index }}.unit_price"
+                                        <input type="number" step="any" min="0" wire:model.live="items.{{ $index }}.unit_price"
                                             class="w-full pl-8 pr-3 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-brand-espresso focus:outline-none focus:border-brand-primary font-mono">
                                     </div>
                                     @error("items.{$index}.unit_price")

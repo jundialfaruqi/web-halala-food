@@ -227,7 +227,7 @@
                                     <div class="relative">
                                         <span
                                             class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-brand-warm-gray">Rp</span>
-                                        <input type="number" step="500" min="0"
+                                        <input type="number" step="any" min="0"
                                             wire:model.live="items.{{ $index }}.unit_price"
                                             class="w-full pl-8 pr-2.5 py-1.5 bg-white border border-brand-border rounded-lg text-sm text-brand-espresso focus:outline-none focus:border-brand-primary font-mono text-right">
                                     </div>
@@ -271,7 +271,7 @@
                                 Potongan / Diskon (Rp)
                             </td>
                             <td class="px-4 py-2 text-right">
-                                <input type="number" min="0" step="1000" wire:model.live="discount"
+                                <input type="number" min="0" step="any" wire:model.live="discount"
                                     class="w-36 text-right px-3 py-1 bg-white border border-brand-border rounded-lg text-sm font-mono text-brand-espresso focus:outline-none focus:border-brand-primary">
                             </td>
                             <td></td>
