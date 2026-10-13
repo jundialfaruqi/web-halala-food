@@ -91,6 +91,14 @@ class Store extends Model
     }
 
     /**
+     * Get sold items count as integer (default 0 if queried via withSum/loadSum).
+     */
+    public function getSoldItemsCountAttribute(mixed $value): ?int
+    {
+        return array_key_exists('sold_items_count', $this->attributes) ? (int) ($value ?? 0) : null;
+    }
+
+    /**
      * Validate photo base64 data for maximum upload size and allowed formats.
      *
      * @return string|null Error message if invalid, null if valid
