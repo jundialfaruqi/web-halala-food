@@ -195,9 +195,13 @@ class InvoiceController extends Controller
             ], 403);
         }
 
+        $hasStoreIds = $request->has('store_ids') && is_array($request->input('store_ids')) && count($request->input('store_ids')) > 0;
+
         $validator = Validator::make($request->all(), [
             'invoice_number' => ['nullable', 'string', 'max:50', 'unique:invoices,invoice_number'],
-            'store_id' => ['required', 'exists:stores,id'],
+            'store_id' => [$hasStoreIds ? 'nullable' : 'required', 'exists:stores,id'],
+            'store_ids' => ['nullable', 'array', 'min:1'],
+            'store_ids.*' => ['required', 'exists:stores,id'],
             'courier_id' => ['nullable', 'exists:users,id'],
             'delivery_id' => [
                 'nullable',
@@ -227,7 +231,9 @@ class InvoiceController extends Controller
             'items.*.returned_quantity' => ['nullable', 'integer', 'min:0'],
         ], [
             'store_id.required' => 'Pilih toko mitra tujuan penagihan.',
+            'store_ids.min' => 'Pilih minimal 1 toko mitra tujuan penagihan.',
             'store_id.exists' => 'Toko mitra yang dipilih tidak valid.',
+            'store_ids.*.exists' => 'Salah satu toko mitra yang dipilih tidak valid.',
             'courier_id.exists' => 'Kurir yang dipilih tidak valid.',
             'delivery_id.exists' => 'Surat jalan yang dipilih tidak valid.',
             'invoice_date.required' => 'Tanggal faktur wajib diisi.',
@@ -265,10 +271,6 @@ class InvoiceController extends Controller
         $discount = (float) ($request->input('discount') ?? 0);
         $totalAmount = max(0.0, $subtotal - $discount);
 
-        $invoiceNumber = $request->filled('invoice_number')
-            ? trim((string) $request->input('invoice_number'))
-            : Invoice::generateInvoiceNumber();
-
         /** @var User|null $currentUser */
         $currentUser = auth('api')->user();
         $isCourier = $currentUser && $currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager']);
@@ -279,78 +281,96 @@ class InvoiceController extends Controller
             $courierId = $delivery?->courier_id;
         }
 
-        $invoice = DB::transaction(function () use ($request, $invoiceNumber, $courierId, $subtotal, $discount, $totalAmount, $itemsData) {
-            $invoice = Invoice::create([
-                'invoice_number' => $invoiceNumber,
-                'delivery_id' => $request->input('delivery_id'),
-                'store_id' => $request->input('store_id'),
-                'courier_id' => $courierId,
-                'created_by' => auth('api')->id(),
-                'invoice_date' => $request->input('invoice_date'),
-                'due_date' => $request->input('due_date'),
-                'subtotal' => $subtotal,
-                'discount' => $discount,
-                'total_amount' => $totalAmount,
-                'paid_amount' => 0.00,
-                'remaining_balance' => $totalAmount,
-                'status' => 'belum_dibayar',
-                'notes' => $request->input('notes'),
-            ]);
+        $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
 
-            foreach ($itemsData as $item) {
-                $qty = (int) $item['quantity'];
-                $price = (float) $item['unit_price'];
-                $delivered = isset($item['delivered_quantity']) && $item['delivered_quantity'] !== '' ? (int) $item['delivered_quantity'] : $qty;
-                $remaining = (int) ($item['remaining_quantity'] ?? 0);
-                $damaged = (int) ($item['damaged_quantity'] ?? 0);
-                $returned = (int) ($item['returned_quantity'] ?? 0);
+        $createdInvoices = DB::transaction(function () use ($targetStoreIds, $request, $courierId, $subtotal, $discount, $totalAmount, $itemsData) {
+            $invoices = [];
+            foreach ($targetStoreIds as $idx => $stId) {
+                $invNum = ($idx === 0 && count($targetStoreIds) === 1 && $request->filled('invoice_number'))
+                    ? trim((string) $request->input('invoice_number'))
+                    : Invoice::generateInvoiceNumber();
 
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'product_id' => $item['product_id'],
-                    'delivered_quantity' => $delivered,
-                    'remaining_quantity' => $remaining,
-                    'damaged_quantity' => $damaged,
-                    'returned_quantity' => $returned,
-                    'quantity' => $qty,
-                    'unit_price' => $price,
-                    'subtotal' => $qty * $price,
+                $invoice = Invoice::create([
+                    'invoice_number' => $invNum,
+                    'delivery_id' => count($targetStoreIds) === 1 ? $request->input('delivery_id') : null,
+                    'store_id' => $stId,
+                    'courier_id' => $courierId,
+                    'created_by' => auth('api')->id(),
+                    'invoice_date' => $request->input('invoice_date'),
+                    'due_date' => $request->input('due_date'),
+                    'subtotal' => $subtotal,
+                    'discount' => $discount,
+                    'total_amount' => $totalAmount,
+                    'paid_amount' => 0.00,
+                    'remaining_balance' => $totalAmount,
+                    'status' => 'belum_dibayar',
+                    'notes' => $request->input('notes'),
                 ]);
 
-                // Increment warehouse stock for returned goods that were brought back in good condition
-                if ($returned > 0) {
-                    Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
+                foreach ($itemsData as $item) {
+                    $qty = (int) $item['quantity'];
+                    $price = (float) $item['unit_price'];
+                    $delivered = isset($item['delivered_quantity']) && $item['delivered_quantity'] !== '' ? (int) $item['delivered_quantity'] : $qty;
+                    $remaining = (int) ($item['remaining_quantity'] ?? 0);
+                    $damaged = (int) ($item['damaged_quantity'] ?? 0);
+                    $returned = (int) ($item['returned_quantity'] ?? 0);
+
+                    InvoiceItem::create([
+                        'invoice_id' => $invoice->id,
+                        'product_id' => $item['product_id'],
+                        'delivered_quantity' => $delivered,
+                        'remaining_quantity' => $remaining,
+                        'damaged_quantity' => $damaged,
+                        'returned_quantity' => $returned,
+                        'quantity' => $qty,
+                        'unit_price' => $price,
+                        'subtotal' => $qty * $price,
+                    ]);
+
+                    // Increment warehouse stock for returned goods that were brought back in good condition
+                    if ($returned > 0) {
+                        Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
+                    }
                 }
+
+                $invoices[] = $invoice;
             }
 
-            return $invoice;
+            return $invoices;
         });
 
-        // Sinkronisasi pembukuan & akuntansi
-        AccountingService::syncInvoiceAccounting($invoice);
+        foreach ($createdInvoices as $inv) {
+            // Sinkronisasi pembukuan & akuntansi
+            AccountingService::syncInvoiceAccounting($inv);
 
-        $invoice->load([
-            'store',
-            'delivery',
-            'courier',
-            'creator',
-            'items.product.unitModel',
-            'payments.user',
-        ]);
+            $inv->load([
+                'store',
+                'delivery',
+                'courier',
+                'creator',
+                'items.product.unitModel',
+                'payments.user',
+            ]);
 
-        // Broadcast event ke kurir yang ditugaskan & manajemen secara real-time via WebSocket Reverb
-        try {
-            event(new InvoiceCreated($invoice));
-        } catch (\Throwable $e) {
-            Log::warning('Broadcast InvoiceCreated error: '.$e->getMessage());
+            // Broadcast event ke kurir yang ditugaskan & manajemen secara real-time via WebSocket Reverb
+            try {
+                event(new InvoiceCreated($inv));
+            } catch (\Throwable $e) {
+                Log::warning('Broadcast InvoiceCreated error: '.$e->getMessage());
+            }
+
+            \App\Services\ActivityService::logInvoiceCreated($inv, $currentUser);
         }
 
-        \App\Services\ActivityService::logInvoiceCreated($invoice, $currentUser);
+        $message = count($createdInvoices) > 1
+            ? count($createdInvoices) . " faktur tagihan berhasil dibuat untuk masing-masing toko."
+            : "Faktur tagihan {$createdInvoices[0]->invoice_number} berhasil dibuat.";
 
         return response()->json([
             'success' => true,
-            'message' => "Faktur tagihan {$invoice->invoice_number} berhasil dibuat.",
-            'data' => $invoice,
+            'message' => $message,
+            'data' => $createdInvoices[0],
+            'invoices' => $createdInvoices,
         ], 201);
     }
 
