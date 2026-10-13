@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Delivery;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
@@ -23,14 +24,14 @@ Broadcast::channel('deliveries', function ($user) {
 });
 
 Broadcast::channel('delivery.{id}', function ($user, $id) {
-    $delivery = \App\Models\Delivery::find($id);
+    $delivery = Delivery::find($id);
     if (! $delivery) {
         return false;
     }
+
     return $delivery->isAccessibleBy($user);
 });
 
 Broadcast::channel('activities', function ($user) {
     return $user->hasRole('dev') || $user->hasPermissionTo('aktifitas-semua', 'web') || $user->can('aktifitas-semua');
 });
-

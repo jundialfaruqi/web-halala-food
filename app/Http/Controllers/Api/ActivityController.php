@@ -12,7 +12,7 @@ class ActivityController extends Controller
 {
     /**
      * Mendapatkan daftar linimasa aktifitas sistem dengan paginasi berbasis hak akses / permission.
-     * 
+     *
      * Hak Akses:
      * - 'aktifitas-semua' : melihat semua aktifitas dari seluruh user.
      * - 'aktifitas-kurir' : hanya melihat aktifitas yang ditujukan ke kurir tersebut (courier_id)
@@ -46,7 +46,7 @@ class ActivityController extends Controller
         if (! $canViewAll && $canViewCourier) {
             $query->where(function ($q) use ($user) {
                 $q->where('courier_id', $user->id)
-                  ->orWhere('user_id', $user->id);
+                    ->orWhere('user_id', $user->id);
             });
         }
 

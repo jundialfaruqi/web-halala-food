@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\InvoiceCreated;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendCourierPushNotificationJob;
 use App\Models\Account;
 use App\Models\Delivery;
 use App\Models\Invoice;
@@ -13,6 +14,7 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\AccountingService;
+use App\Services\ActivityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -354,16 +356,46 @@ class InvoiceController extends Controller
 
             // Broadcast event ke kurir yang ditugaskan & manajemen secara real-time via WebSocket Reverb
             try {
-                event(new InvoiceCreated($inv));
+                event(new InvoiceCreated($inv, sendPush: false));
             } catch (\Throwable $e) {
                 Log::warning('Broadcast InvoiceCreated error: '.$e->getMessage());
             }
 
-            \App\Services\ActivityService::logInvoiceCreated($inv, $currentUser);
+            ActivityService::logInvoiceCreated($inv, $currentUser);
+        }
+
+        // Consolidated and Queued Push Notification to Courier
+        if ($courierId = $request->input('courier_id')) {
+            $count = count($createdInvoices);
+            if ($count === 1) {
+                $inv = $createdInvoices[0];
+                $storeName = $inv->store?->name ?? 'Toko';
+                SendCourierPushNotificationJob::dispatch(
+                    (int) $courierId,
+                    'Faktur Tagihan Baru!',
+                    "Faktur #{$inv->invoice_number} untuk toko {$storeName} telah ditugaskan.",
+                    [
+                        'type' => 'invoice',
+                        'id' => (string) $inv->id,
+                        'invoice_id' => (string) $inv->id,
+                    ]
+                );
+            } else {
+                SendCourierPushNotificationJob::dispatch(
+                    (int) $courierId,
+                    'Tugas Penagihan Baru!',
+                    "Anda ditugaskan {$count} faktur tagihan baru untuk hari ini.",
+                    [
+                        'type' => 'invoice_batch',
+                        'count' => (string) $count,
+                        'invoice_ids' => collect($createdInvoices)->pluck('id')->map(fn ($id) => (string) $id)->values()->all(),
+                    ]
+                );
+            }
         }
 
         $message = count($createdInvoices) > 1
-            ? count($createdInvoices) . " faktur tagihan berhasil dibuat untuk masing-masing toko."
+            ? count($createdInvoices).' faktur tagihan berhasil dibuat untuk masing-masing toko.'
             : "Faktur tagihan {$createdInvoices[0]->invoice_number} berhasil dibuat.";
 
         return response()->json([
@@ -811,7 +843,7 @@ class InvoiceController extends Controller
         $invoice->load(['payments.user', 'items.product.unitModel', 'store']);
 
         if ($invoice->status === 'lunas') {
-            \App\Services\ActivityService::logInvoicePaid($invoice, $payment, auth('api')->user());
+            ActivityService::logInvoicePaid($invoice, $payment, auth('api')->user());
         }
 
         return response()->json([
@@ -996,7 +1028,7 @@ class InvoiceController extends Controller
         $invoice->load(['payments.user', 'items.product.unitModel', 'store', 'courier']);
 
         if ($invoice->status === 'lunas') {
-            \App\Services\ActivityService::logInvoicePaid($invoice, null, auth('api')->user());
+            ActivityService::logInvoicePaid($invoice, null, auth('api')->user());
         }
 
         return response()->json([

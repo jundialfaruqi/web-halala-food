@@ -14,12 +14,19 @@ class CourierLocationUpdated implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $deliveryId;
+
     public int $courierId;
+
     public string $courierName;
+
     public float $latitude;
+
     public float $longitude;
+
     public ?float $heading;
+
     public ?float $speed;
+
     public string $updatedAt;
 
     /**

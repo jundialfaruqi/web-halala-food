@@ -1,6 +1,7 @@
 <?php
 
 use App\Events\InvoiceCreated;
+use App\Jobs\SendCourierPushNotificationJob;
 use App\Models\Delivery;
 use App\Models\Invoice;
 use App\Models\Product;
@@ -9,6 +10,7 @@ use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -380,3 +382,59 @@ test('channel authorization rule permits courier to own channel and denies other
         ->and($rule($manager, $kurirA->id))->toBeTrue();
 });
 
+test('creating invoices for multiple stores dispatches a single consolidated queued push notification', function () {
+    Queue::fake();
+
+    $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
+    $token = JWTAuth::fromUser($manager);
+
+    $kurir = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+
+    $unit = Unit::firstOrCreate(['name' => 'Pcs', 'short_name' => 'Pcs'], ['is_active' => true]);
+    $product = Product::create([
+        'name' => 'Produk Batch Invoice Test',
+        'unit_id' => $unit->id,
+        'unit' => 'Pcs',
+        'consignment_price' => 15000,
+        'retail_price' => 20000,
+        'stock_ready' => 50,
+        'is_active' => true,
+    ]);
+
+    $store1 = Store::create([
+        'name' => 'Toko Faktur Batch A',
+        'address' => 'Jl. Faktur A',
+        'is_active' => true,
+    ]);
+    $store2 = Store::create([
+        'name' => 'Toko Faktur Batch B',
+        'address' => 'Jl. Faktur B',
+        'is_active' => true,
+    ]);
+
+    $response = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/invoices', [
+            'store_ids' => [$store1->id, $store2->id],
+            'courier_id' => $kurir->id,
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(7)->toDateString(),
+            'notes' => 'Batch invoice test',
+            'items' => [
+                ['product_id' => $product->id, 'quantity' => 2, 'unit_price' => 20000],
+            ],
+        ]);
+
+    $response->assertCreated();
+    expect($response->json('success'))->toBeTrue();
+    expect(count($response->json('invoices')))->toBe(2);
+
+    // Verify exactly 1 consolidated push notification job was dispatched to Queue
+    Queue::assertPushed(SendCourierPushNotificationJob::class, 1);
+    Queue::assertPushed(SendCourierPushNotificationJob::class, function ($job) use ($kurir) {
+        return $job->courierId === $kurir->id &&
+               $job->title === 'Tugas Penagihan Baru!' &&
+               str_contains($job->body, '2 faktur tagihan baru') &&
+               $job->data['type'] === 'invoice_batch' &&
+               $job->data['count'] === '2';
+    });
+});

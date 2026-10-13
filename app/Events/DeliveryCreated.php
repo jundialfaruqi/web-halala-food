@@ -16,12 +16,15 @@ class DeliveryCreated implements ShouldBroadcastNow
 
     public Delivery $delivery;
 
+    public bool $sendPush;
+
     /**
      * Create a new event instance.
      */
-    public function __construct(Delivery $delivery)
+    public function __construct(Delivery $delivery, bool $sendPush = true)
     {
         $this->delivery = $delivery;
+        $this->sendPush = $sendPush;
     }
 
     /**

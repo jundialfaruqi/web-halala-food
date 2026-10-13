@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ActivityService
 {
@@ -130,7 +131,7 @@ class ActivityService
         $activity = Activity::create([
             'type' => 'invoice_created',
             'title' => 'Surat Faktur Diterbitkan',
-            'description' => "Faktur tagihan {$invoice->invoice_number} senilai Rp " . number_format($invoice->total_amount, 0, ',', '.') . " diterbitkan untuk {$storeName}.",
+            'description' => "Faktur tagihan {$invoice->invoice_number} senilai Rp ".number_format($invoice->total_amount, 0, ',', '.')." diterbitkan untuk {$storeName}.",
             'user_id' => $actor?->id ?? $invoice->created_by ?? 1,
             'courier_id' => $invoice->courier_id,
             'subject_type' => Invoice::class,
@@ -168,7 +169,7 @@ class ActivityService
         $activity = Activity::create([
             'type' => 'invoice_paid',
             'title' => 'Faktur Telah Lunas',
-            'description' => "Tagihan faktur {$invoice->invoice_number} di {$storeName} senilai Rp " . number_format($invoice->total_amount, 0, ',', '.') . " telah lunas.",
+            'description' => "Tagihan faktur {$invoice->invoice_number} di {$storeName} senilai Rp ".number_format($invoice->total_amount, 0, ',', '.').' telah lunas.',
             'user_id' => $actor?->id ?? $payment?->user_id ?? $invoice->created_by ?? 1,
             'courier_id' => $invoice->courier_id,
             'subject_type' => Invoice::class,
@@ -261,7 +262,7 @@ class ActivityService
         try {
             broadcast(new ActivityCreated($activity));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('[ActivityService] Failed to broadcast activity: ' . $e->getMessage());
+            Log::warning('[ActivityService] Failed to broadcast activity: '.$e->getMessage());
         }
     }
 
@@ -273,7 +274,7 @@ class ActivityService
         try {
             broadcast(new ActivityUpdated($activity));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('[ActivityService] Failed to broadcast activity update: ' . $e->getMessage());
+            Log::warning('[ActivityService] Failed to broadcast activity update: '.$e->getMessage());
         }
     }
 
@@ -297,7 +298,7 @@ class ActivityService
                 $act = Activity::create([
                     'type' => 'delivery_created',
                     'title' => 'Surat Pengiriman Dibuat',
-                    'description' => "Surat jalan {$deliv->delivery_number} dibuat untuk " . ($deliv->store?->name ?? 'Toko Mitra') . ".",
+                    'description' => "Surat jalan {$deliv->delivery_number} dibuat untuk ".($deliv->store?->name ?? 'Toko Mitra').'.',
                     'user_id' => $deliv->created_by ?: ($deliv->courier_id ?: 1),
                     'courier_id' => $deliv->courier_id,
                     'subject_type' => Delivery::class,
@@ -331,7 +332,7 @@ class ActivityService
                     Activity::create([
                         'type' => 'delivery_dispatched',
                         'title' => 'Pengantaran Diberangkatkan',
-                        'description' => "Surat jalan {$deliv->delivery_number} sedang dalam perjalanan ke " . ($deliv->store?->name ?? 'Toko Mitra') . ".",
+                        'description' => "Surat jalan {$deliv->delivery_number} sedang dalam perjalanan ke ".($deliv->store?->name ?? 'Toko Mitra').'.',
                         'user_id' => $deliv->courier_id ?: ($deliv->created_by ?: 1),
                         'courier_id' => $deliv->courier_id,
                         'subject_type' => Delivery::class,
@@ -365,7 +366,7 @@ class ActivityService
                     Activity::create([
                         'type' => 'delivery_completed',
                         'title' => 'Pengantaran Selesai',
-                        'description' => "Surat jalan {$deliv->delivery_number} berhasil diserahterimakan di " . ($deliv->store?->name ?? 'Toko Mitra') . ".",
+                        'description' => "Surat jalan {$deliv->delivery_number} berhasil diserahterimakan di ".($deliv->store?->name ?? 'Toko Mitra').'.',
                         'user_id' => $deliv->courier_id ?: ($deliv->created_by ?: 1),
                         'courier_id' => $deliv->courier_id,
                         'subject_type' => Delivery::class,
@@ -401,7 +402,7 @@ class ActivityService
                 Activity::create([
                     'type' => 'invoice_created',
                     'title' => 'Surat Faktur Diterbitkan',
-                    'description' => "Faktur tagihan {$inv->invoice_number} senilai Rp " . number_format($inv->total_amount, 0, ',', '.') . " diterbitkan untuk " . ($inv->store?->name ?? 'Toko Mitra') . ".",
+                    'description' => "Faktur tagihan {$inv->invoice_number} senilai Rp ".number_format($inv->total_amount, 0, ',', '.').' diterbitkan untuk '.($inv->store?->name ?? 'Toko Mitra').'.',
                     'user_id' => $inv->created_by ?: 1,
                     'courier_id' => $inv->courier_id,
                     'subject_type' => Invoice::class,
@@ -439,7 +440,7 @@ class ActivityService
                     Activity::create([
                         'type' => 'invoice_paid',
                         'title' => 'Faktur Telah Lunas',
-                        'description' => "Tagihan faktur {$inv->invoice_number} di " . ($inv->store?->name ?? 'Toko Mitra') . " senilai Rp " . number_format($inv->total_amount, 0, ',', '.') . " telah lunas.",
+                        'description' => "Tagihan faktur {$inv->invoice_number} di ".($inv->store?->name ?? 'Toko Mitra').' senilai Rp '.number_format($inv->total_amount, 0, ',', '.').' telah lunas.',
                         'user_id' => $latestPayment?->user_id ?? $inv->created_by ?? 1,
                         'courier_id' => $inv->courier_id,
                         'subject_type' => Invoice::class,

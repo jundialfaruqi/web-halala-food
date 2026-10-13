@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\Product;
 use App\Models\Store;
+use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
@@ -63,8 +67,8 @@ test('authenticated user can get stores sorted by highest physical product sales
     $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
     $token = JWTAuth::fromUser($manager);
 
-    $unit = \App\Models\Unit::firstOrCreate(['name' => 'Bungkus', 'short_name' => 'Bks'], ['is_active' => true]);
-    $product = \App\Models\Product::create([
+    $unit = Unit::firstOrCreate(['name' => 'Bungkus', 'short_name' => 'Bks'], ['is_active' => true]);
+    $product = Product::create([
         'name' => 'Kue Bawang Super Renyah',
         'unit_id' => $unit->id,
         'unit' => 'Bks',
@@ -88,7 +92,7 @@ test('authenticated user can get stores sorted by highest physical product sales
     ]);
 
     // Store A: 250 pcs terjual dari faktur LUNAS
-    $invA = \App\Models\Invoice::create([
+    $invA = Invoice::create([
         'invoice_number' => 'INV-TEST-TOP-A',
         'store_id' => $storeA->id,
         'invoice_date' => now()->toDateString(),
@@ -96,7 +100,7 @@ test('authenticated user can get stores sorted by highest physical product sales
         'total_amount' => 1500000,
         'status' => 'lunas',
     ]);
-    \App\Models\InvoiceItem::create([
+    InvoiceItem::create([
         'invoice_id' => $invA->id,
         'product_id' => $product->id,
         'delivered_quantity' => 250,
@@ -109,7 +113,7 @@ test('authenticated user can get stores sorted by highest physical product sales
     ]);
 
     // Store B: 50 pcs terjual dari faktur LUNAS (nominal lebih besar tapi kuantiti fisik lebih kecil)
-    $invB = \App\Models\Invoice::create([
+    $invB = Invoice::create([
         'invoice_number' => 'INV-TEST-TOP-B',
         'store_id' => $storeB->id,
         'invoice_date' => now()->toDateString(),
@@ -117,7 +121,7 @@ test('authenticated user can get stores sorted by highest physical product sales
         'total_amount' => 5000000,
         'status' => 'lunas',
     ]);
-    \App\Models\InvoiceItem::create([
+    InvoiceItem::create([
         'invoice_id' => $invB->id,
         'product_id' => $product->id,
         'delivered_quantity' => 50,
@@ -130,7 +134,7 @@ test('authenticated user can get stores sorted by highest physical product sales
     ]);
 
     // Store C: 1000 pcs tetapi faktur BELUM DIBAYAR (tidak boleh dihitung)
-    $invC = \App\Models\Invoice::create([
+    $invC = Invoice::create([
         'invoice_number' => 'INV-TEST-TOP-C',
         'store_id' => $storeC->id,
         'invoice_date' => now()->toDateString(),
@@ -138,7 +142,7 @@ test('authenticated user can get stores sorted by highest physical product sales
         'total_amount' => 10000000,
         'status' => 'belum_dibayar',
     ]);
-    \App\Models\InvoiceItem::create([
+    InvoiceItem::create([
         'invoice_id' => $invC->id,
         'product_id' => $product->id,
         'delivered_quantity' => 1000,

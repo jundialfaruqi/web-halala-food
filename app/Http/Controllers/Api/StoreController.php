@@ -59,16 +59,16 @@ class StoreController extends Controller
             $query->withSum(['invoiceItems as sold_items_count' => function ($q) {
                 $q->where('invoices.status', 'lunas');
             }], 'quantity')
-            ->withSum(['invoices as total_sales' => function ($q) {
-                $q->where('status', 'lunas');
-            }], 'total_amount')
-            ->withCount(['invoices as sales_count' => function ($q) {
-                $q->where('status', 'lunas');
-            }])
-            ->orderByRaw('COALESCE(sold_items_count, 0) DESC')
-            ->orderByRaw('COALESCE(total_sales, 0) DESC')
-            ->orderByDesc('sales_count')
-            ->orderBy('name', 'asc');
+                ->withSum(['invoices as total_sales' => function ($q) {
+                    $q->where('status', 'lunas');
+                }], 'total_amount')
+                ->withCount(['invoices as sales_count' => function ($q) {
+                    $q->where('status', 'lunas');
+                }])
+                ->orderByRaw('COALESCE(sold_items_count, 0) DESC')
+                ->orderByRaw('COALESCE(total_sales, 0) DESC')
+                ->orderByDesc('sales_count')
+                ->orderBy('name', 'asc');
         } else {
             // Urutkan default berdasarkan nama toko
             $query->orderBy('name', 'asc');
@@ -130,12 +130,12 @@ class StoreController extends Controller
         $store->loadSum(['invoiceItems as sold_items_count' => function ($q) {
             $q->where('invoices.status', 'lunas');
         }], 'quantity')
-        ->loadSum(['invoices as total_sales' => function ($q) {
-            $q->where('status', 'lunas');
-        }], 'total_amount')
-        ->loadCount(['invoices as sales_count' => function ($q) {
-            $q->where('status', 'lunas');
-        }]);
+            ->loadSum(['invoices as total_sales' => function ($q) {
+                $q->where('status', 'lunas');
+            }], 'total_amount')
+            ->loadCount(['invoices as sales_count' => function ($q) {
+                $q->where('status', 'lunas');
+            }]);
 
         return response()->json([
             'success' => true,

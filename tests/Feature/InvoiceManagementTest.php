@@ -611,4 +611,3 @@ test('assigned courier can record payment and reconcile invoice but cannot delet
         ->call('deletePayment', $latestPayment->id)
         ->assertForbidden();
 });
-

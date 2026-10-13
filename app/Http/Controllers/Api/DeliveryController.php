@@ -7,11 +7,13 @@ use App\Events\CourierTrackingRequested;
 use App\Events\DeliveryCreated;
 use App\Events\DeliveryUpdated;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendCourierPushNotificationJob;
 use App\Models\Delivery;
 use App\Models\DeliveryItem;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\ActivityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -327,17 +329,49 @@ class DeliveryController extends Controller
 
                 $deliveries[] = $delivery;
             }
+
             return $deliveries;
         });
 
         foreach ($createdDeliveries as $del) {
             $del->load(['store', 'courier', 'creator', 'items.product.unitModel']);
-            event(new DeliveryCreated($del));
-            \App\Services\ActivityService::logDeliveryCreated($del, $currentUser);
+            // Broadcast live updates on WebSocket without individual FCM spam
+            event(new DeliveryCreated($del, sendPush: false));
+            ActivityService::logDeliveryCreated($del, $currentUser);
+        }
+
+        // Consolidated and Queued Push Notification to Courier
+        if ($courierId = $request->input('courier_id')) {
+            $count = count($createdDeliveries);
+            if ($count === 1) {
+                $del = $createdDeliveries[0];
+                $storeName = $del->store?->name ?? 'Toko';
+                SendCourierPushNotificationJob::dispatch(
+                    (int) $courierId,
+                    'Surat Pengantaran Baru!',
+                    "Surat jalan #{$del->delivery_number} untuk toko {$storeName} telah ditugaskan.",
+                    [
+                        'type' => 'delivery',
+                        'id' => (string) $del->id,
+                        'delivery_id' => (string) $del->id,
+                    ]
+                );
+            } else {
+                SendCourierPushNotificationJob::dispatch(
+                    (int) $courierId,
+                    'Tugas Pengantaran Baru!',
+                    "Anda ditugaskan {$count} surat jalan pengantaran baru untuk hari ini.",
+                    [
+                        'type' => 'delivery_batch',
+                        'count' => (string) $count,
+                        'delivery_ids' => collect($createdDeliveries)->pluck('id')->map(fn ($id) => (string) $id)->values()->all(),
+                    ]
+                );
+            }
         }
 
         $message = count($createdDeliveries) > 1
-            ? count($createdDeliveries) . " surat jalan pengantaran berhasil dibuat untuk masing-masing toko."
+            ? count($createdDeliveries).' surat jalan pengantaran berhasil dibuat untuk masing-masing toko.'
             : "Surat jalan {$createdDeliveries[0]->delivery_number} berhasil dibuat.";
 
         return response()->json([
@@ -570,7 +604,7 @@ class DeliveryController extends Controller
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel']);
 
         event(new DeliveryUpdated($delivery));
-        \App\Services\ActivityService::logDeliveryDispatched($delivery, $user);
+        ActivityService::logDeliveryDispatched($delivery, $user);
 
         return response()->json([
             'success' => true,
@@ -689,9 +723,9 @@ class DeliveryController extends Controller
         $delivery->load(['store', 'courier', 'creator', 'items.product.unitModel', 'invoice']);
 
         event(new DeliveryUpdated($delivery));
-        \App\Services\ActivityService::logDeliveryCompleted($delivery, $user);
+        ActivityService::logDeliveryCompleted($delivery, $user);
         if ($invoice) {
-            \App\Services\ActivityService::logInvoiceCreated($invoice, $user);
+            ActivityService::logInvoiceCreated($invoice, $user);
         }
 
         $invoiceMsg = $invoice ? " Faktur piutang ({$invoice->invoice_number}) otomatis diterbitkan." : '';

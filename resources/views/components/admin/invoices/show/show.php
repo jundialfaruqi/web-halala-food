@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\AccountingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -104,7 +105,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function canRecordPayment(): bool
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = Auth::user();
         if (! $user) {
             return false;
@@ -119,7 +120,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function canReconcile(): bool
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = Auth::user();
         if (! $user) {
             return false;
@@ -134,7 +135,7 @@ new #[Layout('components.layouts.admin')] class extends Component
 
     public function canDeletePayment(): bool
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = Auth::user();
         if (! $user) {
             return false;

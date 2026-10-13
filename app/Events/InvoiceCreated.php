@@ -16,12 +16,15 @@ class InvoiceCreated implements ShouldBroadcastNow
 
     public Invoice $invoice;
 
+    public bool $sendPush;
+
     /**
      * Create a new event instance.
      */
-    public function __construct(Invoice $invoice)
+    public function __construct(Invoice $invoice, bool $sendPush = true)
     {
         $this->invoice = $invoice;
+        $this->sendPush = $sendPush;
     }
 
     /**

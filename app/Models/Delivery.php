@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\DeliveryUpdated;
 use App\Services\ActivityService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,8 +24,9 @@ class Delivery extends Model
         static::deleting(function (Delivery $delivery) {
             ActivityService::markDeliveryDeleted($delivery);
             try {
-                broadcast(new \App\Events\DeliveryUpdated($delivery));
-            } catch (\Throwable $e) {}
+                broadcast(new DeliveryUpdated($delivery));
+            } catch (\Throwable $e) {
+            }
         });
     }
 

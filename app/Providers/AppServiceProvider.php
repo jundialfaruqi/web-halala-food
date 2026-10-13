@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Events\DeliveryCreated;
 use App\Events\InvoiceCreated;
-use App\Services\FcmService;
+use App\Jobs\SendCourierPushNotificationJob;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -40,9 +40,9 @@ class AppServiceProvider extends ServiceProvider
     protected function registerPushNotificationListeners(): void
     {
         Event::listen(function (DeliveryCreated $event) {
-            if ($event->delivery->courier_id) {
-                FcmService::sendToCourier(
-                    $event->delivery->courier_id,
+            if ($event->sendPush && $event->delivery->courier_id) {
+                SendCourierPushNotificationJob::dispatch(
+                    (int) $event->delivery->courier_id,
                     'Surat Pengantaran Baru!',
                     "Surat jalan #{$event->delivery->delivery_number} untuk toko {$event->delivery->store?->name} telah ditugaskan.",
                     [
@@ -55,9 +55,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Event::listen(function (InvoiceCreated $event) {
-            if ($event->invoice->courier_id) {
-                FcmService::sendToCourier(
-                    $event->invoice->courier_id,
+            if ($event->sendPush && $event->invoice->courier_id) {
+                SendCourierPushNotificationJob::dispatch(
+                    (int) $event->invoice->courier_id,
                     'Faktur Pengantaran Baru!',
                     "Faktur #{$event->invoice->invoice_number} untuk toko {$event->invoice->store?->name} telah ditugaskan.",
                     [

@@ -215,6 +215,7 @@ class ProductionController extends Controller
                         'recipes_count' => $p->recipes->count(),
                         'recipes' => $p->recipes->map(function ($r) {
                             $rawMat = $r->rawMaterial;
+
                             return [
                                 'id' => $r->id,
                                 'raw_material_id' => $r->raw_material_id,
@@ -566,6 +567,7 @@ class ProductionController extends Controller
             'created_at' => $batch->created_at?->toIso8601String(),
             'materials' => $batch->batchMaterials->map(function (ProductionBatchMaterial $bm) {
                 $raw = $bm->rawMaterial;
+
                 return [
                     'id' => $bm->id,
                     'raw_material_id' => $bm->raw_material_id,

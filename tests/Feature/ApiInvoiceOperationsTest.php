@@ -296,4 +296,3 @@ test('courier assigned to invoice can record payment and reconcile but cannot de
     $resDeleteAllowed->assertOk()
         ->assertJsonPath('success', true);
 });
-

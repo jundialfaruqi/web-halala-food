@@ -1,11 +1,13 @@
 <?php
 
+use App\Jobs\SendCourierPushNotificationJob;
 use App\Models\Delivery;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Support\Facades\Queue;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -377,3 +379,63 @@ test('status_counts all remains total count when filtering by specific status', 
         ->and(count($resDiproses->json('data')))->toBe($totalDiproses);
 });
 
+test('creating deliveries for multiple stores dispatches a single consolidated queued push notification', function () {
+    Queue::fake();
+
+    $dev = User::where('email', 'developer@halala-food.id')->firstOrFail();
+    $devToken = JWTAuth::fromUser($dev);
+
+    $kurir = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+
+    $unit = Unit::firstOrCreate(['name' => 'Pcs', 'short_name' => 'Pcs'], ['is_active' => true]);
+    $product = Product::create([
+        'name' => 'Produk Batch Notification Test',
+        'unit_id' => $unit->id,
+        'unit' => 'Pcs',
+        'consignment_price' => 10000,
+        'retail_price' => 12000,
+        'stock_ready' => 100,
+        'is_active' => true,
+    ]);
+
+    $store1 = Store::create([
+        'name' => 'Toko Batch A',
+        'address' => 'Jl. A',
+        'is_active' => true,
+    ]);
+    $store2 = Store::create([
+        'name' => 'Toko Batch B',
+        'address' => 'Jl. B',
+        'is_active' => true,
+    ]);
+    $store3 = Store::create([
+        'name' => 'Toko Batch C',
+        'address' => 'Jl. C',
+        'is_active' => true,
+    ]);
+
+    $response = withHeader('Authorization', "Bearer {$devToken}")
+        ->postJson('/api/deliveries', [
+            'store_ids' => [$store1->id, $store2->id, $store3->id],
+            'courier_id' => $kurir->id,
+            'delivery_date' => now()->toDateString(),
+            'notes' => 'Batch delivery test',
+            'items' => [
+                ['product_id' => $product->id, 'quantity' => 5, 'unit_price' => 10000],
+            ],
+        ]);
+
+    $response->assertCreated();
+    expect($response->json('success'))->toBeTrue();
+    expect(count($response->json('deliveries')))->toBe(3);
+
+    // Verify exactly 1 consolidated push notification job was dispatched to Queue
+    Queue::assertPushed(SendCourierPushNotificationJob::class, 1);
+    Queue::assertPushed(SendCourierPushNotificationJob::class, function ($job) use ($kurir) {
+        return $job->courierId === $kurir->id &&
+               $job->title === 'Tugas Pengantaran Baru!' &&
+               str_contains($job->body, '3 surat jalan pengantaran baru') &&
+               $job->data['type'] === 'delivery_batch' &&
+               $job->data['count'] === '3';
+    });
+});

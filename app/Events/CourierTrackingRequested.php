@@ -14,10 +14,15 @@ class CourierTrackingRequested implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $deliveryId;
+
     public string $deliveryNumber;
+
     public int $courierId;
+
     public bool $isWatching;
+
     public ?int $watcherId;
+
     public ?string $watcherName;
 
     /**
