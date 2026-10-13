@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -38,6 +40,9 @@ class Store extends Model
             'latitude' => 'float',
             'longitude' => 'float',
             'is_active' => 'boolean',
+            'sold_items_count' => 'integer',
+            'total_sales' => 'float',
+            'sales_count' => 'integer',
         ];
     }
 
@@ -175,8 +180,16 @@ class Store extends Model
     /**
      * Get invoices associated with the store.
      */
-    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class, 'store_id');
+    }
+
+    /**
+     * Get invoice items associated with the store through invoices.
+     */
+    public function invoiceItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(InvoiceItem::class, Invoice::class, 'store_id', 'invoice_id');
     }
 }

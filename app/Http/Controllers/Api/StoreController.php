@@ -53,15 +53,20 @@ class StoreController extends Controller
             $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
-        // Urutkan berdasarkan total penjualan jika diminta
+        // Urutkan berdasarkan performa penjualan jika diminta
+        // Prioritas utama: total produk fisik (pcs/item) terjual dari faktur yang sudah lunas
         if ($request->input('sort_by') === 'sales') {
-            $query->withSum(['invoices as total_sales' => function ($q) {
-                $q->where('status', '!=', 'dibatalkan');
+            $query->withSum(['invoiceItems as sold_items_count' => function ($q) {
+                $q->where('invoices.status', 'lunas');
+            }], 'quantity')
+            ->withSum(['invoices as total_sales' => function ($q) {
+                $q->where('status', 'lunas');
             }], 'total_amount')
             ->withCount(['invoices as sales_count' => function ($q) {
-                $q->where('status', '!=', 'dibatalkan');
+                $q->where('status', 'lunas');
             }])
-            ->orderByDesc('total_sales')
+            ->orderByRaw('COALESCE(sold_items_count, 0) DESC')
+            ->orderByRaw('COALESCE(total_sales, 0) DESC')
             ->orderByDesc('sales_count')
             ->orderBy('name', 'asc');
         } else {
@@ -122,6 +127,16 @@ class StoreController extends Controller
      */
     public function show(Store $store): JsonResponse
     {
+        $store->loadSum(['invoiceItems as sold_items_count' => function ($q) {
+            $q->where('invoices.status', 'lunas');
+        }], 'quantity')
+        ->loadSum(['invoices as total_sales' => function ($q) {
+            $q->where('status', 'lunas');
+        }], 'total_amount')
+        ->loadCount(['invoices as sales_count' => function ($q) {
+            $q->where('status', 'lunas');
+        }]);
+
         return response()->json([
             'success' => true,
             'message' => 'Detail toko mitra berhasil dimuat.',
