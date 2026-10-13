@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\InvoiceCreated;
+use App\Events\InvoiceUpdated;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendCourierPushNotificationJob;
 use App\Models\Account;
@@ -50,9 +51,9 @@ class InvoiceController extends Controller
     /**
      * Check if user is allowed to record payment for the invoice.
      * Allowed if:
-     * 1. User has 'faktur-pembayaran' permission or 'faktur-edit' permission
-     * 2. Or user has dev/manager role
-     * 3. Or user is the courier assigned to this invoice ($invoice->courier_id === $user->id)
+     * 1. User has dev/manager role
+     * 2. If user is a courier, they MUST be the assigned courier ($invoice->courier_id === $user->id)
+     * 3. Other staff require 'faktur-pembayaran' or 'faktur-edit' permission
      */
     private function canRecordPaymentForInvoice(Invoice $invoice): bool
     {
@@ -66,19 +67,20 @@ class InvoiceController extends Controller
             return true;
         }
 
-        if ($this->checkPermission('faktur-pembayaran') || $this->checkPermission('faktur-edit')) {
-            return true;
+        $isCourier = $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
+        if ($isCourier) {
+            return $invoice->courier_id !== null && (int) $invoice->courier_id === (int) $user->id;
         }
 
-        return $invoice->courier_id !== null && (int) $invoice->courier_id === (int) $user->id;
+        return $this->checkPermission('faktur-pembayaran') || $this->checkPermission('faktur-edit');
     }
 
     /**
      * Check if user is allowed to reconcile items for the invoice.
      * Allowed if:
-     * 1. User has 'faktur-rekonsiliasi' permission or 'faktur-edit' permission
-     * 2. Or user has dev/manager role
-     * 3. Or user is the courier assigned to this invoice ($invoice->courier_id === $user->id)
+     * 1. User has dev/manager role
+     * 2. If user is a courier, they MUST be the assigned courier ($invoice->courier_id === $user->id)
+     * 3. Other staff require 'faktur-rekonsiliasi' or 'faktur-edit' permission
      */
     private function canReconcileInvoice(Invoice $invoice): bool
     {
@@ -92,11 +94,12 @@ class InvoiceController extends Controller
             return true;
         }
 
-        if ($this->checkPermission('faktur-rekonsiliasi') || $this->checkPermission('faktur-edit')) {
-            return true;
+        $isCourier = $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
+        if ($isCourier) {
+            return $invoice->courier_id !== null && (int) $invoice->courier_id === (int) $user->id;
         }
 
-        return $invoice->courier_id !== null && (int) $invoice->courier_id === (int) $user->id;
+        return $this->checkPermission('faktur-rekonsiliasi') || $this->checkPermission('faktur-edit');
     }
 
     /**
@@ -419,12 +422,16 @@ class InvoiceController extends Controller
             ], 403);
         }
 
-        $query = Invoice::with(['store', 'courier', 'creator', 'items.product', 'payments']);
+        /** @var User $user */
+        $user = auth('api')->user();
+        $isCourier = $user->hasRole('kurir') && ! $user->hasAnyRole(['dev', 'manager']);
+
+        $baseQuery = Invoice::with(['store', 'courier', 'creator', 'items.product', 'payments'])->forUser($user);
 
         // Search Filter (Nomor faktur, catatan, nama toko mitra, nama pemilik, alamat, nama kurir)
         if ($request->filled('search')) {
             $searchTerm = trim($request->input('search'));
-            $query->where(function ($q) use ($searchTerm) {
+            $baseQuery->where(function ($q) use ($searchTerm) {
                 $q->where('invoice_number', 'like', "%{$searchTerm}%")
                     ->orWhere('notes', 'like', "%{$searchTerm}%")
                     ->orWhereHas('store', function ($sq) use ($searchTerm) {
@@ -438,7 +445,47 @@ class InvoiceController extends Controller
             });
         }
 
-        // Status Pelunasan Filter (belum_dibayar, sebagian, lunas, overdue, dibatalkan)
+        // Store Filter
+        if ($request->filled('store_id') && $request->input('store_id') !== 'all') {
+            $baseQuery->where('store_id', $request->input('store_id'));
+        }
+
+        // Courier Filter (only for dev/manager, kurir is strictly scoped to their own tasks)
+        if (! $isCourier && $request->filled('courier_id') && $request->input('courier_id') !== 'all') {
+            $baseQuery->where('courier_id', $request->input('courier_id'));
+        }
+
+        // Date Filter
+        if ($request->filled('invoice_date')) {
+            $baseQuery->whereDate('invoice_date', $request->input('invoice_date'));
+        }
+
+        // Route Filter
+        if ($request->filled('route') && $request->input('route') !== 'all') {
+            $baseQuery->whereHas('store', function ($sq) use ($request) {
+                $sq->where('route', $request->input('route'));
+            });
+        }
+
+        // Status counts for badge tabs (calculated from baseQuery before status filter)
+        $statusCounts = [
+            'all' => (clone $baseQuery)->count(),
+            'belum_dibayar' => (clone $baseQuery)->where('status', 'belum_dibayar')->count(),
+            'sebagian' => (clone $baseQuery)->where('status', 'sebagian')->count(),
+            'lunas' => (clone $baseQuery)->where('status', 'lunas')->count(),
+            'overdue' => (clone $baseQuery)->whereNotIn('status', ['lunas', 'dibatalkan'])
+                ->whereDate('due_date', '<', now()->toDateString())
+                ->count(),
+            'dibatalkan' => (clone $baseQuery)->where('status', 'dibatalkan')->count(),
+        ];
+
+        // Store options list for filter dropdown
+        $stores = Store::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'owner_name', 'address', 'phone', 'route', 'latitude', 'longitude', 'photo']);
+
+        // Clone baseQuery for pagination and apply status filter
+        $query = clone $baseQuery;
         if ($request->filled('status') && $request->input('status') !== 'all') {
             $status = $request->input('status');
             if ($status === 'overdue') {
@@ -448,45 +495,6 @@ class InvoiceController extends Controller
                 $query->where('status', $status);
             }
         }
-
-        // Store Filter
-        if ($request->filled('store_id') && $request->input('store_id') !== 'all') {
-            $query->where('store_id', $request->input('store_id'));
-        }
-
-        // Courier Filter
-        if ($request->filled('courier_id') && $request->input('courier_id') !== 'all') {
-            $query->where('courier_id', $request->input('courier_id'));
-        }
-
-        // Date Filter
-        if ($request->filled('invoice_date')) {
-            $query->whereDate('invoice_date', $request->input('invoice_date'));
-        }
-
-        // Route Filter
-        if ($request->filled('route') && $request->input('route') !== 'all') {
-            $query->whereHas('store', function ($sq) use ($request) {
-                $sq->where('route', $request->input('route'));
-            });
-        }
-
-        // Status counts for badge tabs
-        $statusCounts = [
-            'all' => Invoice::count(),
-            'belum_dibayar' => Invoice::where('status', 'belum_dibayar')->count(),
-            'sebagian' => Invoice::where('status', 'sebagian')->count(),
-            'lunas' => Invoice::where('status', 'lunas')->count(),
-            'overdue' => Invoice::whereNotIn('status', ['lunas', 'dibatalkan'])
-                ->whereDate('due_date', '<', now()->toDateString())
-                ->count(),
-            'dibatalkan' => Invoice::where('status', 'dibatalkan')->count(),
-        ];
-
-        // Store options list for filter dropdown
-        $stores = Store::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'owner_name', 'address', 'phone', 'route', 'latitude', 'longitude', 'photo']);
 
         // Order by latest invoice date and id
         $query->orderByDesc('invoice_date')->orderByDesc('id');
@@ -526,6 +534,15 @@ class InvoiceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki hak akses untuk melihat rincian faktur tagihan.',
+            ], 403);
+        }
+
+        /** @var User $user */
+        $user = auth('api')->user();
+        if (! $invoice->isAccessibleBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk melihat rincian faktur tagihan ini.',
             ], 403);
         }
 
@@ -663,6 +680,12 @@ class InvoiceController extends Controller
 
         $invoice->load(['store', 'delivery', 'courier', 'creator', 'items.product.unitModel', 'payments.user']);
 
+        try {
+            event(new InvoiceUpdated($invoice));
+        } catch (\Throwable $e) {
+            Log::warning('[InvoiceController] Failed to broadcast InvoiceUpdated on update: '.$e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => "Faktur tagihan {$invoice->invoice_number} berhasil diperbarui.",
@@ -701,6 +724,12 @@ class InvoiceController extends Controller
             $invoice->update(['status' => 'dibatalkan']);
             AccountingService::deleteInvoiceRecords($invoice);
         });
+
+        try {
+            event(new InvoiceUpdated($invoice));
+        } catch (\Throwable $e) {
+            Log::warning('[InvoiceController] Failed to broadcast InvoiceUpdated on cancel: '.$e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -846,6 +875,12 @@ class InvoiceController extends Controller
             ActivityService::logInvoicePaid($invoice, $payment, auth('api')->user());
         }
 
+        try {
+            event(new InvoiceUpdated($invoice));
+        } catch (\Throwable $e) {
+            Log::warning('[InvoiceController] Failed to broadcast InvoiceUpdated on payment: '.$e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Pembayaran sebesar Rp '.number_format($amount, 0, ',', '.').' berhasil dicatat.',
@@ -883,6 +918,12 @@ class InvoiceController extends Controller
         });
 
         $invoice->load(['payments.user', 'items.product.unitModel', 'store']);
+
+        try {
+            event(new InvoiceUpdated($invoice));
+        } catch (\Throwable $e) {
+            Log::warning('[InvoiceController] Failed to broadcast InvoiceUpdated on payment delete: '.$e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -1029,6 +1070,12 @@ class InvoiceController extends Controller
 
         if ($invoice->status === 'lunas') {
             ActivityService::logInvoicePaid($invoice, null, auth('api')->user());
+        }
+
+        try {
+            event(new InvoiceUpdated($invoice));
+        } catch (\Throwable $e) {
+            Log::warning('[InvoiceController] Failed to broadcast InvoiceUpdated on reconcile: '.$e->getMessage());
         }
 
         return response()->json([

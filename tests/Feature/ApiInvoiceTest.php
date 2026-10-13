@@ -48,11 +48,14 @@ beforeEach(function () {
     );
 
     $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
+    $kurir = User::where('email', 'kurir@halala-food.id')->first();
+    $kurirId = $kurir?->id;
 
     $delivery = Delivery::firstOrCreate(
         ['delivery_number' => 'SJ-INV-0001'],
         [
             'store_id' => $store->id,
+            'courier_id' => $kurirId,
             'created_by' => $manager->id,
             'delivery_date' => now()->toDateString(),
             'status' => 'selesai',
@@ -66,6 +69,7 @@ beforeEach(function () {
         [
             'delivery_id' => $delivery->id,
             'store_id' => $store->id,
+            'courier_id' => $kurirId,
             'created_by' => $manager->id,
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(14)->toDateString(),

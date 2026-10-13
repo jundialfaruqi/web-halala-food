@@ -296,3 +296,42 @@ test('courier assigned to invoice can record payment and reconcile but cannot de
     $resDeleteAllowed->assertOk()
         ->assertJsonPath('success', true);
 });
+
+test('courier A cannot see, view detail, or record payment for invoice assigned to courier B', function () {
+    [
+        'invoice' => $invoice,
+    ] = createTestInvoiceData();
+
+    $kurirB = User::where('email', 'kurir@halala-food.id')->firstOrFail();
+    $invoice->update(['courier_id' => $kurirB->id]);
+
+    $kurirA = User::factory()->create([
+        'name' => 'Kurir A',
+        'email' => 'kurirA@halala-food.id',
+    ]);
+    $kurirA->assignRole('kurir');
+    $kurirAToken = JWTAuth::fromUser($kurirA);
+
+    // 1. Kurir A cannot see Kurir B's invoice in index list
+    $resList = withHeader('Authorization', "Bearer {$kurirAToken}")
+        ->getJson('/api/invoices');
+    $resList->assertOk();
+    $invoiceIds = collect($resList->json('data'))->pluck('id')->all();
+    expect($invoiceIds)->not->toContain($invoice->id);
+
+    // 2. Kurir A cannot view detail of Kurir B's invoice (403 Forbidden)
+    $resDetail = withHeader('Authorization', "Bearer {$kurirAToken}")
+        ->getJson("/api/invoices/{$invoice->id}");
+    $resDetail->assertForbidden()
+        ->assertJsonPath('success', false);
+
+    // 3. Kurir A cannot record payment for Kurir B's invoice (403 Forbidden)
+    $resPay = withHeader('Authorization', "Bearer {$kurirAToken}")
+        ->postJson("/api/invoices/{$invoice->id}/payments", [
+            'amount' => 15000,
+            'payment_date' => now()->toDateString(),
+            'payment_method' => 'tunai',
+        ]);
+    $resPay->assertForbidden()
+        ->assertJsonPath('success', false);
+});

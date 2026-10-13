@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Services\ActivityService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class Invoice extends Model
 {
@@ -155,5 +157,43 @@ class Invoice extends Model
         }
 
         return $prefix.$nextSequence;
+    }
+
+    /**
+     * Scope query to only include invoices accessible by the user.
+     * Kurir is strictly limited to invoices assigned to them (courier_id == user->id).
+     */
+    public function scopeForUser(Builder $query, ?User $user = null): Builder
+    {
+        /** @var User|null $currentUser */
+        $currentUser = $user ?? Auth::user() ?? auth('api')->user();
+        if (! $currentUser instanceof User) {
+            return $query;
+        }
+
+        if ($currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager'])) {
+            return $query->where('courier_id', $currentUser->id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Check if this invoice is accessible by the specified user.
+     * Kurir can only access invoices assigned to themselves.
+     */
+    public function isAccessibleBy(?User $user = null): bool
+    {
+        /** @var User|null $currentUser */
+        $currentUser = $user ?? Auth::user() ?? auth('api')->user();
+        if (! $currentUser instanceof User) {
+            return false;
+        }
+
+        if ($currentUser->hasRole('kurir') && ! $currentUser->hasAnyRole(['dev', 'manager'])) {
+            return $this->courier_id !== null && (int) $this->courier_id === (int) $currentUser->id;
+        }
+
+        return true;
     }
 }
