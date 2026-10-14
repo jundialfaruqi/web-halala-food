@@ -39,6 +39,81 @@
         });
     },
 
+    // Pagination State
+    currentPage: 1,
+    perPage: 10,
+
+    init() {
+        this.$watch('searchQuery', () => { this.currentPage = 1; });
+        this.$watch('selectedRoute', () => { this.currentPage = 1; });
+        this.$watch('selectedStatus', () => { this.currentPage = 1; });
+        this.$watch('perPage', () => { this.currentPage = 1; });
+    },
+
+    get totalPages() {
+        return Math.max(1, Math.ceil(this.filteredStores.length / this.perPage));
+    },
+
+    get paginatedStores() {
+        const start = (this.currentPage - 1) * this.perPage;
+        return this.filteredStores.slice(start, start + this.perPage);
+    },
+
+    get paginationInfo() {
+        const total = this.filteredStores.length;
+        if (total === 0) return { from: 0, to: 0, total: 0 };
+        const from = (this.currentPage - 1) * this.perPage + 1;
+        const to = Math.min(this.currentPage * this.perPage, total);
+        return { from, to, total };
+    },
+
+    goToPage(page) {
+        if (page >= 1 && page <= this.totalPages) {
+            this.currentPage = page;
+        }
+    },
+
+    prevPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+        }
+    },
+
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+        }
+    },
+
+    get pages() {
+        const total = this.totalPages;
+        const current = this.currentPage;
+        const delta = 1;
+        const range = [];
+        const rangeWithDots = [];
+        let l;
+
+        for (let i = 1; i <= total; i++) {
+            if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+                range.push(i);
+            }
+        }
+
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    rangeWithDots.push(l + 1);
+                } else if (i - l !== 1) {
+                    rangeWithDots.push('...');
+                }
+            }
+            rangeWithDots.push(i);
+            l = i;
+        }
+
+        return rangeWithDots;
+    },
+
     confirmDelete(store) {
         this.deleteTarget = store;
         this.showDeleteModal = true;
@@ -52,6 +127,9 @@
             const res = await $wire.deleteStore(this.deleteTarget.id);
             if (res.success) {
                 this.stores = this.stores.filter(s => s.id !== this.deleteTarget.id);
+                if (this.currentPage > this.totalPages) {
+                    this.currentPage = this.totalPages;
+                }
                 this.showDeleteModal = false;
                 this.deleteTarget = null;
                 this.triggerToast(res.message, 'success');
@@ -286,7 +364,7 @@
         </div>
 
         <div class="text-xs sm:text-sm text-brand-warm-gray font-medium self-center">
-            Menampilkan <span class="font-bold text-brand-espresso" x-text="filteredStores.length"></span> toko mitra
+            Menampilkan <span class="font-bold text-brand-espresso" x-text="paginationInfo.total > 0 ? `${paginationInfo.from}-${paginationInfo.to} dari ${paginationInfo.total}` : '0'"></span> toko mitra
         </div>
     </div>
 
@@ -304,7 +382,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-brand-border text-sm">
-                <template x-for="store in filteredStores" :key="store.id">
+                <template x-for="store in paginatedStores" :key="store.id">
                     <tr class="hover:bg-neutral-50/50 transition">
                         
                         <!-- Nama Toko & Pemilik dengan Thumbnail Foto -->
@@ -453,6 +531,59 @@
                 </template>
             </tbody>
         </table>
+    </div>
+
+    <!-- Pagination Bar -->
+    <div x-show="filteredStores.length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1">
+        <!-- Rows per page selector -->
+        <div class="flex items-center gap-2.5 text-xs sm:text-sm text-brand-warm-gray">
+            <span class="font-medium">Tampilkan:</span>
+            <select x-model.number="perPage"
+                class="select select-sm bg-white border border-brand-border rounded-lg text-xs font-semibold text-brand-espresso focus:outline-none focus:border-brand-primary cursor-pointer">
+                <option :value="10">10 baris</option>
+                <option :value="25">25 baris</option>
+                <option :value="50">50 baris</option>
+                <option :value="100">100 baris</option>
+            </select>
+            <span class="hidden sm:inline">per halaman</span>
+        </div>
+
+        <!-- Navigation & Page Numbers -->
+        <div x-show="totalPages > 1" class="flex items-center gap-1.5">
+            <!-- Prev Button -->
+            <button type="button" @click="prevPage()" :disabled="currentPage === 1"
+                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-brand-border text-xs sm:text-sm font-semibold text-brand-espresso hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer">
+                <i class="ti ti-chevron-left text-sm"></i>
+                <span class="hidden sm:inline">Sebelumnya</span>
+            </button>
+
+            <!-- Page Number Buttons -->
+            <div class="flex items-center gap-1">
+                <template x-for="(p, index) in pages" :key="index">
+                    <div>
+                        <template x-if="p === '...'">
+                            <span class="px-2 py-1 text-xs text-brand-warm-gray font-bold select-none">...</span>
+                        </template>
+                        <template x-if="p !== '...'">
+                            <button type="button" @click="goToPage(p)"
+                                class="min-w-8 h-8 px-2 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center"
+                                :class="currentPage === p 
+                                    ? 'bg-brand-primary text-white shadow-xs' 
+                                    : 'border border-brand-border text-brand-espresso hover:bg-neutral-50'"
+                                x-text="p">
+                            </button>
+                        </template>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Next Button -->
+            <button type="button" @click="nextPage()" :disabled="currentPage === totalPages"
+                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-brand-border text-xs sm:text-sm font-semibold text-brand-espresso hover:bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer">
+                <span class="hidden sm:inline">Selanjutnya</span>
+                <i class="ti ti-chevron-right text-sm"></i>
+            </button>
+        </div>
     </div>
 
     <!-- MODAL KONFIRMASI HAPUS (Minimalist, no icon background) -->
