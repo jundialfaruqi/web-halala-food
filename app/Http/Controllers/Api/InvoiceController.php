@@ -613,11 +613,6 @@ class InvoiceController extends Controller
             });
         }
 
-        // Store Filter
-        if ($request->filled('store_id') && $request->input('store_id') !== 'all') {
-            $baseQuery->where('store_id', $request->input('store_id'));
-        }
-
         // Courier Filter (only for dev/manager, kurir is strictly scoped to their own tasks)
         if (! $isCourier && $request->filled('courier_id') && $request->input('courier_id') !== 'all') {
             $baseQuery->where('courier_id', $request->input('courier_id'));
@@ -646,11 +641,6 @@ class InvoiceController extends Controller
                 ->count(),
             'dibatalkan' => (clone $baseQuery)->where('status', 'dibatalkan')->count(),
         ];
-
-        // Store options list for filter dropdown
-        $stores = Store::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name', 'owner_name', 'address', 'phone', 'route', 'latitude', 'longitude', 'photo']);
 
         // Clone baseQuery for pagination and apply status filter
         $query = clone $baseQuery;
@@ -682,7 +672,7 @@ class InvoiceController extends Controller
                 'total' => $invoices->total(),
             ],
             'status_counts' => $statusCounts,
-            'stores' => $stores,
+            'stores' => [],
             'routes' => Store::whereNotNull('route')
                 ->where('route', '!=', '')
                 ->distinct()

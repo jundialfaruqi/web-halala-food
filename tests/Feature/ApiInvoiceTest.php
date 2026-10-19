@@ -134,12 +134,11 @@ test('kurir and manager can view invoices list with search, status, and store fi
     $lunasRes->assertOk();
     expect(count($lunasRes->json('data')))->toBe(0);
 
-    // 4. Store filter
-    $store = Store::where('name', 'Toko Mitra Berkah')->firstOrFail();
-    $storeRes = withHeader('Authorization', "Bearer {$token}")
-        ->getJson("/api/invoices?store_id={$store->id}");
-    $storeRes->assertOk();
-    expect(count($storeRes->json('data')))->toBeGreaterThanOrEqual(1);
+    // 4. Date filter
+    $dateRes = withHeader('Authorization', "Bearer {$token}")
+        ->getJson('/api/invoices?invoice_date='.now()->toDateString());
+    $dateRes->assertOk();
+    expect($dateRes->json('data'))->toBeArray();
 });
 
 test('user can view invoice detail with relations loaded', function () {
