@@ -205,32 +205,61 @@ class DeliveryController extends Controller
             ], 403);
         }
 
+        $hasStores = $request->has('stores') && is_array($request->input('stores')) && count($request->input('stores')) > 0;
         $hasStoreIds = $request->has('store_ids') && is_array($request->input('store_ids')) && count($request->input('store_ids')) > 0;
 
-        $validator = Validator::make($request->all(), [
-            'delivery_number' => ['nullable', 'string', 'max:50', 'unique:deliveries,delivery_number'],
-            'store_id' => [$hasStoreIds ? 'nullable' : 'required', 'exists:stores,id'],
-            'store_ids' => ['nullable', 'array', 'min:1'],
-            'store_ids.*' => ['required', 'exists:stores,id'],
-            'courier_id' => ['nullable', 'exists:users,id'],
-            'delivery_date' => ['required', 'date'],
-            'notes' => ['nullable', 'string', 'max:1000'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id', 'distinct'],
-            'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
-        ], [
-            'store_id.required' => 'Pilih toko mitra tujuan pengantaran.',
-            'store_ids.min' => 'Pilih minimal 1 toko mitra tujuan pengantaran.',
-            'store_id.exists' => 'Toko mitra yang dipilih tidak valid.',
-            'store_ids.*.exists' => 'Salah satu toko mitra yang dipilih tidak valid.',
-            'delivery_date.required' => 'Tanggal pengantaran wajib diisi.',
-            'items.required' => 'Daftar muatan barang wajib diisi minimal 1 jenis produk.',
-            'items.min' => 'Daftar muatan barang wajib diisi minimal 1 jenis produk.',
-            'items.*.product_id.required' => 'Pilih produk untuk setiap baris.',
-            'items.*.product_id.distinct' => 'Produk tidak boleh ganda pada surat jalan yang sama.',
-            'items.*.quantity.min' => 'Jumlah barang minimal 1.',
-        ]);
+        if ($hasStores) {
+            $validator = Validator::make($request->all(), [
+                'delivery_number' => ['nullable', 'string', 'max:50', 'unique:deliveries,delivery_number'],
+                'courier_id' => ['nullable', 'exists:users,id'],
+                'delivery_date' => ['required', 'date'],
+                'notes' => ['nullable', 'string', 'max:1000'],
+                'stores' => ['required', 'array', 'min:1'],
+                'stores.*.store_id' => ['required', 'exists:stores,id'],
+                'stores.*.items' => ['required', 'array', 'min:1'],
+                'stores.*.items.*.product_id' => ['required', 'exists:products,id'],
+                'stores.*.items.*.quantity' => ['required', 'integer', 'min:1'],
+                'stores.*.items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            ], [
+                'stores.required' => 'Pilih minimal 1 toko mitra tujuan pengantaran.',
+                'stores.min' => 'Pilih minimal 1 toko mitra tujuan pengantaran.',
+                'stores.*.store_id.required' => 'Pilih toko mitra tujuan pengantaran.',
+                'stores.*.store_id.exists' => 'Salah satu toko mitra yang dipilih tidak valid.',
+                'stores.*.items.required' => 'Setiap toko wajib memiliki minimal 1 muatan barang.',
+                'stores.*.items.min' => 'Setiap toko wajib memiliki minimal 1 muatan barang.',
+                'stores.*.items.*.product_id.required' => 'Pilih produk untuk setiap baris.',
+                'stores.*.items.*.product_id.exists' => 'Produk yang dipilih tidak valid.',
+                'stores.*.items.*.quantity.required' => 'Jumlah barang wajib diisi.',
+                'stores.*.items.*.quantity.min' => 'Jumlah barang minimal 1.',
+                'delivery_date.required' => 'Tanggal pengantaran wajib diisi.',
+                'courier_id.exists' => 'Kurir yang dipilih tidak valid.',
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'delivery_number' => ['nullable', 'string', 'max:50', 'unique:deliveries,delivery_number'],
+                'store_id' => [$hasStoreIds ? 'nullable' : 'required', 'exists:stores,id'],
+                'store_ids' => ['nullable', 'array', 'min:1'],
+                'store_ids.*' => ['required', 'exists:stores,id'],
+                'courier_id' => ['nullable', 'exists:users,id'],
+                'delivery_date' => ['required', 'date'],
+                'notes' => ['nullable', 'string', 'max:1000'],
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.product_id' => ['required', 'exists:products,id', 'distinct'],
+                'items.*.quantity' => ['required', 'integer', 'min:1'],
+                'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            ], [
+                'store_id.required' => 'Pilih toko mitra tujuan pengantaran.',
+                'store_ids.min' => 'Pilih minimal 1 toko mitra tujuan pengantaran.',
+                'store_id.exists' => 'Toko mitra yang dipilih tidak valid.',
+                'store_ids.*.exists' => 'Salah satu toko mitra yang dipilih tidak valid.',
+                'delivery_date.required' => 'Tanggal pengantaran wajib diisi.',
+                'items.required' => 'Daftar muatan barang wajib diisi minimal 1 jenis produk.',
+                'items.min' => 'Daftar muatan barang wajib diisi minimal 1 jenis produk.',
+                'items.*.product_id.required' => 'Pilih produk untuk setiap baris.',
+                'items.*.product_id.distinct' => 'Produk tidak boleh ganda pada surat jalan yang sama.',
+                'items.*.quantity.min' => 'Jumlah barang minimal 1.',
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -240,53 +269,42 @@ class DeliveryController extends Controller
             ], 422);
         }
 
-        $items = $request->input('items', []);
-        $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
-        $storeCount = count($targetStoreIds);
+        // Validate warehouse ready stock sufficiency across all stores
+        $productStockSums = [];
+        if ($hasStores) {
+            foreach ($request->input('stores') as $st) {
+                foreach ($st['items'] as $item) {
+                    $pid = $item['product_id'];
+                    $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + (int) $item['quantity'];
+                }
+            }
+        } else {
+            $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
+            $storeCount = count($targetStoreIds);
+            foreach ($request->input('items', []) as $item) {
+                $pid = $item['product_id'];
+                $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + ((int) $item['quantity'] * $storeCount);
+            }
+        }
 
-        // Validate stock sufficiency for each product (multiplied by storeCount)
-        foreach ($items as $item) {
-            $product = Product::find($item['product_id']);
-            $qtyPerStore = (int) $item['quantity'];
-            $totalNeeded = $qtyPerStore * $storeCount;
-
-            if (! $product) {
+        foreach ($productStockSums as $pid => $totalQty) {
+            $prod = Product::find($pid);
+            if (! $prod) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Produk tidak ditemukan.',
                 ], 422);
             }
-
-            if ($totalNeeded > $product->stock_ready) {
+            if ($totalQty > $prod->stock_ready) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Stok produk '{$product->name}' tidak mencukupi untuk {$storeCount} toko (Dibutuhkan: {$totalNeeded} {$product->unit}, Tersedia ready di gudang: {$product->stock_ready} {$product->unit}).",
+                    'message' => "Stok produk '{$prod->name}' tidak mencukupi (Dibutuhkan total: {$totalQty} {$prod->unit}, Tersedia ready di gudang: {$prod->stock_ready} {$prod->unit}).",
                     'errors' => [
-                        'items' => ["Stok {$product->name} tidak mencukupi untuk {$storeCount} toko (dibutuhkan: {$totalNeeded}, sisa: {$product->stock_ready})."],
+                        'items' => ["Stok {$prod->name} tidak mencukupi (dibutuhkan: {$totalQty}, sisa: {$prod->stock_ready})."],
                     ],
                 ], 422);
             }
         }
-
-        // Calculate totals
-        $totalItems = 0;
-        $totalAmount = 0.0;
-
-        foreach ($items as &$item) {
-            $product = Product::find($item['product_id']);
-            $qty = (int) $item['quantity'];
-            $price = isset($item['unit_price']) && is_numeric($item['unit_price'])
-                ? (float) $item['unit_price']
-                : (float) $product->consignment_price;
-
-            $item['quantity'] = $qty;
-            $item['unit_price'] = $price;
-            $item['subtotal'] = $qty * $price;
-
-            $totalItems += $qty;
-            $totalAmount += $item['subtotal'];
-        }
-        unset($item);
 
         /** @var User $currentUser */
         $currentUser = auth('api')->user();
@@ -295,39 +313,128 @@ class DeliveryController extends Controller
         // Courier assignment: If user is courier, force courier_id to themselves
         $courierId = $isCourier ? $currentUser->id : $request->input('courier_id');
 
-        $createdDeliveries = DB::transaction(function () use ($targetStoreIds, $request, $currentUser, $courierId, $totalItems, $totalAmount, $items) {
+        $createdDeliveries = DB::transaction(function () use ($hasStores, $request, $currentUser, $courierId) {
             $deliveries = [];
-            foreach ($targetStoreIds as $idx => $stId) {
-                $delNum = ($idx === 0 && count($targetStoreIds) === 1 && $request->filled('delivery_number'))
-                    ? trim($request->input('delivery_number'))
-                    : Delivery::generateDeliveryNumber();
 
-                $delivery = Delivery::create([
-                    'delivery_number' => $delNum,
-                    'store_id' => $stId,
-                    'courier_id' => $courierId,
-                    'created_by' => $currentUser->id,
-                    'delivery_date' => $request->input('delivery_date'),
-                    'status' => 'diproses',
-                    'notes' => $request->input('notes'),
-                    'total_items' => $totalItems,
-                    'total_amount' => $totalAmount,
-                ]);
+            if ($hasStores) {
+                $storesData = $request->input('stores');
+                $totalStoreCount = count($storesData);
 
-                foreach ($items as $item) {
-                    DeliveryItem::create([
-                        'delivery_id' => $delivery->id,
-                        'product_id' => $item['product_id'],
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $item['unit_price'],
-                        'subtotal' => $item['subtotal'],
+                foreach ($storesData as $idx => $st) {
+                    $stId = $st['store_id'];
+                    $itemsData = $st['items'] ?? [];
+                    $totalItems = 0;
+                    $totalAmount = 0.0;
+                    $processedItems = [];
+
+                    foreach ($itemsData as $item) {
+                        $prod = Product::find($item['product_id']);
+                        $qty = (int) $item['quantity'];
+                        $price = isset($item['unit_price']) && is_numeric($item['unit_price'])
+                            ? (float) $item['unit_price']
+                            : (float) ($prod?->consignment_price ?? 0);
+                        $subtotal = $qty * $price;
+
+                        $totalItems += $qty;
+                        $totalAmount += $subtotal;
+
+                        $processedItems[] = [
+                            'product_id' => $item['product_id'],
+                            'quantity' => $qty,
+                            'unit_price' => $price,
+                            'subtotal' => $subtotal,
+                        ];
+                    }
+
+                    $delNum = ($idx === 0 && $totalStoreCount === 1 && $request->filled('delivery_number'))
+                        ? trim($request->input('delivery_number'))
+                        : Delivery::generateDeliveryNumber();
+
+                    $delivery = Delivery::create([
+                        'delivery_number' => $delNum,
+                        'store_id' => $stId,
+                        'courier_id' => $courierId,
+                        'created_by' => $currentUser->id,
+                        'delivery_date' => $request->input('delivery_date'),
+                        'status' => 'diproses',
+                        'notes' => $request->input('notes'),
+                        'total_items' => $totalItems,
+                        'total_amount' => $totalAmount,
                     ]);
 
-                    // Decrement warehouse ready stock
-                    Product::where('id', $item['product_id'])->decrement('stock_ready', $item['quantity']);
+                    foreach ($processedItems as $pItem) {
+                        DeliveryItem::create([
+                            'delivery_id' => $delivery->id,
+                            'product_id' => $pItem['product_id'],
+                            'quantity' => $pItem['quantity'],
+                            'unit_price' => $pItem['unit_price'],
+                            'subtotal' => $pItem['subtotal'],
+                        ]);
+
+                        Product::where('id', $pItem['product_id'])->decrement('stock_ready', $pItem['quantity']);
+                    }
+
+                    $deliveries[] = $delivery;
+                }
+            } else {
+                $hasStoreIds = $request->has('store_ids') && is_array($request->input('store_ids')) && count($request->input('store_ids')) > 0;
+                $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
+                $items = $request->input('items', []);
+
+                $totalItems = 0;
+                $totalAmount = 0.0;
+                $processedItems = [];
+
+                foreach ($items as $item) {
+                    $prod = Product::find($item['product_id']);
+                    $qty = (int) $item['quantity'];
+                    $price = isset($item['unit_price']) && is_numeric($item['unit_price'])
+                        ? (float) $item['unit_price']
+                        : (float) ($prod?->consignment_price ?? 0);
+                    $subtotal = $qty * $price;
+
+                    $totalItems += $qty;
+                    $totalAmount += $subtotal;
+
+                    $processedItems[] = [
+                        'product_id' => $item['product_id'],
+                        'quantity' => $qty,
+                        'unit_price' => $price,
+                        'subtotal' => $subtotal,
+                    ];
                 }
 
-                $deliveries[] = $delivery;
+                foreach ($targetStoreIds as $idx => $stId) {
+                    $delNum = ($idx === 0 && count($targetStoreIds) === 1 && $request->filled('delivery_number'))
+                        ? trim($request->input('delivery_number'))
+                        : Delivery::generateDeliveryNumber();
+
+                    $delivery = Delivery::create([
+                        'delivery_number' => $delNum,
+                        'store_id' => $stId,
+                        'courier_id' => $courierId,
+                        'created_by' => $currentUser->id,
+                        'delivery_date' => $request->input('delivery_date'),
+                        'status' => 'diproses',
+                        'notes' => $request->input('notes'),
+                        'total_items' => $totalItems,
+                        'total_amount' => $totalAmount,
+                    ]);
+
+                    foreach ($processedItems as $pItem) {
+                        DeliveryItem::create([
+                            'delivery_id' => $delivery->id,
+                            'product_id' => $pItem['product_id'],
+                            'quantity' => $pItem['quantity'],
+                            'unit_price' => $pItem['unit_price'],
+                            'subtotal' => $pItem['subtotal'],
+                        ]);
+
+                        Product::where('id', $pItem['product_id'])->decrement('stock_ready', $pItem['quantity']);
+                    }
+
+                    $deliveries[] = $delivery;
+                }
             }
 
             return $deliveries;

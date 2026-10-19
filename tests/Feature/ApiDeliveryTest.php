@@ -439,3 +439,77 @@ test('creating deliveries for multiple stores dispatches a single consolidated q
                $job->data['count'] === '3';
     });
 });
+
+test('manager or dev can create deliveries with dynamic per-store product allocations and valid stock', function () {
+    $dev = User::where('email', 'developer@halala-food.id')->firstOrFail();
+    $token = JWTAuth::fromUser($dev);
+
+    $unit = Unit::firstOrCreate(['name' => 'Pcs', 'short_name' => 'Pcs'], ['is_active' => true]);
+    $product = Product::create([
+        'name' => 'Produk Dinamis Delivery Test',
+        'unit_id' => $unit->id,
+        'unit' => 'Pcs',
+        'consignment_price' => 10000,
+        'retail_price' => 12000,
+        'stock_ready' => 25,
+        'is_active' => true,
+    ]);
+
+    $storeA = Store::create(['name' => 'Toko Delivery A', 'address' => 'Alamat A', 'is_active' => true]);
+    $storeB = Store::create(['name' => 'Toko Delivery B', 'address' => 'Alamat B', 'is_active' => true]);
+
+    // 1. Sukses jika total alokasi (10 + 12 = 22) <= stock_ready (25)
+    $response = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/deliveries', [
+            'delivery_date' => now()->toDateString(),
+            'notes' => 'Dynamic per-store delivery test',
+            'stores' => [
+                [
+                    'store_id' => $storeA->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 10, 'unit_price' => 10000],
+                    ],
+                ],
+                [
+                    'store_id' => $storeB->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 12, 'unit_price' => 10000],
+                    ],
+                ],
+            ],
+        ]);
+
+    $response->assertCreated();
+    expect($response->json('success'))->toBeTrue();
+    $deliveries = $response->json('deliveries');
+    expect(count($deliveries))->toBe(2);
+    expect((int) $deliveries[0]['total_items'])->toBe(10);
+    expect((int) $deliveries[1]['total_items'])->toBe(12);
+
+    // Verifikasi stok gudang berkurang tepat 22 (25 - 22 = 3)
+    $product->refresh();
+    expect($product->stock_ready)->toBe(3);
+
+    // 2. Gagal 422 jika total alokasi melebihi sisa stock_ready (3)
+    $responseFail = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/deliveries', [
+            'delivery_date' => now()->toDateString(),
+            'stores' => [
+                [
+                    'store_id' => $storeA->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 2, 'unit_price' => 10000],
+                    ],
+                ],
+                [
+                    'store_id' => $storeB->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 5, 'unit_price' => 10000],
+                    ],
+                ],
+            ],
+        ]);
+
+    $responseFail->assertStatus(422);
+    expect($responseFail->json('message'))->toContain('tidak mencukupi');
+});
