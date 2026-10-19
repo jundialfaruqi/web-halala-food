@@ -442,3 +442,78 @@ test('creating invoices for multiple stores dispatches a single consolidated que
                $job->data['count'] === '2';
     });
 });
+
+test('manager can create multi-store invoices with dynamic per-store items and validate total warehouse stock', function () {
+    Queue::fake();
+
+    $manager = User::where('email', 'manager@halala-food.id')->firstOrFail();
+    $token = JWTAuth::fromUser($manager);
+
+    $unit = Unit::firstOrCreate(['name' => 'Pcs', 'short_name' => 'Pcs'], ['is_active' => true]);
+    $product = Product::create([
+        'name' => 'Produk Dynamic Per Store Test',
+        'unit_id' => $unit->id,
+        'unit' => 'Pcs',
+        'consignment_price' => 10000,
+        'retail_price' => 12000,
+        'stock_ready' => 25,
+        'is_active' => true,
+    ]);
+
+    $storeA = Store::create(['name' => 'Toko Dinamis A', 'address' => 'Alamat A', 'is_active' => true]);
+    $storeB = Store::create(['name' => 'Toko Dinamis B', 'address' => 'Alamat B', 'is_active' => true]);
+
+    // 1. Sukses jika total alokasi (10 + 12 = 22) <= stock_ready (25)
+    $response = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/invoices', [
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(7)->toDateString(),
+            'notes' => 'Dynamic per-store invoice test',
+            'stores' => [
+                [
+                    'store_id' => $storeA->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 10, 'unit_price' => 10000],
+                    ],
+                ],
+                [
+                    'store_id' => $storeB->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 12, 'unit_price' => 10000],
+                    ],
+                ],
+            ],
+        ]);
+
+    $response->assertCreated();
+    expect($response->json('success'))->toBeTrue();
+    $invoices = $response->json('invoices');
+    expect(count($invoices))->toBe(2);
+    expect((float) $invoices[0]['subtotal'])->toBe(100000.0);
+    expect((float) $invoices[1]['subtotal'])->toBe(120000.0);
+
+    // 2. Gagal 422 jika total alokasi melebihi sisa stock_ready (25)
+    $responseFail = withHeader('Authorization', "Bearer {$token}")
+        ->postJson('/api/invoices', [
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(7)->toDateString(),
+            'stores' => [
+                [
+                    'store_id' => $storeA->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 20, 'unit_price' => 10000],
+                    ],
+                ],
+                [
+                    'store_id' => $storeB->id,
+                    'items' => [
+                        ['product_id' => $product->id, 'quantity' => 10, 'unit_price' => 10000],
+                    ],
+                ],
+            ],
+        ]);
+
+    $responseFail->assertStatus(422);
+    expect($responseFail->json('message'))->toContain('tidak mencukupi');
+});
+

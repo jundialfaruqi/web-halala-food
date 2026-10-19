@@ -200,62 +200,119 @@ class InvoiceController extends Controller
             ], 403);
         }
 
+        $hasStores = $request->has('stores') && is_array($request->input('stores')) && count($request->input('stores')) > 0;
         $hasStoreIds = $request->has('store_ids') && is_array($request->input('store_ids')) && count($request->input('store_ids')) > 0;
 
-        $validator = Validator::make($request->all(), [
-            'invoice_number' => ['nullable', 'string', 'max:50', 'unique:invoices,invoice_number'],
-            'store_id' => [$hasStoreIds ? 'nullable' : 'required', 'exists:stores,id'],
-            'store_ids' => ['nullable', 'array', 'min:1'],
-            'store_ids.*' => ['required', 'exists:stores,id'],
-            'courier_id' => ['nullable', 'exists:users,id'],
-            'delivery_id' => [
-                'nullable',
-                'exists:deliveries,id',
-                function ($attribute, $value, $fail) {
-                    if ($value) {
-                        $hasInvoice = Invoice::where('delivery_id', $value)
-                            ->where('status', '!=', 'dibatalkan')
-                            ->exists();
-                        if ($hasInvoice) {
-                            $fail('Surat jalan ini sudah memiliki faktur tagihan.');
+        if ($hasStores) {
+            $validator = Validator::make($request->all(), [
+                'invoice_number' => ['nullable', 'string', 'max:50', 'unique:invoices,invoice_number'],
+                'courier_id' => ['nullable', 'exists:users,id'],
+                'delivery_id' => [
+                    'nullable',
+                    'exists:deliveries,id',
+                    function ($attribute, $value, $fail) {
+                        if ($value) {
+                            $hasInvoice = Invoice::where('delivery_id', $value)
+                                ->where('status', '!=', 'dibatalkan')
+                                ->exists();
+                            if ($hasInvoice) {
+                                $fail('Surat jalan ini sudah memiliki faktur tagihan.');
+                            }
                         }
-                    }
-                },
-            ],
-            'invoice_date' => ['required', 'date'],
-            'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
-            'discount' => ['nullable', 'numeric', 'min:0'],
-            'notes' => ['nullable', 'string', 'max:1000'],
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'exists:products,id', 'distinct'],
-            'items.*.quantity' => ['required', 'integer', 'min:0'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'items.*.delivered_quantity' => ['nullable', 'integer', 'min:0'],
-            'items.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
-            'items.*.damaged_quantity' => ['nullable', 'integer', 'min:0'],
-            'items.*.returned_quantity' => ['nullable', 'integer', 'min:0'],
-        ], [
-            'store_id.required' => 'Pilih toko mitra tujuan penagihan.',
-            'store_ids.min' => 'Pilih minimal 1 toko mitra tujuan penagihan.',
-            'store_id.exists' => 'Toko mitra yang dipilih tidak valid.',
-            'store_ids.*.exists' => 'Salah satu toko mitra yang dipilih tidak valid.',
-            'courier_id.exists' => 'Kurir yang dipilih tidak valid.',
-            'delivery_id.exists' => 'Surat jalan yang dipilih tidak valid.',
-            'invoice_date.required' => 'Tanggal faktur wajib diisi.',
-            'due_date.required' => 'Tanggal jatuh tempo wajib diisi.',
-            'due_date.after_or_equal' => 'Tanggal jatuh tempo harus sama atau setelah tanggal faktur.',
-            'discount.numeric' => 'Potongan harga / diskon harus berupa angka.',
-            'discount.min' => 'Potongan harga / diskon tidak boleh bernilai negatif.',
-            'items.required' => 'Daftar rincian faktur wajib diisi minimal 1 jenis produk.',
-            'items.min' => 'Daftar rincian faktur wajib diisi minimal 1 jenis produk.',
-            'items.*.product_id.required' => 'Pilih produk untuk setiap baris faktur.',
-            'items.*.product_id.exists' => 'Produk yang dipilih tidak valid.',
-            'items.*.product_id.distinct' => 'Produk tidak boleh ganda pada faktur yang sama.',
-            'items.*.quantity.required' => 'Jumlah barang tertagih wajib diisi.',
-            'items.*.quantity.min' => 'Jumlah barang tertagih minimal 0.',
-            'items.*.unit_price.required' => 'Harga satuan wajib diisi.',
-            'items.*.unit_price.min' => 'Harga satuan tidak boleh negatif.',
-        ]);
+                    },
+                ],
+                'invoice_date' => ['required', 'date'],
+                'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
+                'discount' => ['nullable', 'numeric', 'min:0'],
+                'notes' => ['nullable', 'string', 'max:1000'],
+                'stores' => ['required', 'array', 'min:1'],
+                'stores.*.store_id' => ['required', 'exists:stores,id'],
+                'stores.*.discount' => ['nullable', 'numeric', 'min:0'],
+                'stores.*.items' => ['required', 'array', 'min:1'],
+                'stores.*.items.*.product_id' => ['required', 'exists:products,id'],
+                'stores.*.items.*.quantity' => ['required', 'integer', 'min:0'],
+                'stores.*.items.*.unit_price' => ['required', 'numeric', 'min:0'],
+                'stores.*.items.*.delivered_quantity' => ['nullable', 'integer', 'min:0'],
+                'stores.*.items.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
+                'stores.*.items.*.damaged_quantity' => ['nullable', 'integer', 'min:0'],
+                'stores.*.items.*.returned_quantity' => ['nullable', 'integer', 'min:0'],
+            ], [
+                'stores.required' => 'Pilih minimal 1 toko mitra tujuan penagihan.',
+                'stores.min' => 'Pilih minimal 1 toko mitra tujuan penagihan.',
+                'stores.*.store_id.required' => 'Pilih toko mitra tujuan penagihan.',
+                'stores.*.store_id.exists' => 'Salah satu toko mitra yang dipilih tidak valid.',
+                'stores.*.items.required' => 'Setiap toko wajib memiliki minimal 1 rincian produk tertagih.',
+                'stores.*.items.min' => 'Setiap toko wajib memiliki minimal 1 rincian produk tertagih.',
+                'stores.*.items.*.product_id.required' => 'Pilih produk untuk setiap baris faktur.',
+                'stores.*.items.*.product_id.exists' => 'Produk yang dipilih tidak valid.',
+                'stores.*.items.*.quantity.required' => 'Jumlah barang tertagih wajib diisi.',
+                'stores.*.items.*.quantity.min' => 'Jumlah barang tertagih minimal 0.',
+                'stores.*.items.*.unit_price.required' => 'Harga satuan wajib diisi.',
+                'stores.*.items.*.unit_price.min' => 'Harga satuan tidak boleh negatif.',
+                'courier_id.exists' => 'Kurir yang dipilih tidak valid.',
+                'delivery_id.exists' => 'Surat jalan yang dipilih tidak valid.',
+                'invoice_date.required' => 'Tanggal faktur wajib diisi.',
+                'due_date.required' => 'Tanggal jatuh tempo wajib diisi.',
+                'due_date.after_or_equal' => 'Tanggal jatuh tempo harus sama atau setelah tanggal faktur.',
+                'discount.numeric' => 'Potongan harga / diskon harus berupa angka.',
+                'discount.min' => 'Potongan harga / diskon tidak boleh bernilai negatif.',
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                'invoice_number' => ['nullable', 'string', 'max:50', 'unique:invoices,invoice_number'],
+                'store_id' => [$hasStoreIds ? 'nullable' : 'required', 'exists:stores,id'],
+                'store_ids' => ['nullable', 'array', 'min:1'],
+                'store_ids.*' => ['required', 'exists:stores,id'],
+                'courier_id' => ['nullable', 'exists:users,id'],
+                'delivery_id' => [
+                    'nullable',
+                    'exists:deliveries,id',
+                    function ($attribute, $value, $fail) {
+                        if ($value) {
+                            $hasInvoice = Invoice::where('delivery_id', $value)
+                                ->where('status', '!=', 'dibatalkan')
+                                ->exists();
+                            if ($hasInvoice) {
+                                $fail('Surat jalan ini sudah memiliki faktur tagihan.');
+                            }
+                        }
+                    },
+                ],
+                'invoice_date' => ['required', 'date'],
+                'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
+                'discount' => ['nullable', 'numeric', 'min:0'],
+                'notes' => ['nullable', 'string', 'max:1000'],
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.product_id' => ['required', 'exists:products,id', 'distinct'],
+                'items.*.quantity' => ['required', 'integer', 'min:0'],
+                'items.*.unit_price' => ['required', 'numeric', 'min:0'],
+                'items.*.delivered_quantity' => ['nullable', 'integer', 'min:0'],
+                'items.*.remaining_quantity' => ['nullable', 'integer', 'min:0'],
+                'items.*.damaged_quantity' => ['nullable', 'integer', 'min:0'],
+                'items.*.returned_quantity' => ['nullable', 'integer', 'min:0'],
+            ], [
+                'store_id.required' => 'Pilih toko mitra tujuan penagihan.',
+                'store_ids.min' => 'Pilih minimal 1 toko mitra tujuan penagihan.',
+                'store_id.exists' => 'Toko mitra yang dipilih tidak valid.',
+                'store_ids.*.exists' => 'Salah satu toko mitra yang dipilih tidak valid.',
+                'courier_id.exists' => 'Kurir yang dipilih tidak valid.',
+                'delivery_id.exists' => 'Surat jalan yang dipilih tidak valid.',
+                'invoice_date.required' => 'Tanggal faktur wajib diisi.',
+                'due_date.required' => 'Tanggal jatuh tempo wajib diisi.',
+                'due_date.after_or_equal' => 'Tanggal jatuh tempo harus sama atau setelah tanggal faktur.',
+                'discount.numeric' => 'Potongan harga / diskon harus berupa angka.',
+                'discount.min' => 'Potongan harga / diskon tidak boleh bernilai negatif.',
+                'items.required' => 'Daftar rincian faktur wajib diisi minimal 1 jenis produk.',
+                'items.min' => 'Daftar rincian faktur wajib diisi minimal 1 jenis produk.',
+                'items.*.product_id.required' => 'Pilih produk untuk setiap baris faktur.',
+                'items.*.product_id.exists' => 'Produk yang dipilih tidak valid.',
+                'items.*.product_id.distinct' => 'Produk tidak boleh ganda pada faktur yang sama.',
+                'items.*.quantity.required' => 'Jumlah barang tertagih wajib diisi.',
+                'items.*.quantity.min' => 'Jumlah barang tertagih minimal 0.',
+                'items.*.unit_price.required' => 'Harga satuan wajib diisi.',
+                'items.*.unit_price.min' => 'Harga satuan tidak boleh negatif.',
+            ]);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -265,16 +322,35 @@ class InvoiceController extends Controller
             ], 422);
         }
 
-        $itemsData = $request->input('items', []);
-        $subtotal = 0.0;
-        foreach ($itemsData as $item) {
-            $qty = (int) $item['quantity'];
-            $price = (float) $item['unit_price'];
-            $subtotal += ($qty * $price);
+        // Validate warehouse ready stock sufficiency across all stores
+        $productStockSums = [];
+        if ($hasStores) {
+            foreach ($request->input('stores') as $st) {
+                foreach ($st['items'] as $item) {
+                    $pid = $item['product_id'];
+                    $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + (int) $item['quantity'];
+                }
+            }
+        } else {
+            $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
+            $storeCount = count($targetStoreIds);
+            foreach ($request->input('items', []) as $item) {
+                $pid = $item['product_id'];
+                $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + ((int) $item['quantity'] * $storeCount);
+            }
         }
-
-        $discount = (float) ($request->input('discount') ?? 0);
-        $totalAmount = max(0.0, $subtotal - $discount);
+        foreach ($productStockSums as $pid => $totalQty) {
+            $prod = Product::find($pid);
+            if ($prod && $totalQty > $prod->stock_ready) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Stok produk '{$prod->name}' tidak mencukupi (Dibutuhkan total: {$totalQty} {$prod->unit}, Tersedia ready di gudang: {$prod->stock_ready} {$prod->unit}).",
+                    'errors' => [
+                        'items' => ["Stok {$prod->name} tidak mencukupi (dibutuhkan: {$totalQty}, sisa: {$prod->stock_ready})."],
+                    ],
+                ], 422);
+            }
+        }
 
         /** @var User|null $currentUser */
         $currentUser = auth('api')->user();
@@ -286,59 +362,139 @@ class InvoiceController extends Controller
             $courierId = $delivery?->courier_id;
         }
 
-        $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
-
-        $createdInvoices = DB::transaction(function () use ($targetStoreIds, $request, $courierId, $subtotal, $discount, $totalAmount, $itemsData) {
+        $createdInvoices = DB::transaction(function () use ($hasStores, $request, $courierId) {
             $invoices = [];
-            foreach ($targetStoreIds as $idx => $stId) {
-                $invNum = ($idx === 0 && count($targetStoreIds) === 1 && $request->filled('invoice_number'))
-                    ? trim((string) $request->input('invoice_number'))
-                    : Invoice::generateInvoiceNumber();
 
-                $invoice = Invoice::create([
-                    'invoice_number' => $invNum,
-                    'delivery_id' => count($targetStoreIds) === 1 ? $request->input('delivery_id') : null,
-                    'store_id' => $stId,
-                    'courier_id' => $courierId,
-                    'created_by' => auth('api')->id(),
-                    'invoice_date' => $request->input('invoice_date'),
-                    'due_date' => $request->input('due_date'),
-                    'subtotal' => $subtotal,
-                    'discount' => $discount,
-                    'total_amount' => $totalAmount,
-                    'paid_amount' => 0.00,
-                    'remaining_balance' => $totalAmount,
-                    'status' => 'belum_dibayar',
-                    'notes' => $request->input('notes'),
-                ]);
+            if ($hasStores) {
+                $storesData = $request->input('stores');
+                $totalStoreCount = count($storesData);
 
+                foreach ($storesData as $idx => $st) {
+                    $stId = $st['store_id'];
+                    $itemsData = $st['items'] ?? [];
+                    $subtotal = 0.0;
+                    foreach ($itemsData as $item) {
+                        $subtotal += ((int) $item['quantity']) * ((float) $item['unit_price']);
+                    }
+
+                    $discount = isset($st['discount']) && is_numeric($st['discount'])
+                        ? (float) $st['discount']
+                        : ($totalStoreCount === 1 ? (float) ($request->input('discount') ?? 0) : 0.0);
+                    $totalAmount = max(0.0, $subtotal - $discount);
+
+                    $invNum = ($idx === 0 && $totalStoreCount === 1 && $request->filled('invoice_number'))
+                        ? trim((string) $request->input('invoice_number'))
+                        : Invoice::generateInvoiceNumber();
+
+                    $invoice = Invoice::create([
+                        'invoice_number' => $invNum,
+                        'delivery_id' => $totalStoreCount === 1 ? $request->input('delivery_id') : null,
+                        'store_id' => $stId,
+                        'courier_id' => $courierId,
+                        'created_by' => auth('api')->id(),
+                        'invoice_date' => $request->input('invoice_date'),
+                        'due_date' => $request->input('due_date'),
+                        'subtotal' => $subtotal,
+                        'discount' => $discount,
+                        'total_amount' => $totalAmount,
+                        'paid_amount' => 0.00,
+                        'remaining_balance' => $totalAmount,
+                        'status' => 'belum_dibayar',
+                        'notes' => $request->input('notes'),
+                    ]);
+
+                    foreach ($itemsData as $item) {
+                        $qty = (int) $item['quantity'];
+                        $price = (float) $item['unit_price'];
+                        $delivered = isset($item['delivered_quantity']) && $item['delivered_quantity'] !== '' ? (int) $item['delivered_quantity'] : $qty;
+                        $remaining = (int) ($item['remaining_quantity'] ?? 0);
+                        $damaged = (int) ($item['damaged_quantity'] ?? 0);
+                        $returned = (int) ($item['returned_quantity'] ?? 0);
+
+                        InvoiceItem::create([
+                            'invoice_id' => $invoice->id,
+                            'product_id' => $item['product_id'],
+                            'delivered_quantity' => $delivered,
+                            'remaining_quantity' => $remaining,
+                            'damaged_quantity' => $damaged,
+                            'returned_quantity' => $returned,
+                            'quantity' => $qty,
+                            'unit_price' => $price,
+                            'subtotal' => $qty * $price,
+                        ]);
+
+                        // Increment warehouse stock for returned goods that were brought back in good condition
+                        if ($returned > 0) {
+                            Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
+                        }
+                    }
+
+                    $invoices[] = $invoice;
+                }
+            } else {
+                $hasStoreIds = $request->has('store_ids') && is_array($request->input('store_ids')) && count($request->input('store_ids')) > 0;
+                $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
+                $itemsData = $request->input('items', []);
+                $subtotal = 0.0;
                 foreach ($itemsData as $item) {
                     $qty = (int) $item['quantity'];
                     $price = (float) $item['unit_price'];
-                    $delivered = isset($item['delivered_quantity']) && $item['delivered_quantity'] !== '' ? (int) $item['delivered_quantity'] : $qty;
-                    $remaining = (int) ($item['remaining_quantity'] ?? 0);
-                    $damaged = (int) ($item['damaged_quantity'] ?? 0);
-                    $returned = (int) ($item['returned_quantity'] ?? 0);
-
-                    InvoiceItem::create([
-                        'invoice_id' => $invoice->id,
-                        'product_id' => $item['product_id'],
-                        'delivered_quantity' => $delivered,
-                        'remaining_quantity' => $remaining,
-                        'damaged_quantity' => $damaged,
-                        'returned_quantity' => $returned,
-                        'quantity' => $qty,
-                        'unit_price' => $price,
-                        'subtotal' => $qty * $price,
-                    ]);
-
-                    // Increment warehouse stock for returned goods that were brought back in good condition
-                    if ($returned > 0) {
-                        Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
-                    }
+                    $subtotal += ($qty * $price);
                 }
 
-                $invoices[] = $invoice;
+                $discount = (float) ($request->input('discount') ?? 0);
+                $totalAmount = max(0.0, $subtotal - $discount);
+
+                foreach ($targetStoreIds as $idx => $stId) {
+                    $invNum = ($idx === 0 && count($targetStoreIds) === 1 && $request->filled('invoice_number'))
+                        ? trim((string) $request->input('invoice_number'))
+                        : Invoice::generateInvoiceNumber();
+
+                    $invoice = Invoice::create([
+                        'invoice_number' => $invNum,
+                        'delivery_id' => count($targetStoreIds) === 1 ? $request->input('delivery_id') : null,
+                        'store_id' => $stId,
+                        'courier_id' => $courierId,
+                        'created_by' => auth('api')->id(),
+                        'invoice_date' => $request->input('invoice_date'),
+                        'due_date' => $request->input('due_date'),
+                        'subtotal' => $subtotal,
+                        'discount' => $discount,
+                        'total_amount' => $totalAmount,
+                        'paid_amount' => 0.00,
+                        'remaining_balance' => $totalAmount,
+                        'status' => 'belum_dibayar',
+                        'notes' => $request->input('notes'),
+                    ]);
+
+                    foreach ($itemsData as $item) {
+                        $qty = (int) $item['quantity'];
+                        $price = (float) $item['unit_price'];
+                        $delivered = isset($item['delivered_quantity']) && $item['delivered_quantity'] !== '' ? (int) $item['delivered_quantity'] : $qty;
+                        $remaining = (int) ($item['remaining_quantity'] ?? 0);
+                        $damaged = (int) ($item['damaged_quantity'] ?? 0);
+                        $returned = (int) ($item['returned_quantity'] ?? 0);
+
+                        InvoiceItem::create([
+                            'invoice_id' => $invoice->id,
+                            'product_id' => $item['product_id'],
+                            'delivered_quantity' => $delivered,
+                            'remaining_quantity' => $remaining,
+                            'damaged_quantity' => $damaged,
+                            'returned_quantity' => $returned,
+                            'quantity' => $qty,
+                            'unit_price' => $price,
+                            'subtotal' => $qty * $price,
+                        ]);
+
+                        // Increment warehouse stock for returned goods that were brought back in good condition
+                        if ($returned > 0) {
+                            Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
+                        }
+                    }
+
+                    $invoices[] = $invoice;
+                }
             }
 
             return $invoices;
