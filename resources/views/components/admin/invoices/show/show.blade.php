@@ -464,14 +464,6 @@
                             <div>Rute Wilayah: <strong
                                     class="text-brand-espresso">{{ $invoice->store->route }}</strong></div>
                         @endif
-                        @if ($invoice->store->owner_name)
-                            <div>Pemilik / Kontak: <strong
-                                    class="text-brand-espresso">{{ $invoice->store->owner_name }}</strong></div>
-                        @endif
-                        @if ($invoice->store->phone)
-                            <div>Telepon / WhatsApp: <strong
-                                    class="text-brand-espresso font-mono">{{ $invoice->store->phone }}</strong></div>
-                        @endif
                     </div>
                 @else
                     <div class="text-xs text-brand-warm-gray italic">Data toko mitra tidak ditemukan</div>
