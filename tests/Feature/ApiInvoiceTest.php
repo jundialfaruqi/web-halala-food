@@ -242,9 +242,9 @@ test('manager with faktur-create permission can create invoice with validation, 
         ->and($res->json('data.status'))->toBe('belum_dibayar')
         ->and(count($res->json('data.items')))->toBe(1);
 
-    // Verify product returned quantity was restored to warehouse
+    // Verify product stock was decremented by sold quantity (5) and restored by returned quantity (3)
     $product->refresh();
-    expect($product->stock_ready)->toBe($initialStock + 3);
+    expect($product->stock_ready)->toBe($initialStock - 5 + 3);
 });
 
 test('create options returns couriers list', function () {
@@ -492,7 +492,11 @@ test('manager can create multi-store invoices with dynamic per-store items and v
     expect((float) $invoices[0]['subtotal'])->toBe(100000.0);
     expect((float) $invoices[1]['subtotal'])->toBe(120000.0);
 
-    // 2. Gagal 422 jika total alokasi melebihi sisa stock_ready (25)
+    // Verifikasi stok gudang benar-benar terpotong sebanyak 22 (10 + 12)
+    $product->refresh();
+    expect($product->stock_ready)->toBe(3); // 25 - 22 = 3
+
+    // 2. Gagal 422 jika total alokasi melebihi sisa stock_ready (3)
     $responseFail = withHeader('Authorization', "Bearer {$token}")
         ->postJson('/api/invoices', [
             'invoice_date' => now()->toDateString(),
@@ -515,5 +519,23 @@ test('manager can create multi-store invoices with dynamic per-store items and v
 
     $responseFail->assertStatus(422);
     expect($responseFail->json('message'))->toContain('tidak mencukupi');
+
+    // 3. Batalkan salah satu faktur (Toko A: 10 pcs), stok harus kembali 10 (dari 3 menjadi 13)
+    $invAId = $invoices[0]['id'];
+    $responseCancel = withHeader('Authorization', "Bearer {$token}")
+        ->postJson("/api/invoices/{$invAId}/cancel");
+    $responseCancel->assertOk();
+
+    $product->refresh();
+    expect($product->stock_ready)->toBe(13); // 3 + 10 = 13
+
+    // 4. Hapus faktur Toko B (12 pcs), stok harus kembali 12 (dari 13 menjadi 25)
+    $invBId = $invoices[1]['id'];
+    $responseDelete = withHeader('Authorization', "Bearer {$token}")
+        ->deleteJson("/api/invoices/{$invBId}");
+    $responseDelete->assertOk();
+
+    $product->refresh();
+    expect($product->stock_ready)->toBe(25); // 13 + 12 = 25 (kembali utuh seperti awal)
 });
 

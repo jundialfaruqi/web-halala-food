@@ -322,33 +322,35 @@ class InvoiceController extends Controller
             ], 422);
         }
 
-        // Validate warehouse ready stock sufficiency across all stores
-        $productStockSums = [];
-        if ($hasStores) {
-            foreach ($request->input('stores') as $st) {
-                foreach ($st['items'] as $item) {
+        // Validate warehouse ready stock sufficiency across all stores if invoice is created without delivery order
+        if (! $request->filled('delivery_id')) {
+            $productStockSums = [];
+            if ($hasStores) {
+                foreach ($request->input('stores') as $st) {
+                    foreach ($st['items'] as $item) {
+                        $pid = $item['product_id'];
+                        $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + (int) $item['quantity'];
+                    }
+                }
+            } else {
+                $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
+                $storeCount = count($targetStoreIds);
+                foreach ($request->input('items', []) as $item) {
                     $pid = $item['product_id'];
-                    $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + (int) $item['quantity'];
+                    $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + ((int) $item['quantity'] * $storeCount);
                 }
             }
-        } else {
-            $targetStoreIds = $hasStoreIds ? array_values(array_unique($request->input('store_ids'))) : [$request->input('store_id')];
-            $storeCount = count($targetStoreIds);
-            foreach ($request->input('items', []) as $item) {
-                $pid = $item['product_id'];
-                $productStockSums[$pid] = ($productStockSums[$pid] ?? 0) + ((int) $item['quantity'] * $storeCount);
-            }
-        }
-        foreach ($productStockSums as $pid => $totalQty) {
-            $prod = Product::find($pid);
-            if ($prod && $totalQty > $prod->stock_ready) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Stok produk '{$prod->name}' tidak mencukupi (Dibutuhkan total: {$totalQty} {$prod->unit}, Tersedia ready di gudang: {$prod->stock_ready} {$prod->unit}).",
-                    'errors' => [
-                        'items' => ["Stok {$prod->name} tidak mencukupi (dibutuhkan: {$totalQty}, sisa: {$prod->stock_ready})."],
-                    ],
-                ], 422);
+            foreach ($productStockSums as $pid => $totalQty) {
+                $prod = Product::find($pid);
+                if ($prod && $totalQty > $prod->stock_ready) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Stok produk '{$prod->name}' tidak mencukupi (Dibutuhkan total: {$totalQty} {$prod->unit}, Tersedia ready di gudang: {$prod->stock_ready} {$prod->unit}).",
+                        'errors' => [
+                            'items' => ["Stok {$prod->name} tidak mencukupi (dibutuhkan: {$totalQty}, sisa: {$prod->stock_ready})."],
+                        ],
+                    ], 422);
+                }
             }
         }
 
@@ -423,6 +425,11 @@ class InvoiceController extends Controller
                             'subtotal' => $qty * $price,
                         ]);
 
+                        // Decrement warehouse ready stock if standalone invoice (not created from delivery order)
+                        if (empty($invoice->delivery_id)) {
+                            Product::where('id', $item['product_id'])->decrement('stock_ready', $qty);
+                        }
+
                         // Increment warehouse stock for returned goods that were brought back in good condition
                         if ($returned > 0) {
                             Product::where('id', $item['product_id'])->increment('stock_ready', $returned);
@@ -486,6 +493,11 @@ class InvoiceController extends Controller
                             'unit_price' => $price,
                             'subtotal' => $qty * $price,
                         ]);
+
+                        // Decrement warehouse ready stock if standalone invoice (not created from delivery order)
+                        if (empty($invoice->delivery_id)) {
+                            Product::where('id', $item['product_id'])->decrement('stock_ready', $qty);
+                        }
 
                         // Increment warehouse stock for returned goods that were brought back in good condition
                         if ($returned > 0) {
@@ -795,10 +807,19 @@ class InvoiceController extends Controller
 
             $invoice->update($updatePayload);
 
-            // Revert previously returned items from warehouse inventory before deleting
-            foreach ($invoice->items as $oldItem) {
-                if ($oldItem->returned_quantity > 0) {
-                    Product::where('id', $oldItem->product_id)->decrement('stock_ready', $oldItem->returned_quantity);
+            // Revert previously modified stock movements before replacing line items
+            if (empty($invoice->delivery_id)) {
+                foreach ($invoice->items as $oldItem) {
+                    Product::where('id', $oldItem->product_id)->increment('stock_ready', $oldItem->quantity);
+                    if ($oldItem->returned_quantity > 0) {
+                        Product::where('id', $oldItem->product_id)->decrement('stock_ready', $oldItem->returned_quantity);
+                    }
+                }
+            } else {
+                foreach ($invoice->items as $oldItem) {
+                    if ($oldItem->returned_quantity > 0) {
+                        Product::where('id', $oldItem->product_id)->decrement('stock_ready', $oldItem->returned_quantity);
+                    }
                 }
             }
 
@@ -823,6 +844,11 @@ class InvoiceController extends Controller
                     'unit_price' => $price,
                     'subtotal' => $qty * $price,
                 ]);
+
+                // Decrement warehouse ready stock if standalone invoice
+                if (empty($invoice->delivery_id)) {
+                    Product::where('id', $item['product_id'])->decrement('stock_ready', $qty);
+                }
 
                 // Increment warehouse stock for newly returned items
                 if ($returned > 0) {
@@ -879,6 +905,22 @@ class InvoiceController extends Controller
         DB::transaction(function () use ($invoice) {
             $invoice->update(['status' => 'dibatalkan']);
             AccountingService::deleteInvoiceRecords($invoice);
+
+            // Revert stock movements
+            if (empty($invoice->delivery_id)) {
+                foreach ($invoice->items as $item) {
+                    Product::where('id', $item->product_id)->increment('stock_ready', $item->quantity);
+                    if ($item->returned_quantity > 0) {
+                        Product::where('id', $item->product_id)->decrement('stock_ready', $item->returned_quantity);
+                    }
+                }
+            } else {
+                foreach ($invoice->items as $item) {
+                    if ($item->returned_quantity > 0) {
+                        Product::where('id', $item->product_id)->decrement('stock_ready', $item->returned_quantity);
+                    }
+                }
+            }
         });
 
         try {
@@ -917,6 +959,24 @@ class InvoiceController extends Controller
 
         DB::transaction(function () use ($invoice) {
             AccountingService::deleteInvoiceRecords($invoice);
+
+            if ($invoice->status !== 'dibatalkan') {
+                if (empty($invoice->delivery_id)) {
+                    foreach ($invoice->items as $item) {
+                        Product::where('id', $item->product_id)->increment('stock_ready', $item->quantity);
+                        if ($item->returned_quantity > 0) {
+                            Product::where('id', $item->product_id)->decrement('stock_ready', $item->returned_quantity);
+                        }
+                    }
+                } else {
+                    foreach ($invoice->items as $item) {
+                        if ($item->returned_quantity > 0) {
+                            Product::where('id', $item->product_id)->decrement('stock_ready', $item->returned_quantity);
+                        }
+                    }
+                }
+            }
+
             $invoice->payments()->delete();
             $invoice->items()->delete();
             $invoice->delete();
