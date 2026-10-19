@@ -60,7 +60,7 @@ class Delivery extends Model
     protected function casts(): array
     {
         return [
-            'delivery_date' => 'date',
+            'delivery_date' => 'date:Y-m-d',
             'dispatched_at' => 'datetime',
             'delivered_at' => 'datetime',
             'total_items' => 'integer',
